@@ -91,6 +91,17 @@
             font-weight: 400;
         }
         
+        .home-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
         .main-screen {
             padding: 20px;
             display: grid;
@@ -144,6 +155,7 @@
             justify-content: center;
             color: white;
             text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            aspect-ratio: 1 / 1;
         }
 
         .love-widget .avatars {
@@ -471,36 +483,37 @@
                     <div id="date" class="date"></div>
                 </div>
 
-                <div class="main-screen">
-                <!-- Main Apps -->
-                <div class="app-icon" data-app="chat">
-                    <div class="app-icon-img">💬</div>
-                    <span>520</span>
-                </div>
-                <div class="app-icon" data-app="couple-space">
-                    <div class="app-icon-img">❤️</div>
-                    <span>情侣空间</span>
-                </div>
-                <div class="love-widget">
-                    <div class="avatars">
-                        <label for="avatar1-upload" class="avatar-placeholder" id="avatar1-preview">头像1</label>
-                        <input type="file" id="avatar1-upload" accept="image/*" class="hidden">
-                        <label for="avatar2-upload" class="avatar-placeholder" id="avatar2-preview">头像2</label>
-                        <input type="file" id="avatar2-upload" accept="image/*" class="hidden">
+                <div class="home-content">
+                    <div class="app-grid">
+                        <div class="app-icon" data-app="chat">
+                            <div class="app-icon-img">💬</div>
+                            <span>520</span>
+                        </div>
+                        <div class="app-icon" data-app="couple-space">
+                            <div class="app-icon-img">❤️</div>
+                            <span>情侣空间</span>
+                        </div>
+                        <div class="app-icon" data-app="world-book">
+                            <div class="app-icon-img">📖</div>
+                            <span>世界书</span>
+                        </div>
+                        <div class="app-icon" data-app="check-phone">
+                            <div class="app-icon-img">📱</div>
+                            <span>查手机</span>
+                        </div>
                     </div>
-                    <div class="days-text">小情侣恋爱ing</div>
-                    <div id="love-days" class="days-count">...</div>
-                </div>
-                <div class="app-icon" data-app="world-book">
-                    <div class="app-icon-img">📖</div>
-                    <span>世界书</span>
-                </div>
-                <div class="app-icon" data-app="check-phone">
-                    <div class="app-icon-img">📱</div>
-                    <span>查手机</span>
+                    <div class="love-widget" style="height: 135px;">
+                        <div class="avatars">
+                            <label for="avatar1-upload" class="avatar-placeholder" id="avatar1-preview">头像1</label>
+                            <input type="file" id="avatar1-upload" accept="image/*" class="hidden">
+                            <label for="avatar2-upload" class="avatar-placeholder" id="avatar2-preview">头像2</label>
+                            <input type="file" id="avatar2-upload" accept="image/*" class="hidden">
+                        </div>
+                        <div class="days-text">小情侣恋爱ing</div>
+                        <div id="love-days" class="days-count">...</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
             <div class="dock backdrop-blur">
                 <!-- Dock Apps -->
@@ -758,12 +771,12 @@
                             <div>
                                 <h3 class="font-bold">更换壁纸</h3>
                                 <div class="wallpaper-options">
-                                    <div id="wallpaper-preview-container" class="wallpaper-preview" style="background-image: url(''); background-size: cover; background-position: center; border-radius: 22px; border: 1px solid #ccc; background-color: rgba(255, 255, 255, 0.2);">
-                                        <label for="wallpaper-upload" id="wallpaper-upload-label" class="cursor-pointer w-full h-full flex items-center justify-center border-2 border-dashed rounded-lg">
+                                    <label for="wallpaper-upload" id="wallpaper-upload-label" class="cursor-pointer w-full h-full flex items-center justify-center border-2 border-dashed rounded-lg" style="width: 60px; height: 80px;">
+                                        <div id="wallpaper-preview-container" class="wallpaper-preview flex items-center justify-center" style="background-image: url(''); background-size: cover; background-position: center; border-radius: 22px; background-color: rgba(255, 255, 255, 0.2); width: 100%; height: 100%;">
                                             +
-                                        </label>
-                                        <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
-                                    </div>
+                                        </div>
+                                    </label>
+                                    <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
                                 </div>
                                 <button id="save-wallpaper-btn" class="save-btn">确认修改</button>
                             </div>
