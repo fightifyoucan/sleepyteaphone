@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile Simulation</title>
+    <title>眠茶机</title>
+    <link rel="icon" href="favicon.png" type="image/png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -16,10 +17,10 @@
         }
 
         .mobile-container {
-            width: 390px; /* iPhone 14 Pro width */
-            height: 844px; /* iPhone 14 Pro height */
+            width: 360px;
+            height: 640px;
             background-color: #ffffff; /* Cream White */
-            border-radius: 54px; 
+            border-radius: 40px; 
             box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); /* Soft Pink Shadow */
             position: relative;
             overflow: hidden;
@@ -30,7 +31,7 @@
         .screen {
             width: 100%;
             height: 100%;
-            border-radius: 44px;
+            border-radius: 30px;
             background-color: transparent; /* Let the container color show through */
             background-size: cover;
             background-position: center;
@@ -402,6 +403,8 @@
             border-radius: 8px;
             cursor: pointer;
             border: 2px solid transparent;
+            background-size: cover;
+            background-position: center;
         }
         .wallpaper-preview.selected, .icon-style-preview.selected {
             border-color: #007aff;
@@ -423,6 +426,19 @@
             padding: 16px;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .save-btn {
+            background-color: #FFB6C1;
+            color: white;
+            border-radius: 9999px;
+            padding: 8px 16px;
+            font-weight: 500;
+            margin-top: 8px;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        .save-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -730,12 +746,14 @@
                                         <input type="file" id="wallpaper-upload" accept="image/*" class="hidden">
                                     </div>
                                 </div>
+                                <button id="save-wallpaper-btn" class="save-btn">确认修改</button>
                             </div>
                         </div>
                         <div class="settings-item">
                             <div>
                                 <h3 class="font-bold">更换应用图标</h3>
                                 <div id="app-icon-list" class="space-y-2"></div>
+                                <button id="save-icons-btn" class="save-btn">确认修改</button>
                             </div>
                         </div>
                          <div class="settings-item">
@@ -752,6 +770,11 @@
                 const wallpaperUploadLabel = appPage.querySelector('#wallpaper-upload-label');
                 const appIconList = appPage.querySelector('#app-icon-list');
                 const resetBtn = appPage.querySelector('#reset-settings-btn');
+                const saveWallpaperBtn = appPage.querySelector('#save-wallpaper-btn');
+                const saveIconsBtn = appPage.querySelector('#save-icons-btn');
+
+                let tempWallpaperUrl = null;
+                const tempIconUrls = {};
 
                 // Wallpaper
                 const savedWallpaper = localStorage.getItem('customWallpaper');
@@ -765,13 +788,21 @@
                     if (file) {
                         const reader = new FileReader();
                         reader.onload = (e) => {
-                            const imageUrl = e.target.result;
-                            screen.style.backgroundImage = `url(${imageUrl})`;
-                            wallpaperPreviewContainer.style.backgroundImage = `url(${imageUrl})`;
+                            tempWallpaperUrl = e.target.result;
+                            wallpaperPreviewContainer.style.backgroundImage = `url(${tempWallpaperUrl})`;
+                            wallpaperPreviewContainer.style.backgroundSize = 'cover';
+                            wallpaperPreviewContainer.style.backgroundPosition = 'center';
                             wallpaperUploadLabel.textContent = '';
-                            localStorage.setItem('customWallpaper', imageUrl);
                         };
                         reader.readAsDataURL(file);
+                    }
+                });
+
+                saveWallpaperBtn.addEventListener('click', () => {
+                    if (tempWallpaperUrl) {
+                        screen.style.backgroundImage = `url(${tempWallpaperUrl})`;
+                        localStorage.setItem('customWallpaper', tempWallpaperUrl);
+                        alert('设置成功啦！✨');
                     }
                 });
 
@@ -805,24 +836,36 @@
                             const reader = new FileReader();
                             reader.onload = (e) => {
                                 const imageUrl = e.target.result;
-                                const iconOnMainScreen = document.querySelector(`.app-icon[data-app="${appId}"] .app-icon-img`);
+                                tempIconUrls[appId] = imageUrl;
                                 const iconInSettings = document.getElementById(`preview-icon-${appId}`);
-
-                                if(iconOnMainScreen) {
-                                    iconOnMainScreen.textContent = '';
-                                    iconOnMainScreen.style.backgroundImage = `url(${imageUrl})`;
-                                    iconOnMainScreen.style.backgroundSize = 'cover';
-                                }
                                 if(iconInSettings) {
                                     iconInSettings.textContent = '';
                                     iconInSettings.style.backgroundImage = `url(${imageUrl})`;
                                     iconInSettings.style.backgroundSize = 'cover';
                                     iconInSettings.style.border = '1px solid #ccc';
                                 }
-                                localStorage.setItem(`icon_${appId}`, imageUrl);
                             };
                             reader.readAsDataURL(file);
                         }
+                    }
+                });
+
+                saveIconsBtn.addEventListener('click', () => {
+                    let saved = false;
+                    Object.keys(tempIconUrls).forEach(appId => {
+                        saved = true;
+                        const imageUrl = tempIconUrls[appId];
+                        const iconOnMainScreen = document.querySelector(`.app-icon[data-app="${appId}"] .app-icon-img`);
+                        if(iconOnMainScreen) {
+                            iconOnMainScreen.textContent = '';
+                            iconOnMainScreen.style.backgroundImage = `url(${imageUrl})`;
+                            iconOnMainScreen.style.backgroundSize = 'cover';
+                        }
+                        localStorage.setItem(`icon_${appId}`, imageUrl);
+                        delete tempIconUrls[appId]; // Clear after saving
+                    });
+                    if (saved) {
+                        alert('设置成功啦！✨');
                     }
                 });
                 
