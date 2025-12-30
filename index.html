@@ -43,7 +43,6 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: center;
         }
         
         .backdrop-blur {
@@ -79,10 +78,7 @@
             text-align: center;
             color: white;
             z-index: 10;
-            position: absolute;
-            top: 60px;
-            left: 0;
-            right: 0;
+            margin-bottom: 20px;
         }
 
         .time {
@@ -455,12 +451,13 @@
         <div class="screen">
             <div class="dynamic-island"></div>
             
-            <div class="time-and-date">
-                <div id="time" class="time"></div>
-                <div id="date" class="date"></div>
-            </div>
+            <div class="content-wrapper" style="padding-top: 30%;">
+                <div class="time-and-date">
+                    <div id="time" class="time"></div>
+                    <div id="date" class="date"></div>
+                </div>
 
-            <div class="main-screen">
+                <div class="main-screen">
                 <!-- Main Apps -->
                 <div class="app-icon" data-app="chat">
                     <div class="app-icon-img">💬</div>
@@ -489,6 +486,7 @@
                     <span>查手机</span>
                 </div>
             </div>
+        </div>
 
             <div class="dock backdrop-blur">
                 <!-- Dock Apps -->
