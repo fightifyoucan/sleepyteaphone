@@ -44,7 +44,7 @@
         .app-content { flex-grow: 1; overflow-y: auto; }
 
         /* --- 520 App 基础框架 --- */
-        .app-header-520 { background-color: #fff; border-bottom: 1px solid #f0f0f0; padding-top: 40px; height: 90px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 100; box-sizing: border-box;}
+        .app-header-520 { background-color: #fff; border-bottom: 1px solid #f0f0f0; padding-top: 30px; height: 80px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 100; box-sizing: border-box;}
         .app-header-520 .title { font-size: 17px; font-weight: 600; color: #000; }
         .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { position: absolute; padding: 10px; font-size: 16px; cursor: pointer; color: #333; bottom: 10px; }
         .app-header-520 .close-btn-520 { left: 5px; }
@@ -753,12 +753,14 @@
                     }
 
                     if(pid==='202'){
-                        title.textContent = '朋友圈'; addBtn.style.display = 'none';
+                        title.textContent = '朋友圈';
                         addBtn.style.display = 'none';
 
-                        // 清除所有旧按钮
+                        // 清除所有旧按钮，但保留主要的添加联系人按钮
                         const header = appPage.querySelector('.app-header-520');
-                        header.querySelectorAll('.add-btn-520').forEach(e => e.remove());
+                        header.querySelectorAll('.add-btn-520').forEach(e => {
+                            if (e.id !== 'add-contact-btn') e.remove();
+                        });
 
                         const headerBtn = document.createElement('span');
                         headerBtn.className = 'add-btn-520';
@@ -788,9 +790,6 @@
                             }
                         };
                         
-                        header.appendChild(headerBtn);
-                        header.appendChild(camBtn);
-                        header.querySelectorAll('.add-btn-520').forEach(e=>e.remove());
                         header.appendChild(headerBtn);
                         header.appendChild(camBtn);
 
