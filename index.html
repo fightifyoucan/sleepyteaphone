@@ -18,7 +18,7 @@
         /* --- 核心基础 --- */
         body { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; }
         .mobile-container { width: 360px; height: 640px; background-color: #ffffff; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
-        .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; }
+        .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 20px; box-sizing: border-box; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 300; pointer-events: none; }
         .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; }
@@ -38,8 +38,8 @@
         .love-widget .avatars { display: flex; gap: -15px; margin-bottom: 8px; }
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
-        #tea-widget { flex-shrink: 0; width: 100%; aspect-ratio: 2 / 1; min-height: 150px; }
-        .dock { position: absolute; bottom: 20px; left: 10px; right: 10px; height: 95px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 20; }
+        #tea-widget { flex-shrink: 0; width: 100%; min-height: 160px; }
+        .dock { position: absolute; bottom: 20px; left: 10px; right: 10px; height: 100px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 20; }
 
         /* --- App 容器 --- */
         .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fffafb; z-index: 200; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 44px; pointer-events: none; transform-origin: center; }
