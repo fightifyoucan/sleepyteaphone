@@ -27,12 +27,13 @@
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; }
         .app-icon:active { transform: scale(0.9); }
-        .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); }
+        .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); }
+        .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
         .love-widget { grid-column: span 2; grid-row: span 2; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 22px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15); aspect-ratio: 1/1; }
         .love-widget .avatars { display: flex; gap: -15px; margin-bottom: 8px; }
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
-        .dock { position: absolute; bottom: 40px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 20; }
+        .dock { position: absolute; bottom: 20px; left: 10px; right: 10px; height: 95px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 20; }
 
         /* --- App 容器 --- */
         .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fffafb; z-index: 200; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 44px; pointer-events: none; transform-origin: center; }
@@ -53,7 +54,7 @@
         .bottom-nav-520 { display: flex; justify-content: space-around; background-color: #f7f7f7; border-top: 1px solid #b2b2b2; padding-top: 6px; padding-bottom: 20px; flex-shrink: 0; z-index: 10; }
         .nav-item-520 { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #8e8e93; cursor: pointer; }
         .nav-item-520.active { color: #007aff; }
-        .nav-item-520 .icon { font-size: 24px; margin-bottom: 2px; }
+        .nav-item-520 .icon { font-size: 20px; margin-bottom: 2px; }
         .page-content-520 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; pointer-events: none; overflow-y: auto; background-color: #fff; }
         .app-content-520-wrapper { flex: 1; position: relative; overflow: hidden; }
         .page-content-520.active { opacity: 1; pointer-events: auto; }
@@ -214,6 +215,14 @@
         .couple-space-card { background-color: white; border-radius: 24px; padding: 16px; margin-bottom: 16px; box-shadow: 0 5px 15px rgba(255, 182, 193, 0.2); }
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+
+        .app-content, .page-content-520 {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .app-content::-webkit-scrollbar, .page-content-520::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Webkit */
+        }
     </style>
     <script src="database.js"></script>
 </head>
@@ -226,25 +235,26 @@
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
                 <div class="home-content">
                     <div class="app-grid">
-                        <div class="app-icon" data-app="chat"><div class="app-icon-img">💬</div><span>520</span></div>
-                        <div class="app-icon" data-app="couple-space"><div class="app-icon-img">❤️</div><span>心跳同频中</span></div>
-                        <div class="app-icon" data-app="world-book"><div class="app-icon-img">📖</div><span>世界书</span></div>
-                        <div class="app-icon" data-app="check-phone"><div class="app-icon-img">📱</div><span>查手机</span></div>
+                        <!-- Icons will be rendered here by JavaScript -->
                     </div>
-                    <div class="love-widget" style="height: 135px;">
-                        <div class="avatars">
-                            <label for="avatar1-upload" class="avatar-placeholder" id="avatar1-preview">头像1</label><input type="file" id="avatar1-upload" accept="image/*" class="hidden">
-                            <label for="avatar2-upload" class="avatar-placeholder" id="avatar2-preview">头像2</label><input type="file" id="avatar2-upload" accept="image/*" class="hidden">
+                    <div class="flex flex-col items-center" style="grid-column: span 2;">
+                        <div id="tea-widget" class="love-widget" style="margin-top: 10px; position: relative; overflow: hidden; cursor: pointer; height: 135px; width: 100%; aspect-ratio: unset; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                            <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
+                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                               <div class="flex items-center justify-center mb-2 gap-3">
+                                   <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                                   <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                               </div>
+                               <div class="days-text">恋爱ing</div>
+                               <div id="love-days-text" class="days-count">...</div>
+                            </div>
                         </div>
-                        <div class="days-text">小情侣恋爱ing</div><div id="love-days" class="days-count">...</div>
+                        <span class="text-xs mt-1 text-center text-white" style="text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
                     </div>
                 </div>
             </div>
             <div class="dock backdrop-blur">
-                <div class="app-icon" data-app="api-settings"><div class="app-icon-img">⚙️</div><span>API</span></div>
-                <div class="app-icon" data-app="phone"><div class="app-icon-img">📞</div><span>通话</span></div>
-                <div class="app-icon" data-app="album"><div class="app-icon-img">🖼️</div><span>相册</span></div>
-                <div class="app-icon" data-app="settings"><div class="app-icon-img">🔧</div><span>设置</span></div>
+                <!-- Dock icons will be rendered here by JavaScript -->
             </div>
         </div>
         
@@ -262,6 +272,61 @@
     </div>
 
     <script>
+        let tempIcons = {}; 
+
+        function renderHomeScreenIcons() {
+            const apps = [
+                { id: 'chat', name: '520', emoji: '💬', container: '.app-grid' },
+                { id: 'couple-space', name: '心跳同频中', emoji: '❤️', container: '.app-grid' },
+                { id: 'world-book', name: '世界书', emoji: '📖', container: '.app-grid' },
+                { id: 'check-phone', name: '查手机', emoji: '📱', container: '.app-grid' },
+                { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
+                { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
+                { id: 'album', name: '相册', emoji: '🖼️', container: '.dock' },
+                { id: 'settings', name: '设置', emoji: '🔧', container: '.dock' }
+            ];
+
+            apps.forEach(app => {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" dy=".1em" dominant-baseline="middle" text-anchor="middle" font-size="36">${app.emoji}</text></svg>`;
+                try {
+                    app.icon = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+                } catch (e) {
+                    app.icon = `data:image/svg+xml;base64,${btoa(svg)}`; // Fallback for environments where unescape is deprecated
+                }
+            });
+
+            document.querySelector('.app-grid').innerHTML = '';
+            document.querySelectorAll('.dock .app-icon').forEach(icon => icon.remove());
+
+            apps.forEach(app => {
+                const container = document.querySelector(app.container);
+                if (!container) return;
+
+                const iconWrapper = document.createElement('div');
+                iconWrapper.className = 'app-icon';
+                iconWrapper.dataset.app = app.id;
+
+                const iconImg = document.createElement('img');
+                iconImg.className = 'app-icon-img';
+
+                const savedIcon = localStorage.getItem(`icon_${app.id}`);
+                iconImg.src = savedIcon || app.icon;
+
+                if (savedIcon) {
+                    iconImg.style.objectFit = 'cover';
+                    iconImg.style.backgroundColor = 'transparent';
+                    iconImg.style.backdropFilter = 'none';
+                }
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = app.name;
+
+                iconWrapper.appendChild(iconImg);
+                iconWrapper.appendChild(nameSpan);
+                container.appendChild(iconWrapper);
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const timeEl = document.getElementById('time');
             const dateEl = document.getElementById('date');
@@ -271,6 +336,8 @@
                 dateEl.textContent = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' });
             }
             updateTime(); setInterval(updateTime, 1000);
+
+            renderHomeScreenIcons();
 
             // --- 模板内容 ---
             const appContents = {
@@ -325,7 +392,24 @@
                     <div class="app-header"><span class="text-gray-600 cursor-pointer close-btn">主页</span><h2 class="font-bold">系统设置</h2><span class="w-10"></span></div>
                     <div class="app-content p-5">
                         <div class="settings-item"><div><h3 class="font-bold">更换壁纸</h3><div class="wallpaper-options"><label for="wallpaper-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center"><div id="wallpaper-preview-container" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div></label><input type="file" id="wallpaper-upload" accept="image/*" class="hidden"></div><button id="save-wallpaper-btn" class="save-btn">确认修改</button></div></div>
-                        <div class="settings-item"><div><h3 class="font-bold">更换应用图标</h3><div id="app-icon-list" class="space-y-2 mt-2"></div><button id="save-icons-btn" class="save-btn">确认修改</button></div></div>
+                        <div class="settings-item">
+                            <div>
+                                <h3 class="font-bold">更换应用图标</h3>
+                                <div class="grid grid-cols-4 gap-4 p-4" id="app-icon-list">
+                                    <!-- Icons will be rendered here by initSettingsApp -->
+                                </div>
+                                <button id="save-icons-btn" class="save-btn">确认修改</button>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <h3 class="font-bold">小组件配置</h3>
+                                <div class="grid grid-cols-3 gap-4 p-4" id="widget-config-list">
+                                    <!-- Widget config UI will be rendered here -->
+                                </div>
+                                <button id="save-widget-config-btn" class="save-btn">确认修改</button>
+                            </div>
+                        </div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
                     </div>
                 `,
@@ -829,7 +913,7 @@
                         el.querySelector('.moments-cover').onclick = () => el.querySelector('#cover-up').click();
                         el.querySelector('#cover-up').onchange = (e) => {
                             const f = e.target.files[0];
-                            if(f) { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('moments_cover', ev.target.result); go('202');}; r.readAsDataURL(f); }
+                            if(f) { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('moments_cover', ev.target.result); go('202.js');}; r.readAsDataURL(f); }
                         };
                         el.querySelector('.moments-nick').onclick = () => {
                             const n = prompt('修改昵称', userNick);
@@ -937,51 +1021,6 @@
                 go('200');
             }
 
-            function setupSettingsApp(appPage) {
-                const screen = document.querySelector('.screen');
-                const wallpaperUpload = appPage.querySelector('#wallpaper-upload');
-                const preview = appPage.querySelector('#wallpaper-preview-container');
-                const appIconList = appPage.querySelector('#app-icon-list');
-                let tempUrl = null; const tempIcons = {};
-
-                const savedWp = localStorage.getItem('customWallpaper');
-                if(savedWp) preview.style.backgroundImage = `url(${savedWp})`;
-
-                wallpaperUpload.onchange = (e) => {
-                    const f = e.target.files[0];
-                    if(f) { const r = new FileReader(); r.onload = (evt) => { tempUrl = evt.target.result; preview.style.backgroundImage = `url(${tempUrl})`; preview.textContent=''; }; r.readAsDataURL(f); }
-                };
-                appPage.querySelector('#save-wallpaper-btn').onclick = () => { if(tempUrl){ screen.style.backgroundImage = `url(${tempUrl})`; localStorage.setItem('customWallpaper', tempUrl); alert('壁纸已保存'); }};
-                appPage.querySelector('#reset-settings-btn').onclick = () => { if(confirm('重置所有数据？')) { localStorage.clear(); location.reload(); }};
-
-                const appNameMap = {
-                    'chat': '520',
-                    'couple-space': '心跳同频中',
-                    'world-book': '世界书',
-                    'check-phone': '查手机',
-                    'api-settings': 'API',
-                    'phone': '通话',
-                    'album': '相册',
-                    'settings': '设置'
-                };
-
-                const apps = Object.keys(appNameMap);
-                appIconList.innerHTML = apps.map(id => {
-                    const saved = localStorage.getItem(`icon_${id}`);
-                    return `<div class="flex justify-between items-center"><div class="flex items-center gap-2"><div class="icon-style-preview ${saved?'':'dashed-border'}" id="icon-prev-${id}" style="${saved?`background-image:url(${saved});border:1px solid #ccc`:''}">${saved?'':'+'}</div><span>${appNameMap[id]}</span></div><label class="text-xs px-2 py-1 rounded-full cursor-pointer" style="background-color: #bbe9ff; color: #4b5e7a;">修改<input type="file" data-id="${id}" class="hidden icon-up" accept="image/*"></label></div>`;
-                }).join('');
-
-                appPage.addEventListener('change', (e) => {
-                    if(e.target.classList.contains('icon-up')) {
-                        const f = e.target.files[0]; const id = e.target.dataset.id;
-                        if(f){ const r = new FileReader(); r.onload=(evt)=>{ tempIcons[id]=evt.target.result; const p=document.getElementById(`icon-prev-${id}`); p.style.backgroundImage=`url(${evt.target.result})`; p.textContent=''; p.classList.remove('dashed-border'); p.style.border='1px solid #ccc'; }; r.readAsDataURL(f); }
-                    }
-                });
-                appPage.querySelector('#save-icons-btn').onclick = () => {
-                    Object.keys(tempIcons).forEach(id => { localStorage.setItem(`icon_${id}`, tempIcons[id]); const iconEl = document.querySelector(`.app-icon[data-app="${id}"] .app-icon-img`); if(iconEl){ iconEl.style.backgroundImage=`url(${tempIcons[id]})`; iconEl.style.backgroundSize='cover'; iconEl.textContent=''; }});
-                    alert('图标已更新');
-                };
-            }
 
             function setupApiSettingsApp(appPage) {
                 const platform = appPage.querySelector('#api-platform');
@@ -1035,7 +1074,7 @@
             function setupCoupleSpaceApp(appPage) {
                 const dayEl = appPage.querySelector('#days-together');
                 const start = new Date('2023-01-01');
-                dayEl.textContent = Math.ceil(Math.abs(new Date() - start) / (86400000));
+                dayEl.textContent = Math.ceil(Math.abs(new Date() - start) / (1000 * 60 * 60 * 24));
                 
                 const letter = appPage.querySelector('#love-letter-textarea');
                 letter.value = localStorage.getItem('loveLetter') || '';
@@ -1191,88 +1230,310 @@
                 backBtn.onclick = () => appPage.classList.remove('active');
             }
 
-            function setupLoveWidget() {
-                const loveDaysEl = document.getElementById('love-days');
-                const avatar1Preview = document.getElementById('avatar1-preview');
-                const avatar1Upload = document.getElementById('avatar1-upload');
-                const avatar2Preview = document.getElementById('avatar2-preview');
-                const avatar2Upload = document.getElementById('avatar2-upload');
+            function setupTeaWidget() {
+                const widget = document.getElementById('tea-widget');
+                if (!widget) return;
 
-                const loveStartDate = localStorage.getItem('loveStartDate');
-                if (loveStartDate) {
-                    const diffDays = Math.ceil(Math.abs(new Date() - new Date(loveStartDate)) / (1000 * 60 * 60 * 24));
-                    loveDaysEl.textContent = diffDays;
-                } else {
-                    loveDaysEl.textContent = '1';
-                }
+                const daysText = document.getElementById('love-days-text');
+                const widgetBg = document.getElementById('widget-bg');
+                const avatarMe = document.getElementById('widget-avatar-me');
+                const avatarLover = document.getElementById('widget-avatar-lover');
 
-                function setupAvatar(uploadEl, previewEl, storageKey) {
-                    const savedAvatar = localStorage.getItem(storageKey);
-                    if (savedAvatar) {
-                        previewEl.style.backgroundImage = `url(${savedAvatar})`;
-                        previewEl.textContent = '';
+                function updateLoveDays() {
+                    const startDate = localStorage.getItem('loveStartDate');
+                    if (!startDate) {
+                        daysText.innerText = '...';
+                        return;
                     }
-                    uploadEl.addEventListener('change', (event) => {
-                        const file = event.target.files[0];
-                        if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                previewEl.style.backgroundImage = `url(${e.target.result})`;
-                                previewEl.textContent = '';
-                                localStorage.setItem(storageKey, e.target.result);
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    });
+                    const start = new Date(startDate);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    daysText.innerText = `${diffDays}天`;
                 }
-                setupAvatar(avatar1Upload, avatar1Preview, 'avatar1');
-                setupAvatar(avatar2Upload, avatar2Preview, 'avatar2');
+
+                function updateWidgetDisplay() {
+                    const bg = localStorage.getItem('widget_bg');
+                    const widgetContainer = document.getElementById('tea-widget');
+                    if (bg) {
+                        widgetBg.style.backgroundImage = `url(${bg})`;
+                        widgetContainer.style.background = 'transparent';
+                        widgetContainer.style.backdropFilter = 'none';
+                    } else {
+                        widgetBg.style.backgroundImage = '';
+                        widgetContainer.style.background = 'rgba(255, 255, 255, 0.3)';
+                        widgetContainer.style.backdropFilter = 'blur(10px)';
+                    }
+
+                    avatarMe.src = localStorage.getItem('widget_avatar_me') || '';
+                    avatarLover.src = localStorage.getItem('widget_avatar_lover') || '';
+                }
+
+                widget.addEventListener('click', () => {
+                    const date = prompt('请输入你们在一起的日期 (格式: YYYY-MM-DD)', localStorage.getItem('loveStartDate') || '');
+                    if (date && !isNaN(new Date(date))) {
+                        localStorage.setItem('loveStartDate', date);
+                        updateLoveDays();
+                    } else if (date !== null && date !== '') {
+                        alert('日期格式不正确，请输入 YYYY-MM-DD 格式');
+                    }
+                });
+
+                updateWidgetDisplay();
+                updateLoveDays();
+                
+                window.addEventListener('storage', (e) => {
+                    if (e.key === 'widget_bg' || e.key === 'widget_avatar_me' || e.key === 'widget_avatar_lover' || e.key === 'loveStartDate') {
+                        updateWidgetDisplay();
+                        updateLoveDays();
+                    }
+                });
+                window.updateWidgetDisplay = updateWidgetDisplay;
             }
 
-            const appIcons = document.querySelectorAll('.app-icon');
-            setupLoveWidget();
+            setupTeaWidget();
             
-            appIcons.forEach(icon => {
-                icon.addEventListener('click', (e) => {
-                    const appId = icon.dataset.app;
-                    const appPage = document.getElementById(`${appId}-page`);
-                    const screen = document.querySelector('.screen');
+            function renderSettingsIconsList() {
+                const appIconList = document.querySelector('#app-icon-list');
+                if (!appIconList) return;
 
-                    if (appPage) {
-                        if (!appPage.innerHTML) {
-                            let content = appContents[appId] || `<div class="app-header"><span class="close-btn">主页</span><h2 class="font-bold">${icon.querySelector('span').textContent}</h2><span></span></div><div class="app-content p-5"><p>开发中...</p></div>`;
-                            appPage.innerHTML = content;
-                            
-                            if (appId === 'chat') setupChatApp(appPage);
-                            else if (appId === 'world-book') setupWorldBookApp(appPage);
-                            else if (appId === 'couple-space') setupCoupleSpaceApp(appPage);
-                            else if (appId === 'api-settings') setupApiSettingsApp(appPage);
-                            else if (appId === 'settings') setupSettingsApp(appPage);
+                const appNameMap = {
+                    'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
+                    'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
+                };
+                const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
 
-                            const closeApp = () => {
-                                if (appPage.classList.contains('closing')) return;
-                                const iconRect = icon.getBoundingClientRect();
-                                const screenRect = screen.getBoundingClientRect();
-                                appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
-                                appPage.classList.add('closing');
-                                document.getElementById('app-home-indicator').style.display = 'none';
-                                appPage.addEventListener('animationend', () => appPage.classList.remove('active', 'closing'), { once: true });
-                            };
-                            appPage.querySelector('.close-btn').addEventListener('click', closeApp);
-                            document.getElementById('app-home-indicator').addEventListener('click', closeApp);
-                        }
+                appIconList.innerHTML = appsToChange.map(app => {
+                    // 优先使用 tempIcons,其次使用 localStorage
+                    const savedIcon = tempIcons[app.id] || localStorage.getItem(`icon_${app.id}`);
+                    return `
+                    <div class="flex flex-col items-center gap-1">
+                        <label class="relative w-12 h-12 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100"
+                               style="${savedIcon ? `background-image: url(${savedIcon}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                            <input type="file" class="hidden icon-input" data-app="${app.id}" accept="image/*">
+                            <span class="text-gray-400 text-xl ${savedIcon ? 'hidden' : ''}">+</span>
+                        </label>
+                        <span class="text-[10px] text-gray-500">${app.name}</span>
+                    </div>
+                `}).join('');
+
+                appIconList.querySelectorAll('.icon-input').forEach(input => {
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const base64 = event.target.result;
+                            const appId = input.dataset.app;
+                            tempIcons[appId] = base64;
+
+                            const label = input.parentElement;
+                            label.style.backgroundImage = `url(${base64})`;
+                            label.style.backgroundSize = 'cover';
+                            label.style.backgroundPosition = 'center';
+                            label.style.borderStyle = 'solid';
+                            label.querySelector('span').classList.add('hidden');
+                        };
+                        reader.readAsDataURL(file);
+                    };
+                });
+            }
+
+            document.querySelector('.screen').addEventListener('click', (e) => {
+                const icon = e.target.closest('.app-icon');
+                if (!icon || !icon.dataset.app) return;
+
+                const appId = icon.dataset.app;
+                const appPage = document.getElementById(`${appId}-page`);
+                const screen = document.querySelector('.screen');
+
+                if (appPage) {
+                    if (!appPage.innerHTML) {
+                        let content = appContents[appId] || `<div class="app-header"><span class="close-btn">主页</span><h2 class="font-bold">${icon.querySelector('span').textContent}</h2><span></span></div><div class="app-content p-5"><p>开发中...</p></div>`;
+                        appPage.innerHTML = content;
                         
+                        if (appId === 'chat') setupChatApp(appPage);
+                        else if (appId === 'world-book') setupWorldBookApp(appPage);
+                        else if (appId === 'couple-space') setupCoupleSpaceApp(appPage);
+                        else if (appId === 'api-settings') setupApiSettingsApp(appPage);
+                    }
+
+                    if (appId === 'settings') {
+                        // This block is now self-contained and re-initializes everything on open.
+                        appPage.innerHTML = appContents['settings'];
+
+                        function initSettingsContent() {
+                            // This is the main initialization function for the settings page.
+                            // It's called every time the settings app is opened to ensure all event listeners are correctly bound.
+
+                            // --- Helper for uploads ---
+                            function handleImageUpload(file, key, tempStore, labelElement) {
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const base64 = event.target.result;
+                                    tempStore[key] = base64;
+                                    labelElement.style.backgroundImage = `url(${base64})`;
+                                    labelElement.style.backgroundSize = 'cover';
+                                    labelElement.style.backgroundPosition = 'center';
+                                    labelElement.style.borderStyle = 'solid';
+                                    labelElement.querySelector('span')?.classList.add('hidden');
+                                };
+                                reader.readAsDataURL(file);
+                            }
+
+                            // --- App Icon Logic ---
+                            function initAppIconLogic() {
+                                const appIconList = appPage.querySelector('#app-icon-list');
+                                const saveIconsBtn = appPage.querySelector('#save-icons-btn');
+                                const appNameMap = {
+                                    'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
+                                    'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
+                                };
+                                const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
+                                
+                                appIconList.innerHTML = appsToChange.map(app => {
+                                    const currentIcon = tempIcons[app.id] || localStorage.getItem(`icon_${app.id}`);
+                                    return `<div class="flex flex-col items-center gap-1"><label class="relative w-12 h-12 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${currentIcon ? `background-image: url(${currentIcon}); background-size: cover; background-position: center; border-style: solid;` : ''}"><input type="file" class="hidden icon-input" data-app="${app.id}" accept="image/*"><span class="text-gray-400 text-xl ${currentIcon ? 'hidden' : ''}">+</span></label><span class="text-[10px] text-gray-500">${app.name}</span></div>`;
+                                }).join('');
+
+                                appIconList.querySelectorAll('.icon-input').forEach(input => {
+                                    input.onchange = (e) => handleImageUpload(e.target.files[0], input.dataset.app, tempIcons, input.parentElement);
+                                });
+
+                                saveIconsBtn.onclick = () => {
+                                    for (let id in tempIcons) { localStorage.setItem(`icon_${id}`, tempIcons[id]); }
+                                    alert('图标修改成功！');
+                                    renderHomeScreenIcons();
+                                    tempIcons = {};
+                                    initSettingsContent(); // Re-init all settings
+                                };
+                            }
+
+                            // --- Widget Config Logic ---
+                            function initSettingsWidgetLogic() {
+                                const widgetConfigList = appPage.querySelector('#widget-config-list');
+                                const saveWidgetConfigBtn = appPage.querySelector('#save-widget-config-btn');
+                                let tempWidgetData = {};
+
+                                saveWidgetConfigBtn.style.backgroundColor = '#b8d8e8';
+                                
+                                // Render UI
+                                widgetConfigList.innerHTML = `
+                                    <div class="col-span-3 flex flex-col items-center gap-1">
+                                        <label class="relative w-full h-20 aspect-video flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_bg')) ? `background-image: url(${localStorage.getItem('widget_bg')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                            <input type="file" class="hidden widget-input" data-key="widget_bg" accept="image/*">
+                                            <span class="text-gray-400 text-xl ${localStorage.getItem('widget_bg') ? 'hidden' : ''}">+</span>
+                                        </label>
+                                        <span class="text-[10px] text-gray-500">小组件背景</span>
+                                    </div>
+                                    <div class="col-span-3 grid grid-cols-2 gap-4">
+                                        <div class="flex flex-col items-center gap-1">
+                                            <label class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_avatar_me')) ? `background-image: url(${localStorage.getItem('widget_avatar_me')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                                <input type="file" class="hidden widget-input" data-key="widget_avatar_me" accept="image/*">
+                                                <span class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_me') ? 'hidden' : ''}">+</span>
+                                            </label>
+                                            <span class="text-[10px] text-gray-500">我的头像</span>
+                                        </div>
+                                        <div class="flex flex-col items-center gap-1">
+                                            <label class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_avatar_lover')) ? `background-image: url(${localStorage.getItem('widget_avatar_lover')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                                <input type="file" class="hidden widget-input" data-key="widget_avatar_lover" accept="image/*">
+                                                <span class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_lover') ? 'hidden' : ''}">+</span>
+                                            </label>
+                                            <span class="text-[10px] text-gray-500">恋人头像</span>
+                                        </div>
+                                    </div>
+                                `;
+
+                                // Bind input events
+                                widgetConfigList.querySelectorAll('.widget-input').forEach(input => {
+                                    input.onchange = (e) => handleImageUpload(e.target.files[0], input.dataset.key, tempWidgetData, input.parentElement);
+                                });
+
+                                // Bind save button event
+                                saveWidgetConfigBtn.onclick = () => {
+                                    if (Object.keys(tempWidgetData).length === 0) {
+                                        alert('没有检测到修改');
+                                        return;
+                                    }
+                                    for (let key in tempWidgetData) {
+                                        localStorage.setItem(key, tempWidgetData[key]);
+                                    }
+                                    alert('小组件配置已保存');
+                                    if (window.updateWidgetDisplay) {
+                                        window.updateWidgetDisplay();
+                                    }
+                                    tempWidgetData = {};
+                                    initSettingsContent(); // Re-init all settings
+                                };
+                            }
+
+                            // Initialize all parts of the settings page
+                            initAppIconLogic();
+                            initSettingsWidgetLogic();
+                        }
+
+                        const wallpaperUpload = appPage.querySelector('#wallpaper-upload');
+                        const preview = appPage.querySelector('#wallpaper-preview-container');
+                        let tempUrl = null;
+                        const savedWp = localStorage.getItem('customWallpaper');
+                        if (savedWp) {
+                            preview.style.backgroundImage = `url(${savedWp})`;
+                            preview.textContent = '';
+                        }
+                        wallpaperUpload.onchange = (e) => {
+                            const f = e.target.files[0];
+                            if (f) {
+                                const r = new FileReader();
+                                r.onload = (evt) => {
+                                    tempUrl = evt.target.result;
+                                    preview.style.backgroundImage = `url(${tempUrl})`;
+                                    preview.textContent = '';
+                                };
+                                r.readAsDataURL(f);
+                            }
+                        };
+                        appPage.querySelector('#save-wallpaper-btn').onclick = () => {
+                            if (tempUrl) {
+                                screen.style.backgroundImage = `url(${tempUrl})`;
+                                localStorage.setItem('customWallpaper', tempUrl);
+                                alert('壁纸已保存');
+                            }
+                        };
+                        appPage.querySelector('#reset-settings-btn').onclick = () => {
+                            if (confirm('重置所有数据？')) {
+                                localStorage.clear();
+                                location.reload();
+                            }
+                        };
+
+                        initSettingsContent();
+                    }
+                    
+                    const closeApp = () => {
+                        if (appPage.classList.contains('closing')) return;
                         const iconRect = icon.getBoundingClientRect();
                         const screenRect = screen.getBoundingClientRect();
                         appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
-                        appPage.classList.add('active');
-                        document.getElementById('app-home-indicator').style.display = 'block';
+                        appPage.classList.add('closing');
+                        document.getElementById('app-home-indicator').style.display = 'none';
+                        appPage.addEventListener('animationend', () => appPage.classList.remove('active', 'closing'), { once: true });
+                    };
+                    if (appPage.querySelector('.close-btn')) {
+                        appPage.querySelector('.close-btn').addEventListener('click', closeApp);
                     }
-                });
+                    document.getElementById('app-home-indicator').addEventListener('click', closeApp);
+                    
+                    const iconRect = icon.getBoundingClientRect();
+                    const screenRect = screen.getBoundingClientRect();
+                    appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
+                    appPage.classList.add('active');
+                    document.getElementById('app-home-indicator').style.display = 'block';
+                }
             });
             
             const screen = document.querySelector('.screen');
-            const savedWallpaper = localStorage.getItem('wallpaper') || 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?q=80&w=2703&auto=format&fit=crop';
+            const savedWallpaper = localStorage.getItem('customWallpaper') || localStorage.getItem('wallpaper') || 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?q=80&w=2703&auto=format&fit=crop';
             screen.style.backgroundImage = `url('${savedWallpaper}')`;
         });
     </script>
