@@ -27,7 +27,7 @@
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: rgba(0,0,0,0.4); border-radius: 2.5px; cursor: pointer; z-index: 310; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; padding: 20px; column-gap: 20px; }
+        .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; aspect-ratio: 1 / 1; width: 60px; height: 60px; }
         .app-icon:active { transform: scale(0.9); }
@@ -39,7 +39,7 @@
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
         #tea-widget { width: 140px !important; height: 140px !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important; border-radius: 2rem; margin: 0 auto; }
-        .dock { position: absolute; bottom: 40px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: flex-start; padding: 8px 10px 16px; z-index: 20; }
+        .dock { position: absolute; bottom: 40px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
 
         /* --- App 容器 --- */
         .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fffafb; z-index: 200; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 44px; pointer-events: none; transform-origin: center; }
@@ -257,7 +257,7 @@
     <div class="mobile-container">
         <div class="screen">
             <div class="dynamic-island"></div>
-            <div class="content-wrapper" style="padding-top: 30%;">
+            <div class="content-wrapper" style="padding-top: 25%;">
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
                 <div class="home-content">
                     <div class="app-grid">
