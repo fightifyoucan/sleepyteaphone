@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>眠茶机</title>
     <link rel="icon" href="Gemini_Generated_Image_9nxbzu9nxbzu9nxb.png?v=2" type="image/png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,9 +31,10 @@
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; }
         .app-icon:active { transform: scale(0.9); }
-        .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); }
+        .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); aspect-ratio: 1 / 1; flex-shrink: 0; object-fit: cover; overflow: hidden; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
-        .love-widget { grid-column: span 2; grid-row: span 2; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 22px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15); aspect-ratio: 1/1; }
+        .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+        .love-widget { grid-column: span 2; grid-row: span 2; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 22px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15); aspect-ratio: 1/1; flex-shrink: 0; }
         .love-widget .avatars { display: flex; gap: -15px; margin-bottom: 8px; }
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
@@ -242,7 +243,7 @@
                         <!-- Icons will be rendered here by JavaScript -->
                     </div>
                     <div class="flex flex-col items-center" style="grid-column: span 2;">
-                        <div id="tea-widget" class="love-widget" style="margin-top: 10px; position: relative; overflow: hidden; cursor: pointer; height: 135px; width: 100%; aspect-ratio: unset; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <div id="tea-widget" class="love-widget" style="margin-top: 10px; position: relative; overflow: hidden; cursor: pointer; height: 135px; min-height: 135px; width: 100%; aspect-ratio: unset; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
                             <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
                             <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
                                <div class="flex items-center justify-center mb-2 gap-3">
