@@ -661,6 +661,7 @@
                     const box=p.querySelector('#chat-box'), inp=p.querySelector('#chat-in'), plus=p.querySelector('#plus-p'), emojiP=p.querySelector('#emoji-p');
                     const quotePreview = p.querySelector('#quote-preview');
                     let currentQuote = null; 
+                    let turnCount = 0;
 
                     const history = DB.getChatById(id) || [];
                     
@@ -684,13 +685,19 @@
                             if(m.type==='transfer') body=`<div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">￥</div><div><div>￥${m.amount}</div><div class="text-xs opacity-70">${m.note}</div></div></div>`;
                             if(m.type==='location') body=`<div class="font-bold text-sm text-black">${m.content}</div><div class="text-xs text-gray-500">位置</div><div class="w-full h-16 bg-gray-200 mt-1 flex items-center justify-center">🗺️</div>`;
 
+                            if (m.revoked) {
+                                return `<div class="msg-nudge">${me ? '你' : `"${c.name}"`}撤回了一条消息</div>`;
+                            }
+
                             const userAvatar = localStorage.getItem('user_avatar');
                             const avatar = me ? `<div class="message-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'}</div>` : `<div class="message-avatar">${c.avatar}</div>`;
                             
+                            const bubbleStyle = (m.type === 'transfer' || m.type === 'sticker') ? 'background: transparent; box-shadow: none;' : '';
+
                             return `
                                 <div class="message-row ${me?'sent':'received'}" data-idx="${index}">
                                     ${avatar}
-                                    <div class="message-bubble ${me?'sent':'received'} ${m.type||''} ${m.isQuoted?'quoting':''}" oncontextmenu="return false;">
+                                    <div class="message-bubble ${me?'sent':'received'} ${m.type||''} ${m.isQuoted?'quoting':''}" style="${bubbleStyle}" oncontextmenu="return false;">
                                         ${quoteHtml}
                                         ${body}
                                     </div>
@@ -750,19 +757,17 @@
 
                     const send = (msg) => { 
                         const lastMsg = history.length > 0 ? history[history.length - 1] : null;
-                        if (lastMsg && msg.time && lastMsg.time) {
-                            const timeDiff = new Date(msg.time) - new Date(lastMsg.time);
-                            if (timeDiff > 300000) { // 5 minutes
-                                const timeMsg = {
-                                    id: `time_${Date.now()}`,
-                                    sender: 'system',
-                                    type: 'timestamp',
-                                    text: formatTime(new Date(msg.time)),
-                                    time: msg.time
-                                };
-                                DB.addMessage(id, timeMsg);
-                                history.push(timeMsg);
-                            }
+                        // 时间戳只在用户消息前显示
+                        if (msg.sender === 'me' && (!lastMsg || (lastMsg && new Date(msg.time) - new Date(lastMsg.time) > 300000))) {
+                             const timeMsg = {
+                                id: `time_${Date.now()}`,
+                                sender: 'system',
+                                type: 'timestamp',
+                                text: formatTime(new Date(msg.time)),
+                                time: msg.time
+                            };
+                            DB.addMessage(id, timeMsg);
+                            history.push(timeMsg);
                         }
 
                         if(currentQuote) {
@@ -854,16 +859,26 @@
                                     
                                     // 1. 准备人设 (System Prompt)
                                     const userNick = localStorage.getItem('user_nick') || '玩家';
-                                    let systemPrompt = `你现在的身份是：${c.name}。\n`;
+                                    const currentTime = new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' });
+                                    let systemPrompt = `你是一个真实的微信好友。你能够感知到当前的现实时间。请根据当前的时间点（如深夜、清晨、午饭时间等）自然地在聊天中加入对用户的日常生活关怀（如：‘这么晚还没睡呀’、‘记得吃午饭’等）。当前时间是：${currentTime}。\n请模仿人类打字习惯，将长句拆分成多条短句发送。每隔几轮你可以尝试发语音或拍拍对方。如果对方发图，请务必在第一条回复中自然地评论图片内容。引用消息时要生动，多带表情。你现在的身份是：${c.name}。\n`;
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
                                     if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
+                                    
+                                    // 标点与动作规则
+                                    systemPrompt += "【格式规则】：每一句话，包括第一句话，都必须以正确的中文标点符号（，。！？）结尾，禁止省略首句标点。禁止用空格代替标点。回复用户时，确保每个气泡的结尾语义完整，不要以逗号结束。禁止使用 *动作* 或 [动作] 这种格式。禁止出现 😏 这个表情。\n";
+                                    if (c.mode?.offline) {
+                                        systemPrompt += "【当前为线下模式】：允许使用 () 括号在气泡内进行简短的动作描写，且必须与台词混合在同一个气泡中，不要单独发一个动作气泡。\n";
+                                    } else {
+                                        systemPrompt += "【当前为线上模式】：严禁任何形式的动作描写，只允许纯文字聊天。\n";
+                                    }
+
                                     systemPrompt += `\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
 
                                     // 2. 格式化函数
                                     const getMsgText = (msg) => {
                                         if (msg.text) return msg.text;
-                                        if (msg.type === 'image') return '[图片]';
+                                        if (msg.type === 'image') return `[用户发送了一张图片，请在你的第一条回复中自然地评论这张图片的内容。图片描述: ${msg.text || '无'}]`;
                                         return '[消息]';
                                     };
 
@@ -903,9 +918,88 @@
                                     }
                                     
                                     const data = await res.json();
-                                    const reply = ApiHandler.parseChatResponse(pPlat, data);
-                                    if (reply) {
-                                        send({ id: `r_${Date.now()}`, sender: 'ai', text: reply, time: new Date() });
+                                    const rawReply = ApiHandler.parseChatResponse(pPlat, data);
+                                    
+                                    if (rawReply) {
+                                        turnCount++;
+
+                                        const titleEl = p.querySelector('.title');
+                                        const originalTitle = titleEl.textContent;
+
+                                        // 1. 预处理：移除黑名单表情和所有空格
+                                        let cleanedReply = rawReply.replace(/😏/g, '').replace(/\s+/g, '');
+                                        
+                                        // 2. 硬性截断和拆分
+                                        let parts = [];
+                                        for (let i = 0; i < cleanedReply.length; i += 39) {
+                                            parts.push(cleanedReply.substring(i, i + 39));
+                                        }
+
+                                        // 3. 逻辑补全和标点修正
+                                        let finalMessages = parts.map(p => p.trim()).filter(p => p.length > 0);
+                                        
+                                        if (finalMessages.length > 0 && !/[，。！？]$/.test(finalMessages[0])) {
+                                            finalMessages[0] += '。';
+                                        }
+
+                                        finalMessages.forEach((msg, index) => {
+                                            if ((msg.endsWith('，') || msg.endsWith(',')) && index < finalMessages.length -1) {
+                                               // a comma is fine if it's not the very last message
+                                            } else if (msg.endsWith('，') || msg.endsWith(',')) {
+                                                finalMessages[index] = msg.slice(0, -1) + '。';
+                                            }
+                                        });
+
+                                        // 4. 保证最少3条回复
+                                        while(finalMessages.length < 3 && finalMessages.join('').length < 60) {
+                                            const fillers = ["嗯嗯", "然后呢？", "哈哈"];
+                                            finalMessages.push(fillers[Math.floor(Math.random() * fillers.length)]);
+                                        }
+
+                                        // 5. 发送消息
+                                        for (let i = 0; i < finalMessages.length; i++) {
+                                            let msgText = finalMessages[i].replace(/😏/g, '').replace(/\s+/g, '');
+                                            if (msgText.endsWith('，') || msgText.endsWith(',')) {
+                                                msgText = msgText.slice(0, -1) + '。';
+                                            }
+                                            
+                                            const delay = msgText.length <= 10 ? 1000 : (1500 + Math.random() * 1500);
+                                            titleEl.textContent = '对方正在输入...';
+                                            await new Promise(resolve => setTimeout(resolve, delay));
+                                            titleEl.textContent = originalTitle;
+                                            send({ id: `r_${Date.now()}_${i}`, sender: 'ai', text: msgText, time: new Date() });
+                                        }
+
+                                        // 3. 特殊功能触发
+                                        if (turnCount % 2 === 0) {
+                                            for(let i=0; i<2; i++){
+                                                await new Promise(resolve => setTimeout(resolve, 1200));
+                                                const voiceText = "这条是语音消息哦";
+                                                send({ id: `r_v_${Date.now()}_${i}`, sender: 'ai', type: 'voice', text: voiceText, duration: Math.ceil(voiceText.length / 3), time: new Date() });
+                                            }
+                                        }
+                                        if (turnCount % 3 === 0) {
+                                            await new Promise(resolve => setTimeout(resolve, 1500));
+                                            if(Math.random() > 0.5) {
+                                                const nudgeSuffix = c.nudge || "的头";
+                                                send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: `"${c.name}" 拍了拍你`, time: new Date() });
+                                            } else {
+                                                const lastUserMsg = history.filter(m => m.sender === 'me').pop();
+                                                if(lastUserMsg) {
+                                                    send({ id: `r_q_${Date.now()}`, sender: 'ai', text: "是的呢！😊", quote: lastUserMsg.text, time: new Date() });
+                                                }
+                                            }
+                                        }
+                                        if (turnCount % 4 === 0) {
+                                            await new Promise(resolve => setTimeout(resolve, 5000));
+                                            const lastAiMsg = history.filter(m => m.sender === 'ai').pop();
+                                            if(lastAiMsg) {
+                                                lastAiMsg.revoked = true; // This needs a render update
+                                                DB.saveChatById(id, history);
+                                                render();
+                                            }
+                                        }
+
                                     }
                                 } catch (e) {
                                     alert('AI 请求失败: ' + e.message);
@@ -1308,15 +1402,27 @@
                 worldBookSelect.innerHTML = '<option value="">(无)</option>' + worldBooks.map(wb => `<option value="${wb.id}">${wb.name}</option>`).join('');
 
                 let currentAvatar = '🤖';
+                let currentAvatarBase64 = '';
                 avatarUpload.onchange = (e) => {
                     const file = e.target.files[0];
                     if(file){
                         const reader = new FileReader();
                         reader.onload = (evt) => {
-                            currentAvatar = `<img src="${evt.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-                            avatarPreview.src = evt.target.result;
-                            avatarPreview.classList.remove('hidden');
-                            avatarEmoji.classList.add('hidden');
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                canvas.width = 300;
+                                canvas.height = 300;
+                                ctx.drawImage(img, 0, 0, 300, 300);
+                                currentAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                                
+                                currentAvatar = `<img src="${currentAvatarBase64}" style="width:100%;height:100%;object-fit:cover;">`;
+                                avatarPreview.src = currentAvatarBase64;
+                                avatarPreview.classList.remove('hidden');
+                                avatarEmoji.classList.add('hidden');
+                            };
+                            img.src = evt.target.result;
                         };
                         reader.readAsDataURL(file);
                     }
