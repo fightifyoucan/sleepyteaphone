@@ -72,7 +72,14 @@
         
         .chat-conversation-page { display: flex; flex-direction: column; background-color: #ededed; }
         .chat-messages { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; padding-bottom: 20px; }
-        .message-timestamp { text-align: center; color: #999; font-size: 12px; margin: 15px 0 5px 0; }
+        .message-timestamp {
+            align-self: center;
+            color: #b2b2b2;
+            font-size: 11px;
+            margin: 12px 0 8px 0;
+            text-align: center;
+            width: 100%;
+        }
         
         .message-row { display: flex; margin-bottom: 12px; align-items: flex-start; width: 100%; }
         .message-row.received { flex-direction: row; }
@@ -222,6 +229,16 @@
         .toggle-checkbox:checked { right: 0; border-color: #68D391; }
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
 
+        .msg-nudge {
+            align-self: center;
+            background: transparent;
+            color: #888;
+            font-size: 12px;
+            margin: 8px 0;
+            text-align: center;
+            width: 100%;
+        }
+
         .app-content, .page-content-520 {
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE/Edge */
@@ -298,7 +315,19 @@
     </div>
 
     <script>
-        let tempIcons = {}; 
+        let tempIcons = {};
+
+        function refreshAllUserAvatars() {
+            const userAvatar = localStorage.getItem('user_avatar');
+            if (!userAvatar) return;
+
+            document.querySelectorAll('img[data-user-avatar="true"]').forEach(img => {
+                img.src = userAvatar;
+            });
+             document.querySelectorAll('div[data-user-avatar="true"]').forEach(div => {
+                div.innerHTML = `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+            });
+        }
 
         function renderHomeScreenIcons() {
             const apps = [
@@ -364,6 +393,7 @@
             updateTime(); setInterval(updateTime, 1000);
 
             renderHomeScreenIcons();
+            refreshAllUserAvatars();
 
             // --- 模板内容 ---
             const appContents = {
@@ -382,8 +412,8 @@
                     <div class="bottom-nav-520">
                         <div class="nav-item-520" data-page="200"><span class="icon">💬</span><span>200</span></div>
                         <div class="nav-item-520 active" data-page="201"><span class="icon">👥</span><span>201</span></div>
-                        <div class="nav-item-520" data-page="202"><span class="icon">⭕️</span><span>202</span></div>
-                        <div class="nav-item-520" data-page="me"><span class="icon">👤</span><span>我</span></div>
+                        <div class="nav-item-520" data-page="202"><span class="icon">🍽️</span><span>202</span></div>
+                        <div class="nav-item-520" data-page="me"><span class="icon">🍰</span><span>我</span></div>
                     </div>
                 `,
                 'couple-space': `
@@ -562,6 +592,23 @@
                 };
 
                 // --- 聊天详情页逻辑 (含520触发 & 引用) ---
+                const formatTime = (date) => {
+                    const now = new Date();
+                    const isToday = date.toDateString() === now.toDateString();
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const mins = date.getMinutes().toString().padStart(2, '0');
+                    if (isToday) {
+                        return `${hours}:${mins}`;
+                    }
+                    // Check for yesterday
+                    const yesterday = new Date(now);
+                    yesterday.setDate(now.getDate() - 1);
+                    if (date.toDateString() === yesterday.toDateString()) {
+                        return `昨天 ${hours}:${mins}`;
+                    }
+                    return `${date.getMonth()+1}月${date.getDate()}日 ${hours}:${mins}`;
+                };
+
                 const openChat = (id) => {
                     const c = DB.getContact(id); if(!c) return;
                     let p = appPage.querySelector('#conversation-page');
@@ -619,6 +666,8 @@
                     
                     const render = () => {
                         box.innerHTML = history.map((m, index) => {
+                            if (m.type === 'nudge') return `<div class="msg-nudge">${m.text}</div>`;
+                            if (m.type === 'timestamp') return `<div class="message-timestamp">${m.text}</div>`;
                             if(m.sender==='system') return `<div class="message-timestamp">${m.text}</div>`;
                             const me = m.sender==='me';
                             let quoteHtml = '';
@@ -635,7 +684,8 @@
                             if(m.type==='transfer') body=`<div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">￥</div><div><div>￥${m.amount}</div><div class="text-xs opacity-70">${m.note}</div></div></div>`;
                             if(m.type==='location') body=`<div class="font-bold text-sm text-black">${m.content}</div><div class="text-xs text-gray-500">位置</div><div class="w-full h-16 bg-gray-200 mt-1 flex items-center justify-center">🗺️</div>`;
 
-                            const avatar = me ? `<div class="message-avatar">👤</div>` : `<div class="message-avatar">${c.avatar}</div>`;
+                            const userAvatar = localStorage.getItem('user_avatar');
+                            const avatar = me ? `<div class="message-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'}</div>` : `<div class="message-avatar">${c.avatar}</div>`;
                             
                             return `
                                 <div class="message-row ${me?'sent':'received'}" data-idx="${index}">
@@ -647,6 +697,25 @@
                                 </div>`;
                         }).join('');
                         box.scrollTop = box.scrollHeight;
+
+                        // Add click listener for "pat-pat"
+                        box.querySelectorAll('.message-row.received .message-avatar').forEach(avatarEl => {
+                            avatarEl.onclick = () => {
+                                if (avatarEl.disabled) return;
+                                avatarEl.disabled = true;
+                                setTimeout(() => { avatarEl.disabled = false; }, 1000);
+
+                                const nudgeSuffix = c.nudge || "头";
+                                const nudgeText = `你拍了拍 "${c.name}" 的 ${nudgeSuffix}`;
+                                send({
+                                    id: `nudge_${Date.now()}`,
+                                    sender: 'system',
+                                    type: 'nudge',
+                                    text: nudgeText,
+                                    time: new Date()
+                                });
+                            };
+                        });
 
                         let timer;
                         box.querySelectorAll('.message-bubble').forEach(el => {
@@ -680,6 +749,22 @@
                     render();
 
                     const send = (msg) => { 
+                        const lastMsg = history.length > 0 ? history[history.length - 1] : null;
+                        if (lastMsg && msg.time && lastMsg.time) {
+                            const timeDiff = new Date(msg.time) - new Date(lastMsg.time);
+                            if (timeDiff > 300000) { // 5 minutes
+                                const timeMsg = {
+                                    id: `time_${Date.now()}`,
+                                    sender: 'system',
+                                    type: 'timestamp',
+                                    text: formatTime(new Date(msg.time)),
+                                    time: msg.time
+                                };
+                                DB.addMessage(id, timeMsg);
+                                history.push(timeMsg);
+                            }
+                        }
+
                         if(currentQuote) {
                             msg.quote = currentQuote;
                             currentQuote = null;
@@ -754,28 +839,79 @@
                     p.querySelector('#p-trans').onclick=()=>{const a=prompt('金额');if(a) send({id:`m_${Date.now()}`,sender:'me',type:'transfer',amount:a,note:'转账',time:new Date()});};
                     p.querySelector('#p-pic').onclick=()=>{const d=prompt('图片描述');if(d) send({id:`m_${Date.now()}`,sender:'me',type:'image',content:'https://images.unsplash.com/photo-1518020382113-a7e8fc38eac9?w=300',text:d,time:new Date()});};
                     
-                    p.querySelector('#ai-btn').onclick=async ()=>{
-                        const lastMsg = history[history.length-1];
-                        if(lastMsg && lastMsg.sender === 'me') {
+                    p.querySelector('#ai-btn').onclick = async () => {
+                        const lastMsg = history[history.length - 1];
+                        if (lastMsg) { 
                             const apiKey = localStorage.getItem('apiKey');
                             if (apiKey && typeof ApiHandler !== 'undefined') {
                                 const btn = p.querySelector('#ai-btn');
+                                const originalBtnText = btn.textContent;
                                 btn.textContent = '...';
                                 try {
-                                    const p = localStorage.getItem('apiPlatform')||'openai';
-                                    const ep = localStorage.getItem('apiEndpoint')||'';
-                                    const m = localStorage.getItem('apiModel')||'gpt-3.5-turbo';
-                                    const payload = ApiHandler.generateChatPayload(p, ep, apiKey, m, lastMsg.text);
+                                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                                    const ep = localStorage.getItem('apiEndpoint') || '';
+                                    const m = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                                    
+                                    // 1. 准备人设 (System Prompt)
+                                    const userNick = localStorage.getItem('user_nick') || '玩家';
+                                    let systemPrompt = `你现在的身份是：${c.name}。\n`;
+                                    if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
+                                    if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
+                                    if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
+                                    systemPrompt += `\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
+
+                                    // 2. 格式化函数
+                                    const getMsgText = (msg) => {
+                                        if (msg.text) return msg.text;
+                                        if (msg.type === 'image') return '[图片]';
+                                        return '[消息]';
+                                    };
+
+                                    let messages = [];
+
+                                    // 3. 核心修复：根据平台区分格式
+                                    if (pPlat === 'gemini') {
+                                        // Gemini 强制要求 parts 格式
+                                        messages = history.slice(-15).map(msg => ({
+                                            role: msg.sender === 'me' ? 'user' : 'model',
+                                            parts: [{ text: getMsgText(msg) }]
+                                        }));
+
+                                        // 人设注入：拼接到最后一条用户消息
+                                        let lastUserIdx = -1;
+                                        for (let i = messages.length - 1; i >= 0; i--) {
+                                            if (messages[i].role === 'user') { lastUserIdx = i; break; }
+                                        }
+                                        if (lastUserIdx !== -1) {
+                                            messages[lastUserIdx].parts[0].text = `【系统指令：${systemPrompt}】\n\n${messages[lastUserIdx].parts[0].text}`;
+                                        }
+                                    } else {
+                                        // OpenAI 标准格式
+                                        messages = history.slice(-15).map(msg => ({
+                                            role: msg.sender === 'me' ? 'user' : 'assistant',
+                                            content: getMsgText(msg)
+                                        }));
+                                        messages.unshift({ role: 'system', content: systemPrompt });
+                                    }
+
+                                    // 4. 发送请求
+                                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, m, messages);
                                     const res = await fetch(payload.url, payload.options);
-                                    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+                                    if (!res.ok) {
+                                        const err = await res.json().catch(()=>({}));
+                                        throw new Error(err.error?.message || `HTTP ${res.status}`);
+                                    }
+                                    
                                     const data = await res.json();
-                                    const reply = ApiHandler.parseChatResponse(p, data);
-                                    if(reply) send({id:`r_${Date.now()}`,sender:'ai',text:reply,time:new Date()});
-                                    else throw new Error('API 返回空内容');
-                                } catch(e) { alert('API Error: '+e.message); }
-                                btn.textContent = 'AI';
-                            } else {
-                                alert("请先配置API Key，并确保 api_handler.js 已加载");
+                                    const reply = ApiHandler.parseChatResponse(pPlat, data);
+                                    if (reply) {
+                                        send({ id: `r_${Date.now()}`, sender: 'ai', text: reply, time: new Date() });
+                                    }
+                                } catch (e) {
+                                    alert('AI 请求失败: ' + e.message);
+                                } finally {
+                                    btn.textContent = originalBtnText;
+                                }
                             }
                         }
                     };
@@ -904,7 +1040,7 @@
                         header.appendChild(camBtn);
 
                         const coverUrl = localStorage.getItem('moments_cover');
-                        const userAvatar = localStorage.getItem('user_avatar') || '<div style="width:100%;height:100%;background:#ddd;display:flex;align-items:center;justify-content:center;">👤</div>';
+                        const userAvatar = localStorage.getItem('user_avatar');
                         const userNick = localStorage.getItem('user_nick') || '点击修改昵称';
                         const posts = JSON.parse(localStorage.getItem('moments_list') || '[]');
 
@@ -913,13 +1049,13 @@
                                 <div class="moments-cover" style="background-image:url(${coverUrl})"></div>
                                 <div class="moments-user">
                                     <div class="moments-nick">${userNick}</div>
-                                    <div class="moments-avatar">${userAvatar.includes('<') ? userAvatar : `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">`}</div>
+                                    <div class="moments-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : '👤'}</div>
                                 </div>
                             </div>
                             <div class="moments-feed" style="padding-bottom:20px;">
                                 ${posts.map(p => `
-                                    <div class="moment-item">
-                                        <div class="moment-avatar">${p.avatar.includes('<')?p.avatar:`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`}</div>
+                                    <div class="moment-item" ${p.name === (localStorage.getItem('user_nick') || '我') ? 'data-author="me"' : ''}>
+                                        <div class="moment-avatar" ${p.name === (localStorage.getItem('user_nick') || '我') ? 'data-user-avatar="true"' : ''}>${p.name === (localStorage.getItem('user_nick') || '我') && userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : (p.avatar.includes('<')?p.avatar:`<img src="${p.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`)}</div>
                                         <div class="moment-content">
                                             <div class="moment-name">${p.name}</div>
                                             <div class="moment-text">${p.text}</div>
@@ -961,7 +1097,7 @@
 
                         el.innerHTML = `
                             <div class="me-header">
-                                <label for="me-avatar-upload" class="me-avatar">
+                                <label for="me-avatar-upload" class="me-avatar" data-user-avatar="true">
                                     ${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;">` : '📷'}
                                 </label>
                                 <input type="file" id="me-avatar-upload" class="hidden" accept="image/*">
@@ -996,8 +1132,27 @@
                         `;
 
                         el.querySelector('#me-avatar-upload').onchange = (e) => {
-                            const f = e.target.files[0];
-                            if(f){ const r=new FileReader(); r.onload=ev=>{localStorage.setItem('user_avatar', ev.target.result); go('me');}; r.readAsDataURL(f); }
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    canvas.width = 200;
+                                    canvas.height = 200;
+                                    ctx.drawImage(img, 0, 0, 200, 200);
+                                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                                    
+                                    localStorage.setItem('user_avatar', compressedBase64);
+                                    go('me');
+                                    refreshAllUserAvatars();
+                                };
+                                img.src = event.target.result;
+                            };
+                            reader.readAsDataURL(file);
                         };
                         el.querySelector('#me-name-input').onchange = (e) => localStorage.setItem('user_nick', e.target.value);
                         el.querySelector('#me-persona-input').onchange = (e) => localStorage.setItem('user_persona', e.target.value);
@@ -1007,16 +1162,11 @@
                             if(f){ 
                                 const r = new FileReader(); 
                                 r.onload = ev => {
-                                    // --- 修改点：增加备注输入框 ---
                                     const memo = prompt("请输入此表情的备注/文字（将显示在表情下方）", "表情");
-            
-                                    // 保持你的 src 结构，并加入 memo
                                     const newSticker = { src: ev.target.result, memo: memo || "" };
                                     const list = JSON.parse(localStorage.getItem('user_stickers') || '[]');
                                     list.push(newSticker);
                                     localStorage.setItem('user_stickers', JSON.stringify(list));
-            
-                                    // 刷新页面
                                     go('me');
                                 }; 
                                 r.readAsDataURL(f); 

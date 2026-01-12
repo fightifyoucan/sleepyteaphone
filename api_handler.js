@@ -58,15 +58,16 @@ const ApiHandler = {
     /**
      * Generates the appropriate URL and options for sending a chat message.
      */
-    generateChatPayload(platform, endpoint, apiKey, model, userMessage) {
+    generateChatPayload(platform, endpoint, apiKey, model, messages) {
         const headers = { 'Content-Type': 'application/json' };
         let body;
         let url;
 
         if (platform === 'gemini') {
-            const cleanedEndpoint = endpoint.replace(/\/$/, '');
-            url = `${cleanedEndpoint}/models/${model}:generateContent?key=${apiKey}`;
-            body = JSON.stringify({ contents: [{ parts: [{ text: userMessage }] }] });
+            const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+            url = `${cleanedEndpoint}/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            // Gemini expects the 'contents' field to be the array of messages.
+            body = JSON.stringify({ contents: messages });
             return { url, options: { method: 'POST', headers, body } };
         }
         
@@ -81,7 +82,7 @@ const ApiHandler = {
         
         body = JSON.stringify({
             model: model,
-            messages: [{ role: "user", content: userMessage }]
+            messages: messages
         });
         return { url, options: { method: 'POST', headers, body } };
     },
