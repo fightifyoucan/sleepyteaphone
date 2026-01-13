@@ -81,24 +81,50 @@
             width: 100%;
         }
         
-        .message-row { display: flex; margin-bottom: 12px; align-items: flex-start; width: 100%; }
-        .message-row.received { flex-direction: row; }
-        .message-row.received .message-avatar { margin-right: 10px; margin-left: 0; }
-        .message-row.sent { flex-direction: row-reverse; }
-        .message-row.sent .message-avatar { margin-left: 10px; margin-right: 0; }
         .message-avatar { width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; flex-shrink: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
         
         /* 气泡新样式 */
-        .message-bubble { border-radius: 18px; padding: 10px 14px; font-size: 16px; line-height: 1.5; color: #000; position: relative; max-width: 75%; transition: opacity 0.3s; word-wrap: break-word; }
+        .message-bubble { border-radius: 18px; padding: 10px 14px; font-size: 16px; line-height: 1.5; color: #000; position: relative; max-width: 75%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; }
         .message-bubble.sent { background-color: #fffae6; }
         .message-bubble.received { background-color: #fededf; }
         .message-bubble.quoting { opacity: 0.5; }
         .quote-content { display: block; font-size: 12px; color: #888; margin-bottom: 4px; border-left: 2px solid #ccc; padding-left: 6px; }
 
         .message-bubble.voice { display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: 60px; }
+        .message-bubble-wrapper { /* This wrapper helps group the voice bubble and its tray */ }
+        .voice-content-tray {
+            background-color: #f2f2f2;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: rgba(0,0,0,0.7);
+            display: none;
+            margin-top: 6px;
+            animation: fadeIn 0.3s;
+            width: max-content;
+            min-width: 60px;
+            max-width: 200px;
+            white-space: pre-wrap;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         .message-bubble.image img { border-radius: 4px; max-width: 100%; display: block; }
         .message-bubble.transfer { background-color: #fa9d3b; color: white; padding: 15px; display: flex; flex-direction: column; min-width: 180px; }
         .message-bubble.location { background-color: #fff; padding: 5px; border: 1px solid #ddd; }
+
+        /* --- 统一间距 CSS --- */
+        .message { margin-bottom: 10px !important; display: flex; width: 100%; }
+        .message.sent { flex-direction: row-reverse; }
+        .message.received { flex-direction: row; }
+        .message.sent .message-avatar { margin-left: 10px; }
+        .message.received .message-avatar { margin-right: 10px; }
+        .bubble-group { display: flex; flex-direction: column; }
+        .message.sent .bubble-group { align-items: flex-end; }
+        .message.received .bubble-group { align-items: flex-start; }
+        .bubble-group .message-bubble, .bubble-group .message-bubble-wrapper { margin-bottom: 10px !important; }
+        .bubble-group .message-bubble:last-child, .bubble-group .message-bubble-wrapper:last-child { margin-bottom: 0 !important; }
 
         /* 底部输入栏 */
         .chat-footer { background-color: #f7f7f7; border-top: 1px solid #dcdcdc; transition: padding-bottom 0.2s; position: relative; z-index: 20;}
@@ -489,7 +515,7 @@
                             <div class="flex justify-between items-center mb-4"><span class="text-sm font-medium">线下模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-offline" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-offline" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                             <div class="flex justify-between items-center"><span class="text-sm font-medium">心声模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-thoughts" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-thoughts" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                         </div>
-                        <div class="space-y-3"><button id="ai-save-btn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">保存</button><div class="flex gap-3"><button id="ai-chat-btn" class="flex-1 bg-white text-green-600 font-bold py-3 rounded-xl border hidden">聊天</button><button id="ai-delete-btn" class="flex-1 bg-white text-red-500 font-bold py-3 rounded-xl border hidden">删除</button></div></div>
+                        <div class="space-y-3"><button id="ai-save-btn" class="w-full text-white font-bold py-3 rounded-xl" style="background-color: #b0cbea;">保存</button><div class="flex gap-3"><button id="ai-chat-btn" class="flex-1 bg-white text-green-600 font-bold py-3 rounded-xl border hidden">聊天</button><button id="ai-delete-btn" class="flex-1 bg-white text-red-500 font-bold py-3 rounded-xl border hidden">删除</button></div></div>
                     </div>
                 `
             };
@@ -666,70 +692,99 @@
                     const history = DB.getChatById(id) || [];
                     
                     const render = () => {
-                        box.innerHTML = history.map((m, index) => {
-                            if (m.type === 'nudge') return `<div class="msg-nudge">${m.text}</div>`;
-                            if (m.type === 'timestamp') return `<div class="message-timestamp">${m.text}</div>`;
-                            if(m.sender==='system') return `<div class="message-timestamp">${m.text}</div>`;
-                            const me = m.sender==='me';
-                            let quoteHtml = '';
-                            if(m.quote) quoteHtml = `<span class="quote-content">${m.quote}</span>`;
+                        let messageGroups = [];
+                        let currentGroup = null;
 
-                            let body = m.text;
-                            if(m.type==='image') body=`<img src="${m.content}">`;
-                            if(m.type==='sticker') body=`<img src="${m.content}" style="max-width:100px;">`;
-                            if(m.type==='voice') {
-                                body=`<div class="voice-body" style="display: flex; align-items: center; gap: 5px;">
-                                        ${me?'':`<span style="color:red;font-size:8px;">●</span>`} ${m.duration}"
-                                      </div><div class="voice-text" style="display:none; margin-top: 5px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 8px; font-size: 14px;">${m.text}</div>`;
-                            }
-                            if(m.type==='transfer') body=`<div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">￥</div><div><div>￥${m.amount}</div><div class="text-xs opacity-70">${m.note}</div></div></div>`;
-                            if(m.type==='location') body=`<div class="font-bold text-sm text-black">${m.content}</div><div class="text-xs text-gray-500">位置</div><div class="w-full h-16 bg-gray-200 mt-1 flex items-center justify-center">🗺️</div>`;
-
-                            if (m.revoked) {
-                                return `<div class="msg-nudge">${me ? '你' : `"${c.name}"`}撤回了一条消息</div>`;
+                        history.forEach((msg, index) => {
+                            if (msg.sender === 'system' || msg.type === 'nudge' || msg.type === 'timestamp') {
+                                if (currentGroup) messageGroups.push(currentGroup);
+                                messageGroups.push({ isSystem: true, messages: [msg] });
+                                currentGroup = null;
+                                return;
                             }
 
+                            if (!currentGroup || currentGroup.sender !== msg.sender) {
+                                if (currentGroup) messageGroups.push(currentGroup);
+                                currentGroup = { sender: msg.sender, messages: [msg] };
+                            } else {
+                                currentGroup.messages.push(msg);
+                            }
+                        });
+                        if (currentGroup) messageGroups.push(currentGroup);
+
+                        box.innerHTML = messageGroups.map(group => {
+                            if (group.isSystem) {
+                                const msg = group.messages[0];
+                                if (msg.type === 'nudge') return `<div class="msg-nudge">${msg.text}</div>`;
+                                if (msg.type === 'timestamp') return `<div class="message-timestamp">${msg.text}</div>`;
+                                return `<div class="message-timestamp">${msg.text}</div>`;
+                            }
+
+                            const me = group.sender === 'me';
                             const userAvatar = localStorage.getItem('user_avatar');
-                            const avatar = me ? `<div class="message-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'}</div>` : `<div class="message-avatar">${c.avatar}</div>`;
-                            
-                            const bubbleStyle = (m.type === 'transfer' || m.type === 'sticker') ? 'background: transparent; box-shadow: none;' : '';
+                            const avatarHtml = me 
+                                ? `<div class="message-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'}</div>`
+                                : `<div class="message-avatar">${c.avatar}</div>`;
+
+                            const bubblesHtml = group.messages.map(m => {
+                                const originalIndex = history.indexOf(m);
+                                if (m.revoked) {
+                                    return `<div class="msg-nudge" style="margin:0 !important; padding: 5px 0;">${me ? '你' : `"${c.name}"`}撤回了一条消息</div>`;
+                                }
+                                
+                                let quoteHtml = m.quote ? `<span class="quote-content">${m.quote}</span>` : '';
+                                let body = m.text;
+                                if(m.type==='image') body=`<img src="${m.content}">`;
+                                if(m.type==='sticker') body=`<img src="${m.content}" style="max-width:100px;">`;
+                                if(m.type==='voice') body=`<div class="voice-body" style="display: flex; align-items: center; gap: 5px;">${me?'':''} ${m.duration}"</div>`;
+                                if(m.type==='transfer') body=`<div class="flex items-center gap-2"><div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">￥</div><div><div>￥${m.amount}</div><div class="text-xs opacity-70">${m.note}</div></div></div>`;
+                                if(m.type==='location') body=`<div class="font-bold text-sm text-black">${m.content}</div><div class="text-xs text-gray-500">位置</div><div class="w-full h-16 bg-gray-200 mt-1 flex items-center justify-center">🗺️</div>`;
+                                
+                                const bubbleStyle = (m.type === 'transfer' || m.type === 'sticker') ? 'background: transparent; box-shadow: none;' : '';
+
+                                return m.type === 'voice'
+                                    ? `<div class="message-bubble-wrapper">
+                                        <div class="message-bubble ${me ? 'sent' : 'received'} voice" style="${bubbleStyle}" oncontextmenu="return false;" data-idx="${originalIndex}">
+                                            ${quoteHtml}${body}
+                                        </div>
+                                        <div class="voice-content-tray">${m.text}</div>
+                                    </div>`
+                                    : `<div class="message-bubble ${me ? 'sent' : 'received'} ${m.type || ''} ${m.isQuoted ? 'quoting' : ''}" style="${bubbleStyle}" oncontextmenu="return false;" data-idx="${originalIndex}">
+                                        ${quoteHtml}${body}
+                                    </div>`;
+                            }).join('');
 
                             return `
-                                <div class="message-row ${me?'sent':'received'}" data-idx="${index}">
-                                    ${avatar}
-                                    <div class="message-bubble ${me?'sent':'received'} ${m.type||''} ${m.isQuoted?'quoting':''}" style="${bubbleStyle}" oncontextmenu="return false;">
-                                        ${quoteHtml}
-                                        ${body}
+                                <div class="message ${me ? 'sent' : 'received'}">
+                                    ${avatarHtml}
+                                    <div class="bubble-group">
+                                        ${bubblesHtml}
                                     </div>
-                                </div>`;
+                                </div>
+                            `;
                         }).join('');
+
                         box.scrollTop = box.scrollHeight;
 
-                        // Add click listener for "pat-pat"
-                        box.querySelectorAll('.message-row.received .message-avatar').forEach(avatarEl => {
+                        box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
                             avatarEl.onclick = () => {
                                 if (avatarEl.disabled) return;
                                 avatarEl.disabled = true;
                                 setTimeout(() => { avatarEl.disabled = false; }, 1000);
-
                                 const nudgeSuffix = c.nudge || "头";
                                 const nudgeText = `你拍了拍 "${c.name}" 的 ${nudgeSuffix}`;
-                                send({
-                                    id: `nudge_${Date.now()}`,
-                                    sender: 'system',
-                                    type: 'nudge',
-                                    text: nudgeText,
-                                    time: new Date()
-                                });
+                                send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: nudgeText, time: new Date() });
                             };
                         });
 
                         let timer;
                         box.querySelectorAll('.message-bubble').forEach(el => {
-                            const row = el.closest('.message-row');
-                            const idx = row.dataset.idx;
+                            const idx = el.dataset.idx;
+                            if (idx === undefined) return;
                             const msg = history[idx];
-                            const startPress = () => { timer = setTimeout(() => {
+                            if (!msg) return;
+
+                            const startPress = (e) => { e.preventDefault(); timer = setTimeout(() => {
                                 navigator.vibrate(50); 
                                 currentQuote = msg.text || (msg.type === 'image' ? '[图片]' : '[消息]');
                                 quotePreview.style.display = 'block';
@@ -745,9 +800,10 @@
 
                             if (msg.type === 'voice') {
                                 el.onclick = () => {
-                                    const voiceText = el.querySelector('.voice-text');
-                                    if (voiceText) {
-                                        voiceText.style.display = voiceText.style.display === 'none' ? 'block' : 'none';
+                                    const wrapper = el.closest('.message-bubble-wrapper');
+                                    if (wrapper) {
+                                        const tray = wrapper.querySelector('.voice-content-tray');
+                                        if (tray) tray.style.display = tray.style.display === 'none' ? 'block' : 'none';
                                     }
                                 };
                             }
@@ -757,7 +813,6 @@
 
                     const send = (msg) => { 
                         const lastMsg = history.length > 0 ? history[history.length - 1] : null;
-                        // 时间戳只在用户消息前显示
                         if (msg.sender === 'me' && (!lastMsg || (lastMsg && new Date(msg.time) - new Date(lastMsg.time) > 300000))) {
                              const timeMsg = {
                                 id: `time_${Date.now()}`,
@@ -857,7 +912,6 @@
                                     const ep = localStorage.getItem('apiEndpoint') || '';
                                     const m = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
                                     
-                                    // 1. 准备人设 (System Prompt)
                                     const userNick = localStorage.getItem('user_nick') || '玩家';
                                     const currentTime = new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' });
                                     let systemPrompt = `你是一个真实的微信好友。你能够感知到当前的现实时间。请根据当前的时间点（如深夜、清晨、午饭时间等）自然地在聊天中加入对用户的日常生活关怀（如：‘这么晚还没睡呀’、‘记得吃午饭’等）。当前时间是：${currentTime}。\n请模仿人类打字习惯，将长句拆分成多条短句发送。每隔几轮你可以尝试发语音或拍拍对方。如果对方发图，请务必在第一条回复中自然地评论图片内容。引用消息时要生动，多带表情。你现在的身份是：${c.name}。\n`;
@@ -865,17 +919,16 @@
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
                                     if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
                                     
-                                    // 标点与动作规则
                                     systemPrompt += "【格式规则】：每一句话，包括第一句话，都必须以正确的中文标点符号（，。！？）结尾，禁止省略首句标点。禁止用空格代替标点。回复用户时，确保每个气泡的结尾语义完整，不要以逗号结束。禁止使用 *动作* 或 [动作] 这种格式。禁止出现 😏 这个表情。\n";
+                                    systemPrompt += "【语气词规则】：如果你的回复以语气词（如 唔、嗯、哎呀、那个）开头，其后必须跟随“，”或“...”，禁止直接跟句号。请仅在觉得自然时使用语气词，不要强制每段都加。\n";
                                     if (c.mode?.offline) {
                                         systemPrompt += "【当前为线下模式】：允许使用 () 括号在气泡内进行简短的动作描写，且必须与台词混合在同一个气泡中，不要单独发一个动作气泡。\n";
                                     } else {
                                         systemPrompt += "【当前为线上模式】：严禁任何形式的动作描写，只允许纯文字聊天。\n";
                                     }
 
-                                    systemPrompt += `\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
+                                    systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
 
-                                    // 2. 格式化函数
                                     const getMsgText = (msg) => {
                                         if (msg.text) return msg.text;
                                         if (msg.type === 'image') return `[用户发送了一张图片，请在你的第一条回复中自然地评论这张图片的内容。图片描述: ${msg.text || '无'}]`;
@@ -883,16 +936,11 @@
                                     };
 
                                     let messages = [];
-
-                                    // 3. 核心修复：根据平台区分格式
                                     if (pPlat === 'gemini') {
-                                        // Gemini 强制要求 parts 格式
                                         messages = history.slice(-15).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'model',
                                             parts: [{ text: getMsgText(msg) }]
                                         }));
-
-                                        // 人设注入：拼接到最后一条用户消息
                                         let lastUserIdx = -1;
                                         for (let i = messages.length - 1; i >= 0; i--) {
                                             if (messages[i].role === 'user') { lastUserIdx = i; break; }
@@ -901,7 +949,6 @@
                                             messages[lastUserIdx].parts[0].text = `【系统指令：${systemPrompt}】\n\n${messages[lastUserIdx].parts[0].text}`;
                                         }
                                     } else {
-                                        // OpenAI 标准格式
                                         messages = history.slice(-15).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'assistant',
                                             content: getMsgText(msg)
@@ -909,7 +956,6 @@
                                         messages.unshift({ role: 'system', content: systemPrompt });
                                     }
 
-                                    // 4. 发送请求
                                     const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, m, messages);
                                     const res = await fetch(payload.url, payload.options);
                                     if (!res.ok) {
@@ -922,84 +968,77 @@
                                     
                                     if (rawReply) {
                                         turnCount++;
-
                                         const titleEl = p.querySelector('.title');
                                         const originalTitle = titleEl.textContent;
+                                        let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
 
-                                        // 1. 预处理：移除黑名单表情和所有空格
-                                        let cleanedReply = rawReply.replace(/😏/g, '').replace(/\s+/g, '');
-                                        
-                                        // 2. 硬性截断和拆分
-                                        let parts = [];
-                                        for (let i = 0; i < cleanedReply.length; i += 39) {
-                                            parts.push(cleanedReply.substring(i, i + 39));
-                                        }
-
-                                        // 3. 逻辑补全和标点修正
-                                        let finalMessages = parts.map(p => p.trim()).filter(p => p.length > 0);
-                                        
-                                        if (finalMessages.length > 0 && !/[，。！？]$/.test(finalMessages[0])) {
-                                            finalMessages[0] += '。';
-                                        }
-
-                                        finalMessages.forEach((msg, index) => {
-                                            if ((msg.endsWith('，') || msg.endsWith(',')) && index < finalMessages.length -1) {
-                                               // a comma is fine if it's not the very last message
-                                            } else if (msg.endsWith('，') || msg.endsWith(',')) {
-                                                finalMessages[index] = msg.slice(0, -1) + '。';
-                                            }
-                                        });
-
-                                        // 4. 保证最少3条回复
-                                        while(finalMessages.length < 3 && finalMessages.join('').length < 60) {
-                                            const fillers = ["嗯嗯", "然后呢？", "哈哈"];
-                                            finalMessages.push(fillers[Math.floor(Math.random() * fillers.length)]);
-                                        }
-
-                                        // 5. 发送消息
-                                        for (let i = 0; i < finalMessages.length; i++) {
-                                            let msgText = finalMessages[i].replace(/😏/g, '').replace(/\s+/g, '');
-                                            if (msgText.endsWith('，') || msgText.endsWith(',')) {
-                                                msgText = msgText.slice(0, -1) + '。';
-                                            }
+                                        function splitResponseWithSentenceMigration(text) {
+                                            const MAX_LEN = 39;
+                                            const sentenceEndings = /(?<=[。！？~])|(?=\n)/g;
+                                            const sentences = text.split(sentenceEndings).map(s => s.trim()).filter(Boolean);
                                             
-                                            const delay = msgText.length <= 10 ? 1000 : (1500 + Math.random() * 1500);
+                                            const bubbles = [];
+                                            let currentBubble = "";
+
+                                            for (const sentence of sentences) {
+                                                if (sentence === '\n') {
+                                                    if (currentBubble) bubbles.push(currentBubble);
+                                                    currentBubble = "";
+                                                    continue;
+                                                }
+
+                                                if (currentBubble.length + sentence.length <= MAX_LEN) {
+                                                    currentBubble += (currentBubble ? " " : "") + sentence;
+                                                } else {
+                                                    if (currentBubble) bubbles.push(currentBubble);
+                                                    
+                                                    if (sentence.length > MAX_LEN) {
+                                                        let remainingPart = sentence;
+                                                        while(remainingPart.length > MAX_LEN) {
+                                                            let cutPos = -1;
+                                                            for (let i = MAX_LEN - 1; i >= 0; i--) {
+                                                                if (['，', '；', ',', ';'].includes(remainingPart[i])) {
+                                                                    cutPos = i + 1;
+                                                                    break;
+                                                                }
+                                                            }
+                                                            if (cutPos !== -1) {
+                                                                bubbles.push(remainingPart.substring(0, cutPos));
+                                                                remainingPart = remainingPart.substring(cutPos).trim();
+                                                            } else {
+                                                                bubbles.push(remainingPart);
+                                                                remainingPart = "";
+                                                                break;
+                                                            }
+                                                        }
+                                                        currentBubble = remainingPart;
+                                                    } else {
+                                                        currentBubble = sentence;
+                                                    }
+                                                }
+                                            }
+
+                                            if (currentBubble) bubbles.push(currentBubble);
+                                            return bubbles.map(b => b.trim()).filter(Boolean);
+                                        }
+
+                                        const finalMessages = splitResponseWithSentenceMigration(cleanedReply);
+                                        
+                                        for (let i = 0; i < finalMessages.length; i++) {
+                                            let msgText = finalMessages[i];
+                                            const delay = (i === 0) ? 400 : (msgText.length * 80 + 200);
+                                            
                                             titleEl.textContent = '对方正在输入...';
                                             await new Promise(resolve => setTimeout(resolve, delay));
                                             titleEl.textContent = originalTitle;
-                                            send({ id: `r_${Date.now()}_${i}`, sender: 'ai', text: msgText, time: new Date() });
-                                        }
 
-                                        // 3. 特殊功能触发
-                                        if (turnCount % 2 === 0) {
-                                            for(let i=0; i<2; i++){
-                                                await new Promise(resolve => setTimeout(resolve, 1200));
-                                                const voiceText = "这条是语音消息哦";
-                                                send({ id: `r_v_${Date.now()}_${i}`, sender: 'ai', type: 'voice', text: voiceText, duration: Math.ceil(voiceText.length / 3), time: new Date() });
-                                            }
+                                            send({ 
+                                                id: `r_${Date.now()}_${i}`, 
+                                                sender: 'ai', 
+                                                text: msgText, 
+                                                time: new Date()
+                                            });
                                         }
-                                        if (turnCount % 3 === 0) {
-                                            await new Promise(resolve => setTimeout(resolve, 1500));
-                                            if(Math.random() > 0.5) {
-                                                const nudgeSuffix = c.nudge || "的头";
-                                                send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: `"${c.name}" 拍了拍你`, time: new Date() });
-                                            } else {
-                                                const lastUserMsg = history.filter(m => m.sender === 'me').pop();
-                                                if(lastUserMsg) {
-                                                    send({ id: `r_q_${Date.now()}`, sender: 'ai', text: "是的呢！😊", quote: lastUserMsg.text, time: new Date() });
-                                                }
-                                            }
-                                        }
-                                        if (turnCount % 4 === 0) {
-                                            await new Promise(resolve => setTimeout(resolve, 5000));
-                                            const lastAiMsg = history.filter(m => m.sender === 'ai').pop();
-                                            if(lastAiMsg) {
-                                                lastAiMsg.revoked = true; // This needs a render update
-                                                DB.saveChatById(id, history);
-                                                render();
-                                            }
-                                        }
-
                                     }
                                 } catch (e) {
                                     alert('AI 请求失败: ' + e.message);
