@@ -16,8 +16,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* --- 核心基础 --- */
-        body { display: flex; justify-content: center; align-items: center; height: 100dvh; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none;}
-        .mobile-container { width: 360px; height: 630px; background-color: #ffffff; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
+        html {background-color: #fff5f7; height: 100%;/* 设置和你渐变色顶部一致的纯色 */}
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;}
+        .mobile-container { width: 330px; height: 620px; background-color: #ffffff; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 20px; box-sizing: border-box; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 300; pointer-events: none; }
@@ -367,15 +368,6 @@
                 { id: 'settings', name: '设置', emoji: '🔧', container: '.dock' }
             ];
 
-            apps.forEach(app => {
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" dy=".1em" dominant-baseline="middle" text-anchor="middle" font-size="36">${app.emoji}</text></svg>`;
-                try {
-                    app.icon = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-                } catch (e) {
-                    app.icon = `data:image/svg+xml;base64,${btoa(svg)}`; // Fallback for environments where unescape is deprecated
-                }
-            });
-
             document.querySelector('.app-grid').innerHTML = '';
             document.querySelectorAll('.dock .app-icon').forEach(icon => icon.remove());
 
@@ -387,16 +379,24 @@
                 iconWrapper.className = 'app-icon';
                 iconWrapper.dataset.app = app.id;
 
-                const iconImg = document.createElement('img');
+                const savedIcon = localStorage.getItem(`icon_${app.id}`);
+
+                const iconImg = document.createElement('div');
                 iconImg.className = 'app-icon-img';
 
-                const savedIcon = localStorage.getItem(`icon_${app.id}`);
-                iconImg.src = savedIcon || app.icon;
-
                 if (savedIcon) {
-                    iconImg.style.objectFit = 'cover';
+                    // 有自定义图标：显示图片，去掉背景方块
+                    const imgElement = document.createElement('img');
+                    imgElement.src = savedIcon;
+                    imgElement.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:15px;';
+                    iconImg.appendChild(imgElement);
                     iconImg.style.backgroundColor = 'transparent';
                     iconImg.style.backdropFilter = 'none';
+                    iconImg.style.webkitBackdropFilter = 'none';
+                    iconImg.style.padding = '0';
+                } else {
+                    // 没有自定义图标：emoji + 半透明背景方块
+                    iconImg.textContent = app.emoji;
                 }
 
                 const nameSpan = document.createElement('span');
