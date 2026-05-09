@@ -1859,24 +1859,29 @@
 
                         function setImmersive(on) {
                             if (on) {
+                                // 取当前壁纸
+                                const wallpaperBg = screenEl.style.backgroundImage;
+                                const wallpaperCss = wallpaperBg
+                                    ? `background-image:${wallpaperBg} !important;background-size:cover !important;background-position:center !important;`
+                                    : 'background:transparent !important;';
                                 mobileContainer.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100vw !important;height:100dvh !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
-                                document.documentElement.style.cssText = 'background:transparent !important;';
-                                document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
-                                if (dynamicIsland) dynamicIsland.style.display = 'none';
-                                // 壁纸铺满：去掉 screen 圆角
+                                // 圆角区域也铺壁纸，不透出白色
+                                document.documentElement.style.cssText = wallpaperCss;
+                                document.body.style.cssText = `padding:0 !important;${wallpaperCss}`;
+                                // screen 本身也去掉圆角
                                 screenEl.style.borderRadius = '0';
-                                // app 和小组件往下移一点点
-                                homeContent.style.marginTop = '40px';
+                                // app 和小组件往下移
+                                homeContent.style.marginTop = '80px';
+                                if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
                                 mobileContainer.style.cssText = '';
                                 document.documentElement.style.cssText = '';
                                 document.body.style.cssText = '';
-                                if (dynamicIsland) dynamicIsland.style.display = '';
-                                // 恢复圆角和间距
                                 screenEl.style.borderRadius = '';
                                 homeContent.style.marginTop = '';
+                                if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
                             }
