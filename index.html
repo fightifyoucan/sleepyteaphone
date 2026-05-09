@@ -28,7 +28,8 @@
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: rgba(0,0,0,0.4); border-radius: 2.5px; cursor: pointer; z-index: 310; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
+        .content-wrapper { flex: 1; display: flex; flex-direction: column; padding-top: 25%; }
+        .home-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; aspect-ratio: 1 / 1; width: 60px; height: 60px; }
         .app-icon:active { transform: scale(0.9); }
@@ -301,7 +302,7 @@
     <div class="mobile-container">
         <div class="screen">
             <div class="dynamic-island"></div>
-            <div class="content-wrapper" style="padding-top: 25%;">
+            <div class="content-wrapper">
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
                 <div class="home-content">
                     <div class="app-grid">
@@ -1854,6 +1855,7 @@
                         const immersiveWrap = appPage.querySelector('#immersive-toggle-wrap');
                         const mobileContainer = document.querySelector('.mobile-container');
                         const dynamicIsland = document.querySelector('.dynamic-island');
+                        const contentWrapper = document.querySelector('.content-wrapper');
 
                         function setImmersive(on) {
                             if (on) {
@@ -1861,6 +1863,8 @@
                                 document.documentElement.style.cssText = 'background:transparent !important;';
                                 document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
+                                contentWrapper.style.paddingTop = 'calc(env(safe-area-inset-top, 0px) + 20px)';
+                                contentWrapper.style.paddingBottom = '140px';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
@@ -1868,6 +1872,8 @@
                                 document.documentElement.style.cssText = '';
                                 document.body.style.cssText = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
+                                contentWrapper.style.paddingTop = '';
+                                contentWrapper.style.paddingBottom = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
                             }
