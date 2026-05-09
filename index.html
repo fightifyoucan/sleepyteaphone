@@ -18,14 +18,16 @@
         /* --- 核心基础 --- */
         html { background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); height: 100%; min-height: -webkit-fill-available; }
         body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;}
-        .mobile-container { width: 330px; height: 620px; background-color: #ffffff; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
-        .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 20px; box-sizing: border-box; }
+        .mobile-container { width: 330px; height: 620px; background-color: #FBF9F4; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
+        .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-        .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 300; pointer-events: none; }
+        .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
         .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
-        .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: rgba(0,0,0,0.4); border-radius: 2.5px; cursor: pointer; z-index: 310; }
+        .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
+        #app-home-indicator { display: none !important; }
+        #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
         .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
@@ -43,41 +45,41 @@
         .dock { position: absolute; bottom: 40px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
 
         /* --- App 容器 --- */
-        .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #fffafb; z-index: 200; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 44px; pointer-events: none; transform-origin: center; }
+        .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #FBF9F4; z-index: 350; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 0; pointer-events: none; transform-origin: center; }
         .app-page.active { pointer-events: auto; animation: open-app 0.5s cubic-bezier(0.45, 0, 0.1, 1) forwards; }
         .app-page.closing { animation: close-app 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards; }
         @keyframes open-app { from { opacity: 0; transform: scale(0.1); border-radius: 44px; } to { opacity: 1; transform: scale(1); border-radius: 0; } }
         @keyframes close-app { from { opacity: 1; transform: scale(1); border-radius: 0; } to { opacity: 0; transform: scale(0.1); border-radius: 44px; } }
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 45px 15px 15px; background-color: rgba(255, 255, 255, 0.9); border-bottom: 1px solid rgba(0,0,0,0.05); flex-shrink: 0; }
-        .app-content { flex-grow: 1; overflow-y: auto; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 15px 15px; background-color: #FBF9F4; border-bottom: 1px solid #e8e0d0; flex-shrink: 0; }
+        .app-content { flex-grow: 1; overflow-y: auto; color: #775C56; }
 
         /* --- 520 App 基础框架 --- */
-        .app-header-520 { background-color: #fff; border-bottom: 1px solid #f0f0f0; padding-top: 30px; height: 80px; display: flex; align-items: center; justify-content: center; position: relative; z-index: 100; box-sizing: border-box;}
-        .app-header-520 .title { font-size: 17px; font-weight: 600; color: #000; }
-        .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { position: absolute; padding: 10px; font-size: 16px; cursor: pointer; color: #333; bottom: 10px; }
-        .app-header-520 .close-btn-520 { left: 5px; }
-        .app-header-520 .add-btn-520 { right: 5px; font-size: 20px; }
+        .app-header-520 { background-color: #FBF9F4; border-bottom: 1.5px solid #e8e0d0; padding: 26px 15px 8px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 100; box-sizing: border-box;}
+        .app-header-520 .title { font-size: 17px; font-weight: 600; color: #775C56; position: absolute; left: 50%; top: 50%; transform: translateX(-50%); }
+        .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 4px; font-size: 22px; cursor: pointer; color: #775C56; width: 40px; }
+        .app-header-520 .close-btn-520 { text-align: left; }
+        .app-header-520 .add-btn-520 { text-align: right; font-size: 24px; }
         
-        .bottom-nav-520 { display: flex; justify-content: space-around; background-color: #f7f7f7; border-top: 1px solid #b2b2b2; padding-top: 6px; padding-bottom: 20px; flex-shrink: 0; z-index: 10; }
+        .bottom-nav-520 { display: flex; justify-content: space-around; align-items: center; background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 62px; padding: 0; flex-shrink: 0; z-index: 10; box-sizing: border-box; }
         .nav-item-520 { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #8e8e93; cursor: pointer; }
         .nav-item-520.active { color: #007aff; }
         .nav-item-520 .icon { font-size: 20px; margin-bottom: 2px; }
-        .page-content-520 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; pointer-events: none; overflow-y: auto; background-color: #fff; }
+        .page-content-520 { position: absolute; top: 0; left: 0; right: 0; bottom: 0; opacity: 0; pointer-events: none; overflow-y: auto; background-color: #FBF9F4; }
         .app-content-520-wrapper { flex: 1; position: relative; overflow: hidden; }
         .page-content-520.active { opacity: 1; pointer-events: auto; }
 
         /* --- 列表与聊天 --- */
-        .chat-list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; background: #fff; margin:0; }
+        .chat-list-item { display: flex; align-items: center; padding: 12px 15px; border-bottom: 1.5px solid #e8e0d0; cursor: pointer; background: #FBF9F4; margin:0; }
         .chat-list-avatar { width: 48px; height: 48px; border-radius: 6px; flex-shrink: 0; background-color: #e5e5e5; margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
         .chat-list-info { flex-grow: 1; overflow: hidden; }
         
-        .chat-conversation-page { display: flex; flex-direction: column; background-color: #ededed; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; padding-bottom: 20px; }
+        .chat-conversation-page { display: flex; flex-direction: column; background-color: #FBF9F4; overflow: hidden; width: 100%; height: 100%; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 62px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
         .message-timestamp {
             align-self: center;
             color: #b2b2b2;
             font-size: 11px;
-            margin: 12px 0 8px 0;
+            margin: 0px 0 6px 0;
             text-align: center;
             width: 100%;
         }
@@ -85,9 +87,29 @@
         .message-avatar { width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; flex-shrink: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
         
         /* 气泡新样式 */
-        .message-bubble { border-radius: 18px; padding: 10px 14px; font-size: 16px; line-height: 1.5; color: #000; position: relative; max-width: 75%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; }
-        .message-bubble.sent { background-color: #fffae6; }
-        .message-bubble.received { background-color: #fededf; }
+        .message-bubble { border-radius: 18px; padding: 7px 11px; font-size: 14px; line-height: 1.4; color: #775C56; position: relative; max-width: 100%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08)); }
+        .message-bubble.sent { background-color: #FFD3D4; }
+        .message-bubble.sent::after {
+            content: '';
+            position: absolute;
+            right: -7px;
+            top: 10px;
+            width: 0; height: 0;
+            border-left: 8px solid #FFD3D4;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+        .message-bubble.received { background-color: #ffffff; }
+        .message-bubble.received::after {
+            content: '';
+            position: absolute;
+            left: -7px;
+            top: 10px;
+            width: 0; height: 0;
+            border-right: 8px solid white;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
         .message-bubble.quoting { opacity: 0.5; }
         .quote-content { display: block; font-size: 12px; color: #888; margin-bottom: 4px; border-left: 2px solid #ccc; padding-left: 6px; }
 
@@ -113,7 +135,7 @@
         }
         .message-bubble.image img { border-radius: 4px; max-width: 100%; display: block; }
         .message-bubble.transfer { background-color: #fa9d3b; color: white; padding: 15px; display: flex; flex-direction: column; min-width: 180px; }
-        .message-bubble.location { background-color: #fff; padding: 5px; border: 1px solid #ddd; }
+        .message-bubble.location { background-color: #FBF9F4; padding: 5px; border: 1px solid #ddd; }
 
         /* --- 统一间距 CSS --- */
         .message { margin-bottom: 10px !important; display: flex; width: 100%; }
@@ -121,21 +143,22 @@
         .message.received { flex-direction: row; }
         .message.sent .message-avatar { margin-left: 10px; }
         .message.received .message-avatar { margin-right: 10px; }
-        .bubble-group { display: flex; flex-direction: column; }
+        .bubble-group { display: flex; flex-direction: column; max-width: 72%; }
         .message.sent .bubble-group { align-items: flex-end; }
         .message.received .bubble-group { align-items: flex-start; }
         .bubble-group .message-bubble, .bubble-group .message-bubble-wrapper { margin-bottom: 10px !important; }
         .bubble-group .message-bubble:last-child, .bubble-group .message-bubble-wrapper:last-child { margin-bottom: 0 !important; }
 
         /* 底部输入栏 */
-        .chat-footer { background-color: #f7f7f7; border-top: 1px solid #dcdcdc; transition: padding-bottom 0.2s; position: relative; z-index: 20;}
-        .chat-input-bar { display: flex; align-items: center; padding: 8px 10px; gap: 8px; min-height: 50px; }
-        .chat-input-field { flex-grow: 1; border: none; padding: 8px 12px; border-radius: 18px; font-size: 16px; background: #fff; min-height: 36px; max-height: 100px; overflow-y: auto; }
+        .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 62px; padding: 0; display: flex; align-items: center; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
+        .chat-footer::after { display: none; }
+        .chat-input-bar { display: flex; align-items: center; width: 100%; padding: 0 10px; gap: 6px; }
+        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 5px 12px; border-radius: 14px; font-size: 15px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #fff; border-radius: 6px; font-weight: bold; font-size: 15px; border: 1px solid #ddd; cursor: pointer; user-select: none; }
         .chat-voice-btn:active { background: #dcdcdc; }
         
         .chat-action-btn {
-            width: 36px; height: 36px;
+            width: 28px; height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -145,10 +168,10 @@
             transition: transform 0.1s;
         }
         .chat-action-btn:active { transform: scale(0.9); }
-        #voice-sw-btn { background-color: #ebf5ff; }
-        #emoji-btn { background-color: #ceecfa; font-size: 20px; }
-        #plus-btn { background-color: #e6f8f6; font-size: 22px; }
-        #ai-btn { background-color: #aed5ff; color: white; font-size: 14px; font-weight: bold; }
+        #voice-sw-btn { background: #D5EBE4; border: 1.5px solid #775C56; box-sizing: border-box; }
+        #emoji-btn { background: none; border: none; padding: 0; }
+        #plus-btn { background: #D5EBE4; border: 1.5px solid #775C56; font-size: 18px; color: #775C56; line-height: 1; box-sizing: border-box; }
+        #ai-btn { background: #D5EBE4; border: 1.5px solid #775C56; color: #775C56; font-size: 11px; font-weight: bold; box-sizing: border-box; }
 
         .wave-icon {
             position: relative;
@@ -159,8 +182,8 @@
         .wave-icon span {
             position: absolute;
             box-sizing: border-box;
-            border: 2px solid #333;
-            border-color: transparent #333 transparent transparent;
+            border: 2px solid transparent;
+            border-color: transparent #775C56 transparent transparent;
             border-radius: 50%;
         }
         .wave-icon span:nth-child(1) {
@@ -189,7 +212,7 @@
         .plus-icon-box { width: 50px; height: 50px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid #e5e5e5; }
         .plus-label { font-size: 11px; color: #888; }
         
-        .chat-details-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f2f2f7; z-index: 200; transform: translateX(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
+        .chat-details-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #FBF9F4; z-index: 200; transform: translateX(100%); transition: transform 0.3s; display: flex; flex-direction: column; }
         .chat-details-page.active { transform: translateX(0); }
 
         /* --- 202 朋友圈样式 --- */
@@ -199,7 +222,7 @@
         .moments-avatar { width: 70px; height: 70px; border-radius: 18px; border: 2px solid white; background-size: cover; background-position: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
         .moments-nick { color: white; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-size: 18px; cursor: pointer; margin-right: 10px; margin-bottom: 25px;}
 
-        .moment-item { padding: 15px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 10px; background: #fff; }
+        .moment-item { padding: 15px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 10px; background: #FBF9F4; }
         .moment-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; flex-shrink: 0; background-color: #eee; }
         .moment-content { flex: 1; }
         .moment-name { color: #576b95; font-weight: 600; font-size: 15px; margin-bottom: 4px; }
@@ -209,19 +232,19 @@
         .moment-likes { background: #f7f7f7; padding: 5px 8px; border-radius: 4px; margin-top: 5px; font-size: 13px; color: #576b95; }
 
         /* --- "我" 的界面样式 --- */
-        .me-header { background: #fff; padding: 30px 20px; display: flex; align-items: center; gap: 15px; }
-        .me-avatar { width: 64px; height: 64px; border-radius: 16px; background-size: cover; background-position: center; border: 1px solid #eee; cursor: pointer; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #ccc;}
-        .me-info input { border: none; font-size: 18px; font-weight: bold; width: 150px; background: transparent; }
+        .me-header { background: #FBF9F4; color: #775C56; padding: 30px 20px; display: flex; align-items: center; gap: 15px; }
+        .me-avatar { width: 64px; height: 64px; border-radius: 16px; background-size: cover; background-position: center; border: none; background-color: #F2EDE4; cursor: pointer; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #ccc;}
+        .me-info input { border: none; font-size: 18px; font-weight: bold; width: 150px; background: transparent; color: #775C56; }
         .me-info input:focus { border-bottom: 1px solid #ccc; outline: none; }
         .me-persona-box { margin-top: 5px; }
-        .me-persona-input { font-size: 12px; color: #666; width: 100%; border: none; background: #f9f9f9; padding: 4px; border-radius: 4px; }
+        .me-persona-input { font-size: 12px; color: #775C56; width: 100%; border: none; background: #FBF9F4; padding: 4px; border-radius: 4px; }
 
-        .wallet-card { margin: 15px; background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); padding: 20px; border-radius: 16px; color: white; box-shadow: 0 4px 10px rgba(142, 197, 252, 0.4); }
+        .wallet-card { margin: 15px; background: #FFD3D4; padding: 20px; border-radius: 16px; color: white; box-shadow: 0 4px 10px rgba(255,180,180,0.4); }
         .wallet-label { font-size: 12px; opacity: 0.9; }
         .wallet-amount { font-size: 32px; font-weight: bold; margin-top: 5px; }
 
-        .sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #fff; }
-        .sticker-item { aspect-ratio: 1/1; border-radius: 12px; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; }
+        .sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #FBF9F4; }
+        .sticker-item { aspect-ratio: 1/1; border-radius: 12px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; }
         .sticker-img { width: 100%; height: 100%; object-fit: cover; }
         .sticker-add { font-size: 24px; color: #ccc; }
         .sticker-del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.5); color: white; font-size: 10px; padding: 2px 4px; border-bottom-left-radius: 6px; display: none; }
@@ -229,32 +252,33 @@
         
         /* 样式补丁 */
         .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; margin-bottom: 4px; color: #333; font-weight: 500; }
+        .form-group label { display: block; margin-bottom: 4px; color: #775C56; font-weight: 500; }
         .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid #dcdcdc; border-radius: 8px; font-size: 16px; }
-        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #e5e5e5; }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e5e5e5; }
         .wallpaper-preview, .icon-style-preview { width: 60px; height: 60px; border-radius: 15px; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; color: #ccc; font-weight: bold; font-size: 20px; }
         .dashed-border { border: 2px dashed #ccc !important; border-radius: 10px; } 
         .save-btn {
-            background-color: #e3f2ff;
-            color: #4b5e7a;
+            background-color: #D5EBE4;
+            color: #775C56;
             font-weight: bold;
-            border-radius: 12px;
-            padding: 8px 16px;
+            border-radius: 10px;
+            padding: 7px 8px;
             margin-top: 8px;
             transition: transform 0.2s;
-            width: 120px;
+            width: 76px;
+            font-size: 13px;
             border: none;
             box-shadow: none;
         }
         #save-icons-btn {
-            background-color: #beddff;
+            background-color: #D5EBE4;
         }
         .save-btn:active {
             transform: scale(0.95);
         }
-        .couple-space-card { background-color: white; border-radius: 24px; padding: 16px; margin-bottom: 16px; box-shadow: 0 5px 15px rgba(255, 182, 193, 0.2); }
-        .toggle-checkbox:checked { right: 0; border-color: #68D391; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
+        .couple-space-card { background-color: #FBF9F4; border-radius: 24px; padding: 16px; margin-bottom: 16px; box-shadow: 0 5px 15px rgba(255, 182, 193, 0.2); }
+        .toggle-checkbox:checked { right: 0; border-color: #D5EBE4; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #D5EBE4; }
 
         .msg-nudge {
             align-self: center;
@@ -266,12 +290,12 @@
             width: 100%;
         }
 
-        .app-content, .page-content-520 {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE/Edge */
+        .app-content, .page-content-520, .chat-messages {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
-        .app-content::-webkit-scrollbar, .page-content-520::-webkit-scrollbar {
-            display: none; /* Chrome/Safari/Webkit */
+        .app-content::-webkit-scrollbar, .page-content-520::-webkit-scrollbar, .chat-messages::-webkit-scrollbar {
+            display: none;
         }
 
         @media (display-mode: standalone) {
@@ -435,7 +459,7 @@
             const appContents = {
                 chat: `
                     <div class="app-header-520">
-                        <span class="close-btn-520 close-btn">主页</span>
+                        <span class="close-btn-520 close-btn">‹</span>
                         <h2 class="title" id="chat-title">聊天</h2>
                         <span class="add-btn-520" id="add-contact-btn" style="display: none;">+</span>
                     </div>
@@ -449,22 +473,22 @@
                         <div class="nav-item-520" data-page="200"><span class="icon">💬</span><span>200</span></div>
                         <div class="nav-item-520 active" data-page="201"><span class="icon">👥</span><span>201</span></div>
                         <div class="nav-item-520" data-page="202"><span class="icon">🍽️</span><span>202</span></div>
-                        <div class="nav-item-520" data-page="me"><span class="icon">🍰</span><span>我</span></div>
+                        <div class="nav-item-520" data-page="me"><span class="icon">👤</span><span>我</span></div>
                     </div>
                 `,
                 'couple-space': `
-                    <div class="app-header"><span class="text-pink-500 cursor-pointer close-btn">主页</span><h2 class="font-bold">心跳同频中</h2><span class="w-10"></span></div>
+                    <div class="app-header"><span style="color:#775C56" class="cursor-pointer close-btn w-10 inline-block">‹</span><h2 class="font-bold" style="color:#775C56">心跳同频中</h2><span class="w-10"></span></div>
                     <div class="app-content p-4 bg-pink-50/50 overflow-y-auto">
                         <div class="couple-space-card text-center"><p class="text-gray-500">我们已经在一起</p><p id="days-together" class="text-4xl font-bold text-pink-500 my-2">...</p><p class="text-gray-500">天</p></div>
                         <div class="couple-space-card"><h3 class="font-bold mb-2">💌 写给TA的情书</h3><textarea id="love-letter-textarea" class="w-full h-24 p-2 border rounded-lg" placeholder="写下你的甜言蜜语..."></textarea><button id="save-love-letter" class="mt-2 w-full bg-pink-500 text-white py-2 rounded-lg">保存情书</button></div>
                     </div>
                 `,
                 'world-book': `
-                    <div class="app-header-520"><span class="close-btn-520 close-btn">主页</span><h2 class="title">世界书</h2><span class="add-btn-520" id="add-world-book-btn">+</span></div>
+                    <div class="app-header-520"><span class="close-btn-520 close-btn" style="color:#775C56">‹</span><h2 class="title">世界书</h2><span class="add-btn-520" id="add-world-book-btn">+</span></div>
                     <div class="app-content p-0" id="world-book-list" style="background: #f7f7f7;"></div>
                 `,
                 'api-settings': `
-                    <div class="app-header"><span class="text-black cursor-pointer close-btn">主页</span><h2 class="font-bold">API 设置</h2><span class="w-10"></span></div>
+                    <div class="app-header"><span style="color:#775C56" class="cursor-pointer close-btn w-10 inline-block">‹</span><h2 class="font-bold" style="color:#775C56">API 设置</h2><span class="w-10"></span></div>
                     <div class="app-content p-5">
                         <div class="form-group"><label>模型平台</label><select id="api-platform" class="w-full p-2 border rounded-lg"><option value="openai">OpenAI</option><option value="gemini">Gemini</option><option value="MyAPI">MyAPI</option></select></div>
                         <div class="form-group"><label>API 接口地址</label><input type="text" id="api-endpoint" placeholder="接口地址 (例如 https://api.openai.com/v1)"></div>
@@ -474,23 +498,23 @@
                             <div class="flex gap-2">
                                 <select id="api-model" class="w-full p-2 border rounded-lg bg-white hidden"></select>
                                 <input type="text" id="api-model-custom" placeholder="输入模型名称" class="w-full p-2 border rounded-lg bg-white">
-                                <button id="fetch-models-btn" class="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl transition-all active:scale-95" style="background-color: #e0f2ff; border-radius: 12px;" title="获取模型列表">🔄</button>
+                                <button id="fetch-models-btn" class="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl transition-all active:scale-95" style="background-color: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px;" title="获取模型列表">🔄</button>
                             </div>
                         </div>
-                        <button id="save-api-settings" class="mt-4 w-full text-white py-2 rounded-lg" style="background-color: #aed5ff;">保存设置</button>
+                        <button id="save-api-settings" class="mt-4 w-full py-2 rounded-lg" style="background-color: #D5EBE4; color: #775C56; font-weight: bold;">保存设置</button>
                     </div>
                 `,
                 'settings': `
-                    <div class="app-header"><span class="text-gray-600 cursor-pointer close-btn">主页</span><h2 class="font-bold">系统设置</h2><span class="w-10"></span></div>
-                    <div class="app-content p-5">
-                        <div class="settings-item"><div><h3 class="font-bold">更换壁纸</h3><div class="wallpaper-options"><label for="wallpaper-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center"><div id="wallpaper-preview-container" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div></label><input type="file" id="wallpaper-upload" accept="image/*" class="hidden"></div><button id="save-wallpaper-btn" class="save-btn">确认修改</button></div></div>
+                    <div class="app-header"><span style="color:#775C56" class="cursor-pointer close-btn w-10 inline-block">‹</span><h2 class="font-bold" style="color:#775C56">系统设置</h2><span class="w-10"></span></div>
+                    <div class="app-content p-5 pt-0">
+                        <div class="settings-item"><div><h3 class="font-bold" style="margin-top: 10px;">更换壁纸</h3><div class="wallpaper-options" style="margin-top: 8px;"><label for="wallpaper-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center bg-white"><div id="wallpaper-preview-container" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div></label><input type="file" id="wallpaper-upload" accept="image/*" class="hidden"></div><button id="save-wallpaper-btn" class="save-btn" style="margin-top: 16px;">确认修改</button></div></div>
                         <div class="settings-item">
                             <div>
                                 <h3 class="font-bold">更换应用图标</h3>
                                 <div class="grid grid-cols-4 gap-4 p-4" id="app-icon-list">
                                     <!-- Icons will be rendered here by initSettingsApp -->
                                 </div>
-                                <button id="save-icons-btn" class="save-btn">确认修改</button>
+                                <button id="save-icons-btn" class="save-btn" style="margin-top: -4px;">确认修改</button>
                             </div>
                         </div>
                         <div class="settings-item">
@@ -499,7 +523,7 @@
                                 <div class="grid grid-cols-3 gap-4 p-4" id="widget-config-list">
                                     <!-- Widget config UI will be rendered here -->
                                 </div>
-                                <button id="save-widget-config-btn" class="save-btn">确认修改</button>
+                                <button id="save-widget-config-btn" class="save-btn" style="margin-top: -4px;">确认修改</button>
                             </div>
                         </div>
                         <div class="settings-item">
@@ -516,26 +540,26 @@
                     </div>
                 `,
                 'ai-character-setup': `
-                    <div class="app-header"><span class="text-black cursor-pointer ml-3" id="back-to-contacts" style="font-size: 28px; width: 40px;">‹</span><h2 class="font-bold text-lg">联系人</h2><span class="w-12"></span></div>
-                    <div class="app-content p-4 pb-24" style="background:#f2f2f7; overflow-y: auto;">
+                    <div class="app-header"><span class="cursor-pointer ml-3" id="back-to-contacts" style="font-size: 28px; width: 40px; color:#775C56;">‹</span><h2 class="font-bold text-lg" style="color:#775C56;">联系人</h2><span class="w-12"></span></div>
+                    <div class="app-content p-4 pb-24" style="background:#FBF9F4; overflow-y: auto;">
                         <input type="hidden" id="ai-contact-id">
-                        <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
-                            <h3 class="font-bold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">核心</h3>
-                            <div class="flex items-start gap-4 mb-4"><label for="ai-avatar-upload" class="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center text-3xl cursor-pointer overflow-hidden border border-gray-200"><img id="ai-avatar-preview" src="" class="hidden w-full h-full object-cover"><span id="ai-avatar-emoji">📷</span></label><input type="file" id="ai-avatar-upload" class="hidden" accept="image/*"><div class="flex-1 space-y-2"><div><label class="text-xs text-gray-500">姓名</label><input type="text" id="ai-name" class="w-full border-b border-gray-200 py-1"></div><div><label class="text-xs text-gray-500">备注</label><input type="text" id="ai-notes" class="w-full border-b border-gray-200 py-1"></div></div></div>
-                            <div><label class="text-xs text-gray-500">人设</label><textarea id="ai-persona" rows="3" class="w-full mt-1 p-2 bg-gray-50 rounded-lg text-sm border-none resize-none"></textarea></div>
+                        <div class="rounded-xl p-4 mb-4" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
+                            <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#FFD3D4;">核心</h3>
+                            <div class="flex items-start gap-4 mb-4"><label for="ai-avatar-upload" class="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl cursor-pointer overflow-hidden" style="background:#F2EDE4; border:none;"><img id="ai-avatar-preview" src="" class="hidden w-full h-full object-cover"><span id="ai-avatar-emoji" style="color:#775C56;font-size:26px;font-weight:300;line-height:1;">+</span></label><input type="file" id="ai-avatar-upload" class="hidden" accept="image/*"><div class="flex-1 space-y-2"><div><label style="color:#775C56; font-size:12px;">姓名</label><input type="text" id="ai-name" class="w-full py-1" style="background:#FBF9F4; border:none; border-bottom:1px solid #775C56; color:#775C56; outline:none;"></div><div><label style="color:#775C56; font-size:12px;">备注</label><input type="text" id="ai-notes" class="w-full py-1" style="background:#FBF9F4; border:none; border-bottom:1px solid #775C56; color:#775C56; outline:none;"></div></div></div>
+                            <div><label style="color:#775C56; font-size:12px;">人设</label><textarea id="ai-persona" rows="3" class="w-full mt-1 p-2 rounded-lg text-sm resize-none" style="background:white; color:#775C56; border:none;"></textarea></div>
                         </div>
-                        <div class="bg-white rounded-xl p-4 mb-4 shadow-sm">
-                            <h3 class="font-bold text-gray-800 mb-3 border-l-4 border-green-500 pl-2">记忆</h3>
-                            <div class="mb-3"><label class="text-sm font-medium">记忆数</label><input type="number" id="ai-context-limit" value="10" class="float-right w-16 text-center border rounded bg-gray-50"></div>
-                            <div class="mb-3"><label class="text-sm font-medium block mb-1">世界书</label><select id="ai-world-book-select" class="w-full p-2 bg-gray-50 rounded border border-gray-200 text-sm"><option value="">(无)</option></select></div>
-                            <div><label class="text-sm font-medium block mb-1">手动记忆</label><textarea id="ai-manual-memory" rows="2" class="w-full p-2 bg-gray-50 rounded-lg text-sm resize-none"></textarea></div>
+                        <div class="rounded-xl p-4 mb-4" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
+                            <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#D5EBE4;">记忆</h3>
+                            <div class="mb-3"><label class="text-sm font-medium" style="color:#775C56;">记忆数</label><input type="number" id="ai-context-limit" value="10" class="float-right w-16 text-center rounded" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"></div>
+                            <div class="mb-3"><label class="text-sm font-medium block mb-1" style="color:#775C56;">世界书</label><select id="ai-world-book-select" class="w-full p-2 rounded text-sm" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"><option value="">(无)</option></select></div>
+                            <div><label class="text-sm font-medium block mb-1" style="color:#775C56;">手动记忆</label><textarea id="ai-manual-memory" rows="2" class="w-full p-2 rounded-lg text-sm resize-none" style="background:white; color:#775C56; border:none;"></textarea></div>
                         </div>
-                        <div class="bg-white rounded-xl p-4 mb-6 shadow-sm">
-                            <h3 class="font-bold text-gray-800 mb-3 border-l-4 border-purple-500 pl-2">模式</h3>
-                            <div class="flex justify-between items-center mb-4"><span class="text-sm font-medium">线下模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-offline" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-offline" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
-                            <div class="flex justify-between items-center"><span class="text-sm font-medium">心声模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-thoughts" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-thoughts" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
+                        <div class="rounded-xl p-4 mb-6" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
+                            <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#FFD3D4;">模式</h3>
+                            <div class="flex justify-between items-center mb-4"><span class="text-sm font-medium" style="color:#775C56;">线下模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-offline" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-offline" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
+                            <div class="flex justify-between items-center"><span class="text-sm font-medium" style="color:#775C56;">心声模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-thoughts" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-thoughts" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                         </div>
-                        <div class="space-y-3"><button id="ai-save-btn" class="w-full text-white font-bold py-3 rounded-xl" style="background-color: #b0cbea;">保存</button><div class="flex gap-3"><button id="ai-chat-btn" class="flex-1 bg-white text-green-600 font-bold py-3 rounded-xl border hidden">聊天</button><button id="ai-delete-btn" class="flex-1 bg-white text-red-500 font-bold py-3 rounded-xl border hidden">删除</button></div></div>
+                        <div class="space-y-3" style="padding-bottom:20px;"><button id="ai-save-btn" class="w-full font-bold py-3 rounded-xl" style="background-color: #D5EBE4; color: #775C56;">保存</button><div class="flex gap-3"><button id="ai-chat-btn" class="flex-1 font-bold py-3 rounded-xl hidden" style="background:#FFD3D4;color:#775C56;border:none;">聊天</button><button id="ai-delete-btn" class="flex-1 font-bold py-3 rounded-xl hidden" style="background:#FFD3D4;color:#775C56;border:none;">删除</button></div></div>
                     </div>
                 `
             };
@@ -656,19 +680,20 @@
                 };
 
                 const openChat = (id) => {
+                    document.getElementById('app-home-indicator').style.display='none';
                     const c = DB.getContact(id); if(!c) return;
                     let p = appPage.querySelector('#conversation-page');
                     if(!p) { 
                         p=document.createElement('div'); p.id='conversation-page'; p.className='chat-conversation-page'; 
-                        p.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:#ededed;z-index:110;display:flex;flex-direction:column;'; 
+                        p.style.cssText='position:absolute;top:0;left:0;width:100%;height:100%;background:#FBF9F4;z-index:110;display:flex;flex-direction:column;overflow:hidden;'; document.getElementById('app-home-indicator').style.display='none';; 
                         appPage.appendChild(p); 
                     }
                     p.style.display = 'flex';
                     
                     p.innerHTML = `
-                        <div class="app-header-520" style="background:#ededed;border:none;">
-                            <span class="close-btn-520" id="chat-back" style="font-size:16px; cursor:pointer;">‹ 返回</span>
-                            <h2 class="title" style="transform: translateY(-3px);">${c.notes||c.name}</h2>
+                        <div class="app-header-520" style="background:#FBF9F4;border-bottom:1px solid #e8e0d0;">
+                            <span class="close-btn-520" id="chat-back" style="font-size:22px; cursor:pointer; color:#775C56;">‹</span>
+                            <h2 class="title" style="transform: translateX(-50%);">${c.notes||c.name}</h2>
                             <span class="add-btn-520" id="chat-more" style="font-size:20px;">•••</span>
                         </div>
                         <div class="chat-messages" id="chat-box" style="${c.chatBackground?`background:url(${c.chatBackground}) center/cover no-repeat`:''}"></div>
@@ -686,7 +711,7 @@
                                 </div>
                                 <input type="text" class="chat-input-field" id="chat-in">
                                 <div class="chat-voice-btn" id="voice-btn" style="display:none;">按住 说话</div>
-                                <div id="emoji-btn" class="chat-action-btn">☺</div>
+                                <div id="emoji-btn" class="chat-action-btn" style="padding:0;overflow:hidden;"><svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="#D5EBE4" stroke="#775C56" stroke-width="5.5"/><circle cx="36" cy="42" r="7" fill="#775C56"/><circle cx="64" cy="42" r="7" fill="#775C56"/><path d="M 28 62 Q 50 80 72 62" stroke="#775C56" stroke-width="5.5" fill="none" stroke-linecap="round"/></svg></div>
                                 <div id="plus-btn" class="chat-action-btn">+</div>
                                 <div id="ai-btn" class="chat-action-btn">AI</div>
                             </div>
@@ -696,12 +721,12 @@
                                     <div class="plus-item" id="p-call"><div class="plus-icon-box" style="color:#07c160;">📹</div><div class="plus-label">通话</div></div>
                                     <div class="plus-item" id="p-pic"><div class="plus-icon-box" style="color:#10aeff;">🖼️</div><div class="plus-label">照片</div></div>
                                     <div class="plus-item" id="p-loc"><div class="plus-icon-box" style="color:#888;">📍</div><div class="plus-label">位置</div></div>
-                                    <div class="plus-item" id="p-cam"><div class="plus-icon-box" style="color:#000;">📷</div><div class="plus-label">拍摄</div></div>
+                                    <div class="plus-item" id="p-cam"><div class="plus-icon-box" style="color:#775C56;">📷</div><div class="plus-label">拍摄</div></div>
                                 </div>
                             </div>
                             <div class="plus-panel" id="emoji-p" style="height:0; overflow-y:auto;"></div>
                         </div>
-                        <div class="chat-details-page" id="chat-sets"><div class="app-header-520"><span class="close-btn-520" id="set-back">‹</span><h2 class="title">详情</h2></div><div class="app-content p-4" id="sets-content"></div></div>
+                        <div class="chat-details-page" id="chat-sets"><div class="app-header-520"><span class="close-btn-520" id="set-back">‹</span><h2 class="title">详情</h2></div><div class="app-content p-4" id="sets-content" style="background:#FBF9F4;"></div></div>
                     `;
 
                     const box=p.querySelector('#chat-box'), inp=p.querySelector('#chat-in'), plus=p.querySelector('#plus-p'), emojiP=p.querySelector('#emoji-p');
@@ -875,6 +900,7 @@
 
                     p.querySelector('#chat-back').onclick = () => {
                         p.style.display = 'none';
+                        document.getElementById('app-home-indicator').style.display='';
                         go('200');
                     };
                     p.querySelector('#quote-cancel').onclick=()=>{currentQuote=null; quotePreview.style.display='none'; render();}; 
@@ -990,56 +1016,34 @@
                                         turnCount++;
                                         const titleEl = p.querySelector('.title');
                                         const originalTitle = titleEl.textContent;
+                                        // 添加副标题元素
+                                        if (!p.querySelector('.chat-subtitle')) {
+                                            const sub = document.createElement('div');
+                                            sub.className = 'chat-subtitle';
+                                            sub.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:calc(50% + 12px);font-size:11px;color:#aaa;white-space:nowrap;';
+                                            p.querySelector('.app-header-520').appendChild(sub);
+                                        }
                                         let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
 
                                         function splitResponseWithSentenceMigration(text) {
-                                            const MAX_LEN = 39;
-                                            const sentenceEndings = /(?<=[。！？~])|(?=\n)/g;
-                                            const sentences = text.split(sentenceEndings).map(s => s.trim()).filter(Boolean);
-                                            
+                                            // 每个句子单独一个气泡，更像真人打字
+                                            const parts = text.split(/(?<=[。！？~…])/g)
+                                                .map(s => s.trim()).filter(Boolean);
+                                            if (parts.length <= 1) return [text.trim()];
+                                            // 超短片段（≤2字）合并到下一条
                                             const bubbles = [];
-                                            let currentBubble = "";
-
-                                            for (const sentence of sentences) {
-                                                if (sentence === '\n') {
-                                                    if (currentBubble) bubbles.push(currentBubble);
-                                                    currentBubble = "";
-                                                    continue;
-                                                }
-
-                                                if (currentBubble.length + sentence.length <= MAX_LEN) {
-                                                    currentBubble += (currentBubble ? " " : "") + sentence;
+                                            let carry = '';
+                                            for (const p of parts) {
+                                                const merged = carry ? carry + p : p;
+                                                if (merged.length <= 3) {
+                                                    carry = merged;
                                                 } else {
-                                                    if (currentBubble) bubbles.push(currentBubble);
-                                                    
-                                                    if (sentence.length > MAX_LEN) {
-                                                        let remainingPart = sentence;
-                                                        while(remainingPart.length > MAX_LEN) {
-                                                            let cutPos = -1;
-                                                            for (let i = MAX_LEN - 1; i >= 0; i--) {
-                                                                if (['，', '；', ',', ';'].includes(remainingPart[i])) {
-                                                                    cutPos = i + 1;
-                                                                    break;
-                                                                }
-                                                            }
-                                                            if (cutPos !== -1) {
-                                                                bubbles.push(remainingPart.substring(0, cutPos));
-                                                                remainingPart = remainingPart.substring(cutPos).trim();
-                                                            } else {
-                                                                bubbles.push(remainingPart);
-                                                                remainingPart = "";
-                                                                break;
-                                                            }
-                                                        }
-                                                        currentBubble = remainingPart;
-                                                    } else {
-                                                        currentBubble = sentence;
-                                                    }
+                                                    bubbles.push(merged);
+                                                    carry = '';
                                                 }
                                             }
-
-                                            if (currentBubble) bubbles.push(currentBubble);
-                                            return bubbles.map(b => b.trim()).filter(Boolean);
+                                            if (carry) bubbles.push(carry);
+                                            return bubbles.filter(Boolean);
                                         }
 
                                         const finalMessages = splitResponseWithSentenceMigration(cleanedReply);
@@ -1048,9 +1052,9 @@
                                             let msgText = finalMessages[i];
                                             const delay = (i === 0) ? 400 : (msgText.length * 80 + 200);
                                             
-                                            titleEl.textContent = '对方正在输入...';
+                                            const subEl = p.querySelector('.chat-subtitle'); if(subEl) subEl.textContent = '对方正在输入...';
                                             await new Promise(resolve => setTimeout(resolve, delay));
-                                            titleEl.textContent = originalTitle;
+                                            const subEl2 = p.querySelector('.chat-subtitle'); if(subEl2) subEl2.textContent = '';
 
                                             send({ 
                                                 id: `r_${Date.now()}_${i}`, 
@@ -1073,18 +1077,18 @@
                     p.querySelector('#chat-more').onclick=()=>{
                         p.querySelector('#chat-sets').classList.add('active');
                         setsContent.innerHTML = `
-                            <div class="bg-white mt-2 rounded-lg overflow-hidden">
+                            <div class="mt-2 rounded-lg overflow-hidden" style="background:#FBF9F4;">
                                 <div class="p-4 flex flex-col items-center border-bottom">
                                     <div class="w-16 h-16 rounded-lg bg-gray-200 mb-2 flex items-center justify-center text-3xl overflow-hidden">${c.avatar}</div>
                                     <div class="text-sm">${c.name}</div>
                                 </div>
                             </div>
-                            <div class="bg-white mt-4 rounded-lg overflow-hidden">
+                            <div class="mt-4 rounded-lg overflow-hidden" style="background:#FBF9F4;">
                                 <div class="settings-item px-4" id="set-pat"><span>拍一拍</span><span class="text-gray-400">›</span></div>
                                 <label for="bg-upload-input" class="settings-item px-4 cursor-pointer"><span>聊天背景</span><span class="text-gray-400">›</span></label>
                                 <input type="file" id="bg-upload-input" class="hidden" accept="image/*">
                             </div>
-                            <button id="set-clr" class="w-full mt-4 bg-white text-red-500 py-3 rounded-lg font-bold">清空聊天记录</button>
+                            <button id="set-clr" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#D5EBE4; color:#775C56;">清空聊天记录</button>
                         `;
                         setsContent.querySelector('#set-pat').onclick=()=>{const v=prompt('拍一拍内容',c.nudge||'拍了拍我');if(v){c.nudge=v;DB.saveContact(c);}};
                         
@@ -1130,7 +1134,7 @@
                         }).filter(x=>x&&x.c).sort((a,b)=>new Date(b.m.time)-new Date(a.m.time));
                         if(chats.length===0) el.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-300">暂无聊天</div>`;
                         else {
-                            el.innerHTML = chats.map(x=>`<div class="chat-list-item" data-id="${x.id}"><div class="chat-list-avatar">${x.c.avatar}</div><div class="chat-list-info"><div class="flex justify-between"><span class="font-medium">${x.c.notes||x.c.name}</span><span class="text-xs text-gray-400">${new Date(x.m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-gray-500 text-sm truncate">${x.m.type==='image'?'[图片]':(x.m.text||'[消息]')}</div></div></div>`).join('');
+                            el.innerHTML = chats.map(x=>`<div class="chat-list-item" data-id="${x.id}"><div class="chat-list-avatar">${x.c.avatar}</div><div class="chat-list-info"><div class="flex justify-between"><span class="font-medium" style="color:#775C56;">${x.c.notes||x.c.name}</span><span class="text-xs text-gray-400">${new Date(x.m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-sm truncate" style="color:#9A7872;">${x.m.type==='image'?'[图片]':(x.m.text||'[消息]')}</div></div></div>`).join('');
                             el.querySelectorAll('.chat-list-item').forEach(i=>i.onclick=()=>openChat(i.dataset.id));
                         }
                     }
@@ -1142,7 +1146,7 @@
                             if(e.id !== 'add-contact-btn') e.remove();
                         });
                         const cs = DB.getContacts();
-                        el.innerHTML = cs.map(c=>`<div class="chat-list-item contact-item" data-id="${c.id}"><div class="chat-list-avatar">${c.avatar}</div><div class="font-medium">${c.notes||c.name}</div></div>`).join('');
+                        el.innerHTML = cs.map(c=>`<div class="chat-list-item contact-item" data-id="${c.id}"><div class="chat-list-avatar">${c.avatar}</div><div class="font-medium" style="color:#775C56;">${c.notes||c.name}</div></div>`).join('');
                         el.querySelectorAll('.contact-item').forEach(i=>i.onclick=()=>{
                             const setup=document.getElementById('ai-character-setup-page');
                             if(!setup.innerHTML) setup.innerHTML=appContents['ai-character-setup'];
@@ -1161,11 +1165,6 @@
                             if (e.id !== 'add-contact-btn') e.remove();
                         });
 
-                        const headerBtn = document.createElement('span');
-                        headerBtn.className = 'add-btn-520';
-                        headerBtn.innerHTML = '✨';
-                        headerBtn.style.right = '45px';
-                        headerBtn.onclick = generateMoments;
                         
                         const camBtn = document.createElement('span');
                         camBtn.className = 'add-btn-520';
@@ -1189,7 +1188,6 @@
                             }
                         };
                         
-                        header.appendChild(headerBtn);
                         header.appendChild(camBtn);
 
                         const coverUrl = localStorage.getItem('moments_cover');
@@ -1237,7 +1235,7 @@
                     }
 
                     if(pid==='me'){
-                        title.textContent = '我'; addBtn.style.display = 'none';
+                        title.textContent = ''; addBtn.style.display = 'none';
                         const header = appPage.querySelector('.app-header-520');
                         header.querySelectorAll('.add-btn-520').forEach(e => {
                             if(e.id !== 'add-contact-btn') e.remove();
@@ -1251,7 +1249,7 @@
                         el.innerHTML = `
                             <div class="me-header">
                                 <label for="me-avatar-upload" class="me-avatar" data-user-avatar="true">
-                                    ${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;">` : '📷'}
+                                    ${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="color:#775C56;font-size:26px;font-weight:300;line-height:1;">+</span>'}
                                 </label>
                                 <input type="file" id="me-avatar-upload" class="hidden" accept="image/*">
                                 <div class="me-info">
@@ -1269,7 +1267,7 @@
                             </div>
 
                             <div style="background:white; margin-top:10px;">
-                                <div style="padding:15px; font-weight:bold; border-bottom:1px solid #f0f0f0;">表情包库</div>
+                                <div style="padding:15px; font-weight:bold; border-bottom:1px solid #e8e0d0; background:#FBF9F4; color:#775C56;">表情包库</div>
                                 <div class="sticker-grid">
                                     <label class="sticker-item sticker-add">
                                         + <input type="file" id="sticker-upload" class="hidden" accept="image/*">
@@ -1524,7 +1522,10 @@
                 }
 
                 saveBtn.onclick = () => {
+                    saveBtn.style.transform = 'scale(0.95)';
+                    setTimeout(() => saveBtn.style.transform = '', 150);
                     if (!nameInput.value.trim()) return alert('请输入姓名');
+                    if (typeof DB === 'undefined') return alert('请确保 database.js 已正确加载（与 index.html 放在同一文件夹）');
                     const contactData = {
                         id: idInput.value || `contact_${Date.now()}`,
                         name: nameInput.value,
@@ -1690,7 +1691,7 @@
 
                 if (appPage) {
                     if (!appPage.innerHTML) {
-                        let content = appContents[appId] || `<div class="app-header"><span class="close-btn">主页</span><h2 class="font-bold">${icon.querySelector('span').textContent}</h2><span></span></div><div class="app-content p-5"><p>开发中...</p></div>`;
+                        let content = appContents[appId] || `<div class="app-header"><span class="close-btn w-10 inline-block" style="color:#775C56">‹</span><h2 class="font-bold">${icon.querySelector('span').textContent}</h2><span></span></div><div class="app-content p-5"><p>开发中...</p></div>`;
                         appPage.innerHTML = content;
                         
                         if (appId === 'chat') setupChatApp(appPage);
@@ -1757,8 +1758,6 @@
                                 const saveWidgetConfigBtn = appPage.querySelector('#save-widget-config-btn');
                                 let tempWidgetData = {};
 
-                                saveWidgetConfigBtn.style.backgroundColor = '#b8d8e8';
-                                
                                 // Render UI
                                 widgetConfigList.innerHTML = `
                                     <div class="col-span-3 flex flex-col items-center gap-1">
@@ -1873,7 +1872,7 @@
                                 // app 和小组件往下移
                                 homeContent.style.marginTop = '80px';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
-                                immersiveTrack.style.background = '#ff9ab5';
+                                immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
                                 mobileContainer.style.cssText = '';
@@ -1918,7 +1917,7 @@
                     const screenRect = screen.getBoundingClientRect();
                     appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
                     appPage.classList.add('active');
-                    document.getElementById('app-home-indicator').style.display = 'block';
+                    const _ind = document.getElementById('app-home-indicator'); _ind.style.display = 'block'; if(document.getElementById('chat-page').classList.contains('active')) _ind.style.setProperty('display','none','important');
                 }
             });
             
