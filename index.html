@@ -425,7 +425,9 @@
             if (localStorage.getItem('immersive_mode') === '1') {
                 const mc = document.querySelector('.mobile-container');
                 const di = document.querySelector('.dynamic-island');
-                mc.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100vw !important;height:100vh !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                mc.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100vw !important;height:100dvh !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                document.documentElement.style.cssText = 'background:transparent !important;';
+                document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
                 if (di) di.style.display = 'none';
             }
 
@@ -1855,12 +1857,16 @@
 
                         function setImmersive(on) {
                             if (on) {
-                                mobileContainer.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100vw !important;height:100vh !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                                mobileContainer.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100vw !important;height:100dvh !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                                document.documentElement.style.cssText = 'background:transparent !important;';
+                                document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
                                 mobileContainer.style.cssText = '';
+                                document.documentElement.style.cssText = '';
+                                document.body.style.cssText = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
