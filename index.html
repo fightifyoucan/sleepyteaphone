@@ -28,8 +28,7 @@
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: rgba(0,0,0,0.4); border-radius: 2.5px; cursor: pointer; z-index: 310; }
 
         /* --- 桌面元素 --- */
-        .content-wrapper { flex: 1; display: flex; flex-direction: column; padding-top: 25%; }
-        .home-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; }
+        .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; aspect-ratio: 1 / 1; width: 60px; height: 60px; }
         .app-icon:active { transform: scale(0.9); }
@@ -1863,8 +1862,7 @@
                                 document.documentElement.style.cssText = 'background:transparent !important;';
                                 document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
-                                contentWrapper.style.paddingTop = 'calc(env(safe-area-inset-top, 0px) + 20px)';
-                                contentWrapper.style.paddingBottom = '140px';
+                                contentWrapper.style.paddingTop = 'env(safe-area-inset-top, 44px)';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
@@ -1872,8 +1870,7 @@
                                 document.documentElement.style.cssText = '';
                                 document.body.style.cssText = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
-                                contentWrapper.style.paddingTop = '';
-                                contentWrapper.style.paddingBottom = '';
+                                contentWrapper.style.paddingTop = '25%';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
                             }
