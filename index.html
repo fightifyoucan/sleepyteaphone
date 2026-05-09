@@ -425,7 +425,12 @@
             if (localStorage.getItem('immersive_mode') === '1') {
                 const mc = document.querySelector('.mobile-container');
                 const di = document.querySelector('.dynamic-island');
-                mc.style.cssText = 'width:100% !important;max-width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                const isMobile = window.innerWidth <= 430;
+                if (isMobile) {
+                    mc.style.cssText = 'width:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                } else {
+                    mc.style.cssText = 'width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                }
                 if (di) di.style.display = 'none';
             }
 
@@ -1855,7 +1860,12 @@
 
                         function setImmersive(on) {
                             if (on) {
-                                mobileContainer.style.cssText = 'width:100% !important;max-width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                                const isMobile = window.innerWidth <= 430;
+                                if (isMobile) {
+                                    mobileContainer.style.cssText = 'width:100% !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                                } else {
+                                    mobileContainer.style.cssText = 'width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                                }
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
