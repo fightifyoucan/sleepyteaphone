@@ -421,6 +421,14 @@
             renderHomeScreenIcons();
             refreshAllUserAvatars();
 
+            // 启动时恢复沉浸模式
+            if (localStorage.getItem('immersive_mode') === '1') {
+                const mc = document.querySelector('.mobile-container');
+                const di = document.querySelector('.dynamic-island');
+                mc.style.cssText = 'width:100% !important;max-width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                if (di) di.style.display = 'none';
+            }
+
             // --- 模板内容 ---
             const appContents = {
                 chat: `
@@ -490,6 +498,16 @@
                                     <!-- Widget config UI will be rendered here -->
                                 </div>
                                 <button id="save-widget-config-btn" class="save-btn">确认修改</button>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <h3 class="font-bold">沉浸模式</h3>
+                                <p class="text-xs text-gray-400 mt-1">开启后隐藏手机外框，内容铺满全屏</p>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 cursor-pointer" id="immersive-toggle-wrap">
+                                <div id="immersive-toggle-track" class="w-12 h-6 rounded-full transition-colors duration-200" style="background:#ddd;"></div>
+                                <div id="immersive-toggle-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></div>
                             </div>
                         </div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
@@ -1826,6 +1844,37 @@
                                 localStorage.clear();
                                 location.reload();
                             }
+                        };
+
+                        // 沉浸模式开关
+                        const immersiveTrack = appPage.querySelector('#immersive-toggle-track');
+                        const immersiveThumb = appPage.querySelector('#immersive-toggle-thumb');
+                        const immersiveWrap = appPage.querySelector('#immersive-toggle-wrap');
+                        const mobileContainer = document.querySelector('.mobile-container');
+                        const dynamicIsland = document.querySelector('.dynamic-island');
+
+                        function setImmersive(on) {
+                            if (on) {
+                                mobileContainer.style.cssText = 'width:100% !important;max-width:390px !important;height:100% !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;';
+                                if (dynamicIsland) dynamicIsland.style.display = 'none';
+                                immersiveTrack.style.background = '#ff9ab5';
+                                immersiveThumb.style.transform = 'translateX(24px)';
+                            } else {
+                                mobileContainer.style.cssText = '';
+                                if (dynamicIsland) dynamicIsland.style.display = '';
+                                immersiveTrack.style.background = '#ddd';
+                                immersiveThumb.style.transform = 'translateX(0)';
+                            }
+                            localStorage.setItem('immersive_mode', on ? '1' : '0');
+                        }
+
+                        // 初始化状态
+                        const isImmersive = localStorage.getItem('immersive_mode') === '1';
+                        setImmersive(isImmersive);
+
+                        immersiveWrap.onclick = () => {
+                            const current = localStorage.getItem('immersive_mode') === '1';
+                            setImmersive(!current);
                         };
 
                         initSettingsContent();
