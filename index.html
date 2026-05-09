@@ -301,7 +301,7 @@
     <div class="mobile-container">
         <div class="screen">
             <div class="dynamic-island"></div>
-            <div class="content-wrapper">
+            <div class="content-wrapper" style="padding-top: 25%;">
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
                 <div class="home-content">
                     <div class="app-grid">
@@ -1854,7 +1854,8 @@
                         const immersiveWrap = appPage.querySelector('#immersive-toggle-wrap');
                         const mobileContainer = document.querySelector('.mobile-container');
                         const dynamicIsland = document.querySelector('.dynamic-island');
-                        const contentWrapper = document.querySelector('.content-wrapper');
+                        const screenEl = document.querySelector('.screen');
+                        const homeContent = document.querySelector('.home-content');
 
                         function setImmersive(on) {
                             if (on) {
@@ -1862,7 +1863,10 @@
                                 document.documentElement.style.cssText = 'background:transparent !important;';
                                 document.body.style.cssText += 'padding:0 !important;background:transparent !important;';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
-                                contentWrapper.style.paddingTop = 'env(safe-area-inset-top, 44px)';
+                                // 壁纸铺满：去掉 screen 圆角
+                                screenEl.style.borderRadius = '0';
+                                // app 和小组件往下移一点点
+                                homeContent.style.marginTop = '40px';
                                 immersiveTrack.style.background = '#ff9ab5';
                                 immersiveThumb.style.transform = 'translateX(24px)';
                             } else {
@@ -1870,7 +1874,9 @@
                                 document.documentElement.style.cssText = '';
                                 document.body.style.cssText = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
-                                contentWrapper.style.paddingTop = '25%';
+                                // 恢复圆角和间距
+                                screenEl.style.borderRadius = '';
+                                homeContent.style.marginTop = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
                             }
