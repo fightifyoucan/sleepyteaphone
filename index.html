@@ -17,8 +17,8 @@
     <style>
         /* --- 核心基础 --- */
         html { background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); height: 100%; min-height: -webkit-fill-available; }
-        html { background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); }
-        body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;}
+        html { background: #ffeaf0; } /* 底部safe area填充色 */
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; background-color: #ffeaf0;}
         .mobile-container { width: 330px; height: 620px; background-color: #FBF9F4; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
@@ -372,7 +372,10 @@
             }
             body {
                 padding: 0 !important;
+                margin: 0 !important;
                 align-items: stretch;
+                background: #ffeaf0 !important;
+                min-height: 100dvh !important;
             }
             .mobile-container {
                 width: 100%;
