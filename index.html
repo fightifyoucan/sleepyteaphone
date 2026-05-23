@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>眠茶机</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,7 +31,7 @@
         #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 40px; }
+        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 45px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; width: 60px; gap: 4px; }
         /* 棕色字体模式：覆盖白色文字 */
@@ -185,7 +185,7 @@
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
         .chat-input-bar { display: flex; align-items: center; min-height: 62px; padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; }
-        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 15px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
+        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
         .chat-voice-btn:active { background: #f0e8e8; }
         
@@ -1865,8 +1865,11 @@
                             </div>`;
                                 if(m.type==='call') body=`<div style="color:#775C56;font-size:13px;">${m.text}</div>`;
                                 
-                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble ? 'background:transparent;box-shadow:none;color:#B89B95;font-style:italic;padding:4px 8px;' : (isActionBubble ? 'background:transparent;box-shadow:none;color:#9A7872;padding:4px 8px;' : ''));
-                                const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||isThoughtBubble||isActionBubble) ? 'no-tail' : '';
+                                // 仅在线下模式下，括号动作变透明（沉浸感）；否则正常气泡
+                                const offlineMode = c.mode?.offline;
+                                const thoughtsMode = c.mode?.thoughts;
+                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:transparent;box-shadow:none;color:#B89B95;font-style:italic;padding:4px 8px;' : (isActionBubble && offlineMode ? 'background:transparent;box-shadow:none;color:#9A7872;padding:4px 8px;' : ''));
+                                const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||(isThoughtBubble && thoughtsMode)||(isActionBubble && offlineMode)) ? 'no-tail' : '';
 
                                 if(m.type==='photo') return `<div class="message-bubble-wrapper">
                                     <div class="message-bubble ${me?'sent':'received'} no-tail" style="background:transparent;box-shadow:none;padding:0;cursor:pointer;" oncontextmenu="return false;" data-idx="${originalIndex}">
