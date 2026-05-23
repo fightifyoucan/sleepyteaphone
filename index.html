@@ -1776,7 +1776,7 @@
                                 const isActionBubble = (!m.type || m.type === 'text') && typeof m.text === 'string' && /^[（(][\s\S]*[）)]$/.test(m.text.trim());
                                 if(m.type==='image') body=`<img src="${m.content}" style="max-width:150px;border-radius:12px;display:block;">`;
                                 if(m.type==='photo') body=`<img src="${m.content}" style="max-width:150px;border-radius:12px;display:block;" class="photo-tap">`;
-                                if(m.type==='sticker') body=`<img src="${m.content}" style="width:65px;height:65px;object-fit:cover;border-radius:10px;display:block;">`;
+                                if(m.type==='sticker') body=`<img src="${m.content}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;">`;
                                 if(m.type==='voice') { const w = Math.min(200, 48 + (m.duration||1) * 4); body=`<div class="voice-body" style="display:flex;align-items:center;gap:5px;width:${w}px;">${m.duration}"</div>`; }
                                 if(m.type==='transfer') {
                                     const isMine = m.sender==='me';
@@ -1866,7 +1866,7 @@
 
                                 const bubbleEl = m.type === 'voice'
                                     ? `<div class="message-bubble-wrapper">
-                                        <div class="message-bubble ${me ? 'sent' : 'received'} voice" style="${bubbleStyle}" oncontextmenu="return false;" data-idx="${originalIndex}">
+                                        <div class="message-bubble ${me ? 'sent' : 'received'} voice" style="${bubbleStyle}" oncontextmenu="return false;" onclick="this.parentElement.querySelector('.voice-content-tray').classList.toggle('open');event.stopPropagation();" data-idx="${originalIndex}">
                                             ${body}
                                         </div>
                                         <div class="voice-content-tray">${m.text}</div>
@@ -1887,7 +1887,7 @@
                                     // Reuse full bubble rendering from main render path
                                     let sb = m.text||'';
                                     if(m.type==='image'||m.type==='photo') sb='<img src="'+m.content+'" style="max-width:150px;border-radius:12px;display:block;">';
-                                    if(m.type==='sticker') sb='<img src="'+m.content+'" style="width:65px;height:65px;object-fit:cover;border-radius:10px;display:block;">';
+                                    if(m.type==='sticker') sb='<img src="'+m.content+'" style="width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;">';
                                     if(m.type==='voice') { const sw=Math.min(200,48+(m.duration||1)*4); sb='<div style="display:flex;align-items:center;gap:5px;width:'+sw+'px;">'+m.duration+'"</div>'; }
                                     if(m.type==='transfer') {
                                         const txStatus = m.claimed?'已接收':m.status==='returned'?'已退还':'';
@@ -1933,18 +1933,6 @@
                             if(bubble) bubble.onclick = () => tray.classList.toggle('open');
                         });
                         
-                        // 语音气泡点击展开/收起转文字
-                        box.querySelectorAll('.message-bubble.voice').forEach(bubble => {
-                            const wrapper = bubble.parentElement;
-                            if (!wrapper) return;
-                            const tray = wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
-                            if (!tray) return;
-                            const toggle = (e) => {
-                                e.stopPropagation();
-                                tray.classList.toggle('open');
-                            };
-                            bubble.addEventListener('click', toggle);
-                        });
 
                         // Re-bind long press on every render (DOM is replaced each time)
                         box.querySelectorAll('.message-bubble[data-idx]').forEach(bbl => {
@@ -2381,7 +2369,7 @@
                     p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='180px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:15px;">${st.map(s=>`<img src="${s.src}" style="width:100%;border-radius:8px;cursor:pointer;">`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='200px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:15px;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const imgData=ev.target.result;send({id:`m_${Date.now()}`,sender:'me',type:'image',content:imgData,text:'',time:new Date()});plus.classList.remove('open');try{const album=JSON.parse(localStorage.getItem('chat_album')||'[]');album.push({src:imgData,contact:c.name,time:new Date().toISOString()});localStorage.setItem('chat_album',JSON.stringify(album));}catch(e){console.warn('Album save failed:',e);}};r.readAsDataURL(f);};fi.click();};
                     p.querySelector('#p-cam').onclick=()=>{
