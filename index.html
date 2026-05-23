@@ -23,7 +23,7 @@
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
-        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; }
+        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -20px; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
@@ -31,9 +31,9 @@
         #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
+        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; aspect-ratio: 1 / 1; width: 60px; height: 60px; }
+        .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; width: 60px; gap: 4px; }
         /* 棕色字体模式：覆盖白色文字 */
         body.brown-font .app-icon { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
         body.brown-font .love-widget { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
@@ -416,7 +416,7 @@
                         <!-- Icons will be rendered here by JavaScript -->
                     </div>
                     <div style="grid-column: span 2; text-align: center;">
-                        <div id="tea-widget" class="love-widget" style="margin-top: 10px; position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
                             <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
                             <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
                                <div class="flex flex-row items-center justify-center mb-2 gap-3">
@@ -966,8 +966,7 @@
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
                 }
-                const cwInit = document.querySelector('.content-wrapper');
-                if (cwInit) cwInit.style.paddingTop = '22%';
+
 
                 if (di) di.style.display = 'none';
             }
@@ -3975,8 +3974,6 @@
                                 screenEl.style.height = '100%';
                                 // app 和小组件往下移
                                 homeContent.style.marginTop = '';
-                                const cw = screenEl.querySelector('.content-wrapper');
-                                if (cw) cw.style.paddingTop = '22%';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
@@ -3990,8 +3987,6 @@
                                 screenEl.style.boxSizing = '';
                                 screenEl.style.height = '';
                                 homeContent.style.marginTop = '';
-                                const cw2 = screenEl.querySelector('.content-wrapper');
-                                if (cw2) cw2.style.paddingTop = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
