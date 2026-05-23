@@ -34,6 +34,9 @@
         .home-content { display: flex; justify-content: center; padding: 20px 40px; column-gap: 15px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; aspect-ratio: 1 / 1; width: 60px; height: 60px; }
+        /* 棕色字体模式：覆盖白色文字 */
+        body.brown-font .app-icon { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
+        body.brown-font .love-widget { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
         .app-icon:active { transform: scale(0.9); }
         .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; margin-bottom: 5px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); aspect-ratio: 1 / 1; flex-shrink: 0; object-fit: cover; overflow: hidden; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -939,31 +942,9 @@
             }
             updateTime(); setInterval(updateTime, 1000);
 
-            // 键盘弹出时调整布局（iOS Safari/PWA），使用 visualViewport API
-            if (window.visualViewport) {
-                const vv = window.visualViewport;
-                const updateForKeyboard = () => {
-                    const isImmersive = localStorage.getItem('immersive_mode') === '1';
-                    const mc = document.querySelector('.mobile-container');
-                    if (!mc) return;
-                    // 键盘弹出时 vv.height < window.innerHeight
-                    const kbHeight = window.innerHeight - vv.height;
-                    if (isImmersive) {
-                        if (kbHeight > 50) {
-                            // 键盘弹出：把整个 container 高度限制成可见区高度
-                            mc.style.height = vv.height + 'px';
-                        } else {
-                            mc.style.height = '100vh';
-                        }
-                    }
-                    // 滚动当前激活的输入框到可见区
-                    const focused = document.activeElement;
-                    if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
-                        setTimeout(() => focused.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
-                    }
-                };
-                vv.addEventListener('resize', updateForKeyboard);
-                vv.addEventListener('scroll', updateForKeyboard);
+            // 启动时恢复棕色字体
+            if (localStorage.getItem('brown_font') === '1') {
+                document.body.classList.add('brown-font');
             }
 
             renderHomeScreenIcons();
@@ -983,7 +964,6 @@
                     sc.style.paddingTop = 'env(safe-area-inset-top, 0px)';
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
-                    sc.style.zoom = '0.85';
                 }
                 if (hc) hc.style.marginTop = '80px';
                 if (di) di.style.display = 'none';
@@ -1068,6 +1048,16 @@
                             <div class="relative inline-block w-12 h-6 cursor-pointer" id="immersive-toggle-wrap">
                                 <div id="immersive-toggle-track" class="w-12 h-6 rounded-full transition-colors duration-200" style="background:#ddd;"></div>
                                 <div id="immersive-toggle-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></div>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div>
+                                <h3 class="font-bold">棕色字体</h3>
+                                <p class="text-xs text-gray-400 mt-1">开启后主屏 app 名称和小组件名称变成棕色</p>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 cursor-pointer" id="brownfont-toggle-wrap">
+                                <div id="brownfont-toggle-track" class="w-12 h-6 rounded-full transition-colors duration-200" style="background:#ddd;"></div>
+                                <div id="brownfont-toggle-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></div>
                             </div>
                         </div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
@@ -3916,13 +3906,11 @@
                         // 切换实线/虚线边框
                         const setWpSelected = (hasImage) => {
                             if (hasImage) {
-                                wpLabel.classList.remove('border-dashed', 'border-gray-300');
+                                wpLabel.classList.remove('border-dashed');
                                 wpLabel.classList.add('border-solid');
-                                wpLabel.style.borderColor = '#775C56';
                             } else {
-                                wpLabel.classList.add('border-dashed', 'border-gray-300');
+                                wpLabel.classList.add('border-dashed');
                                 wpLabel.classList.remove('border-solid');
-                                wpLabel.style.borderColor = '';
                             }
                         };
                         const savedWp = localStorage.getItem('customWallpaper');
@@ -3984,7 +3972,6 @@
                                 screenEl.style.paddingTop = 'env(safe-area-inset-top, 0px)';
                                 screenEl.style.boxSizing = 'border-box';
                                 screenEl.style.height = '100%';
-                                screenEl.style.zoom = '0.85';
                                 // app 和小组件往下移
                                 homeContent.style.marginTop = '80px';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
@@ -3999,7 +3986,6 @@
                                 screenEl.style.paddingBottom = '';
                                 screenEl.style.boxSizing = '';
                                 screenEl.style.height = '';
-                                screenEl.style.zoom = '';
                                 homeContent.style.marginTop = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
@@ -4015,6 +4001,28 @@
                         immersiveWrap.onclick = () => {
                             const current = localStorage.getItem('immersive_mode') === '1';
                             setImmersive(!current);
+                        };
+
+                        // 棕色字体开关
+                        const brownTrack = appPage.querySelector('#brownfont-toggle-track');
+                        const brownThumb = appPage.querySelector('#brownfont-toggle-thumb');
+                        const brownWrap = appPage.querySelector('#brownfont-toggle-wrap');
+                        function setBrownFont(on) {
+                            if (on) {
+                                document.body.classList.add('brown-font');
+                                brownTrack.style.background = '#FFD3D4';
+                                brownThumb.style.transform = 'translateX(24px)';
+                            } else {
+                                document.body.classList.remove('brown-font');
+                                brownTrack.style.background = '#ddd';
+                                brownThumb.style.transform = 'translateX(0)';
+                            }
+                            localStorage.setItem('brown_font', on ? '1' : '0');
+                        }
+                        setBrownFont(localStorage.getItem('brown_font') === '1');
+                        brownWrap.onclick = () => {
+                            const cur = localStorage.getItem('brown_font') === '1';
+                            setBrownFont(!cur);
                         };
 
                         initSettingsContent();
