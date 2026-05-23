@@ -957,15 +957,17 @@
                 const di = document.querySelector('.dynamic-island');
                 const sc = document.querySelector('.screen');
                 const hc = document.querySelector('.home-content');
-                mc.style.cssText = 'position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;height:100dvh !important;max-width:none !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
-                document.documentElement.style.cssText = 'height:100% !important;overflow:hidden !important;background:linear-gradient(180deg,#fff5f7 0%,#ffeaf0 100%) !important;';
-                document.body.style.cssText = 'padding:0 !important;margin:0 !important;overflow:hidden !important;height:100vh !important;min-height:100dvh !important;background:transparent !important;';
+                mc.style.cssText = 'position:absolute !important;top:0 !important;left:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                document.documentElement.style.cssText = 'background:linear-gradient(180deg,#fff5f7 0%,#ffeaf0 100%) !important;';
+                document.body.style.cssText = 'padding:0 !important;margin:0 !important;background:transparent !important;';
                 if (sc) {
                     sc.style.borderRadius = '0';
                     sc.style.paddingTop = 'env(safe-area-inset-top, 0px)';
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
                 }
+                const cwInit = document.querySelector('.content-wrapper');
+                if (cwInit) cwInit.style.paddingTop = '22%';
 
                 if (di) di.style.display = 'none';
             }
@@ -1866,7 +1868,7 @@
 
                                 const bubbleEl = m.type === 'voice'
                                     ? `<div class="message-bubble-wrapper">
-                                        <div class="message-bubble ${me ? 'sent' : 'received'} voice" style="${bubbleStyle}" oncontextmenu="return false;" onclick="this.parentElement.querySelector('.voice-content-tray').classList.toggle('open');event.stopPropagation();" data-idx="${originalIndex}">
+                                        <div class="message-bubble ${me ? 'sent' : 'received'} voice" style="${bubbleStyle}" oncontextmenu="return false;" data-idx="${originalIndex}" data-voice="1">
                                             ${body}
                                         </div>
                                         <div class="voice-content-tray">${m.text}</div>
@@ -2095,6 +2097,16 @@
                             }, {passive:true});
                             bubble.addEventListener('touchend', () => clearTimeout(touchTimer));
                             bubble.addEventListener('touchmove', () => clearTimeout(touchTimer));
+                            // 语音气泡点击展开/收起转文字（优先于 select-mode 监听）
+                            if (bubble.dataset.voice === '1') {
+                                bubble.addEventListener('click', (e) => {
+                                    if (selectMode) return; // 选择模式下不展开
+                                    e.stopPropagation();
+                                    const wrapper = bubble.parentElement;
+                                    const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                                    if (tray) tray.classList.toggle('open');
+                                });
+                            }
                             // Click to toggle when in select mode
                             bubble.addEventListener('click', (e) => {
                                 if(!selectMode) return;
@@ -3952,10 +3964,10 @@
                                     ? `background-image:${wallpaperBg} !important;background-size:cover !important;background-position:center !important;`
                                     : 'background:linear-gradient(180deg,#fff5f7 0%,#ffeaf0 100%) !important;';
                                 // mobile-container 用 100vw 100vh 全屏（手机上原本就是 100vw）
-                                mobileContainer.style.cssText = 'position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;height:100dvh !important;max-width:none !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
+                                mobileContainer.style.cssText = 'position:absolute !important;top:0 !important;left:0 !important;width:100vw !important;height:100vh !important;max-width:none !important;border-radius:0 !important;border:none !important;box-shadow:none !important;transform:none !important;z-index:9999 !important;';
                                 // 圆角区域也铺壁纸，不透出白色
-                                document.documentElement.style.cssText = `height:100% !important;overflow:hidden !important;${wallpaperCss}`;
-                                document.body.style.cssText = `padding:0 !important;margin:0 !important;overflow:hidden !important;height:100vh !important;min-height:100dvh !important;${wallpaperCss}`;
+                                document.documentElement.style.cssText = `${wallpaperCss}`;
+                                document.body.style.cssText = `padding:0 !important;margin:0 !important;${wallpaperCss}`;
                                 // screen 顶留出安全区，底部由输入栏自己处理
                                 screenEl.style.borderRadius = '0';
                                 screenEl.style.paddingTop = 'env(safe-area-inset-top, 0px)';
@@ -3963,6 +3975,8 @@
                                 screenEl.style.height = '100%';
                                 // app 和小组件往下移
                                 homeContent.style.marginTop = '';
+                                const cw = screenEl.querySelector('.content-wrapper');
+                                if (cw) cw.style.paddingTop = '22%';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
@@ -3976,6 +3990,8 @@
                                 screenEl.style.boxSizing = '';
                                 screenEl.style.height = '';
                                 homeContent.style.marginTop = '';
+                                const cw2 = screenEl.querySelector('.content-wrapper');
+                                if (cw2) cw2.style.paddingTop = '';
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
