@@ -23,7 +23,7 @@
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
-        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -20px; }
+        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
@@ -31,7 +31,7 @@
         #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; }
+        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 35px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; width: 60px; gap: 4px; }
         /* 棕色字体模式：覆盖白色文字 */
@@ -396,6 +396,7 @@
                 padding-left: env(safe-area-inset-left);
                 padding-right: env(safe-area-inset-right);
                 padding-bottom: env(safe-area-inset-bottom);
+                overflow: visible !important;
             }
             .dynamic-island, .home-indicator {
                 display: none !important;
@@ -2376,11 +2377,37 @@
                     p.querySelector('#quote-cancel').onclick=()=>{currentQuote=null; quotePreview.style.display='none'; render();}; 
                     
                     p.querySelector('#voice-sw-btn').onclick=()=>showDlg('发送语音',[{label:'语音内容',id:'txt',placeholder:'输入语音内容…'}],'发送',v=>{if(v.txt)send({id:`m_${Date.now()}`,sender:'me',type:'voice',text:v.txt,duration:Math.max(1,Math.ceil(v.txt.length/3)),time:new Date()});});
-                    inp.onkeypress=(e)=>{if(e.key==='Enter'&&inp.value){send({id:`m_${Date.now()}`,sender:'me',type:'text',text:inp.value,time:new Date()});inp.value='';}};
+                    inp.onkeypress=(e)=>{if(e.key==='Enter'&&inp.value){
+                        const text = inp.value;
+                        // 拆分括号包裹的动作和心声成独立气泡
+                        const parts = [];
+                        const regex = /([（(][^)）]+[)）])|(〈[^〉]+〉)/g;
+                        let lastIdx = 0;
+                        let m;
+                        while ((m = regex.exec(text)) !== null) {
+                            if (m.index > lastIdx) {
+                                const t = text.slice(lastIdx, m.index).trim();
+                                if (t) parts.push(t);
+                            }
+                            parts.push(m[0].trim());
+                            lastIdx = m.index + m[0].length;
+                        }
+                        if (lastIdx < text.length) {
+                            const t = text.slice(lastIdx).trim();
+                            if (t) parts.push(t);
+                        }
+                        if (parts.length === 0) parts.push(text);
+                        parts.forEach((p, i) => {
+                            setTimeout(() => {
+                                send({id:`m_${Date.now()}_${i}`,sender:'me',type:'text',text:p,time:new Date()});
+                            }, i * 80);
+                        });
+                        inp.value='';
+                    }};
                     p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='200px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:15px;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='260px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px;overflow-y:auto;max-height:260px;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const imgData=ev.target.result;send({id:`m_${Date.now()}`,sender:'me',type:'image',content:imgData,text:'',time:new Date()});plus.classList.remove('open');try{const album=JSON.parse(localStorage.getItem('chat_album')||'[]');album.push({src:imgData,contact:c.name,time:new Date().toISOString()});localStorage.setItem('chat_album',JSON.stringify(album));}catch(e){console.warn('Album save failed:',e);}};r.readAsDataURL(f);};fi.click();};
                     p.querySelector('#p-cam').onclick=()=>{
