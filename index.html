@@ -2255,7 +2255,17 @@
                                 if(cb) { cb.classList.toggle('checked', selectedIdxs.has(idx)); }
                             });
                         });
-                        box.addEventListener('click', () => {
+                        box.addEventListener('click', (e) => {
+                            // 事件委托处理 voice 气泡点击展开转文字
+                            const voiceBubble = e.target.closest('.message-bubble.voice');
+                            if (voiceBubble && !selectMode) {
+                                const wrapper = voiceBubble.parentElement;
+                                const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                                if (tray) {
+                                    tray.classList.toggle('open');
+                                    return;
+                                }
+                            }
                             plus.classList.remove('open');
                             emojiP.classList.remove('open');
                             emojiP.style.height = '0';
