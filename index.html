@@ -2720,10 +2720,13 @@
                                             await new Promise(resolve => setTimeout(resolve, delay));
                                             const subEl2 = p.querySelector('.title'); if(subEl2) subEl2.textContent = savedTitle;
                                             const isLast = i === finalMessages.length - 1;
+                                            const trimmedMsg = (msgText || '').trim();
+                                            // 空消息直接跳过，不发气泡
+                                            if (!trimmedMsg) continue;
                                             if (isLast && !hasMoneyIntent && !hasGiftIntent && Math.random() < 0.2) {
-                                                // 20% 概率最后一条变语音（仅普通消息）
-                                                const dur = Math.max(1, Math.ceil(msgText.length / 4));
-                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'voice', text:msgText, duration:dur, time:new Date() });
+                                                // 20% 概率最后一条变语音（仅普通消息，且必须有内容）
+                                                const dur = Math.max(1, Math.ceil(trimmedMsg.length / 4));
+                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'voice', text:trimmedMsg, duration:dur, time:new Date() });
                                             } else if (isLast && hasMoneyIntent) {
                                                 send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:msgText, time:new Date() });
                                                 const amt = amtInFull ? parseFloat(amtInFull[1]) : 520;
