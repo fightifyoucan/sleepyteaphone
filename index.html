@@ -966,15 +966,7 @@
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
                 }
-                if (hc) hc.style.marginTop = '20px';
-                const cw = document.querySelector('.content-wrapper');
-                if (cw) {
-                    cw.style.flex = '1';
-                    cw.style.display = 'flex';
-                    cw.style.flexDirection = 'column';
-                    cw.style.justifyContent = 'center';
-                    cw.style.paddingTop = '0';
-                }
+
                 if (di) di.style.display = 'none';
             }
 
@@ -3970,16 +3962,7 @@
                                 screenEl.style.boxSizing = 'border-box';
                                 screenEl.style.height = '100%';
                                 // app 和小组件往下移
-                                // app 和小组件居中显示
-                                const cw = screenEl.querySelector('.content-wrapper');
-                                if (cw) {
-                                    cw.style.flex = '1';
-                                    cw.style.display = 'flex';
-                                    cw.style.flexDirection = 'column';
-                                    cw.style.justifyContent = 'center';
-                                    cw.style.paddingTop = '0';
-                                }
-                                homeContent.style.marginTop = '20px';
+                                homeContent.style.marginTop = '';
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
@@ -3993,14 +3976,6 @@
                                 screenEl.style.boxSizing = '';
                                 screenEl.style.height = '';
                                 homeContent.style.marginTop = '';
-                                const cw = screenEl.querySelector('.content-wrapper');
-                                if (cw) {
-                                    cw.style.flex = '';
-                                    cw.style.display = '';
-                                    cw.style.flexDirection = '';
-                                    cw.style.justifyContent = '';
-                                    cw.style.paddingTop = '';
-                                }
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
