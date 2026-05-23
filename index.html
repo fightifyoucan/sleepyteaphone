@@ -31,7 +31,7 @@
         #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 35px; }
+        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 40px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; width: 60px; gap: 4px; }
         /* 棕色字体模式：覆盖白色文字 */
@@ -370,26 +370,30 @@
 
         @media (display-mode: standalone) {
             html, body {
-                width: 100%;
-                height: 100%;
                 background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%);
+            }
+            html {
+                height: 100%;
             }
             body {
                 padding: 0 !important;
                 margin: 0 !important;
-                align-items: stretch;
+                display: block !important;
                 background: #ffeaf0 !important;
-                min-height: 100dvh !important;
+                min-height: 0 !important;
             }
             .mobile-container {
-                width: 100%;
-                height: 100%;
-                min-height: 100vh;
-                min-height: 100dvh;
-                border-radius: 0;
-                border: none;
-                box-shadow: none;
-                transform: none;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                max-width: none !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                transform: none !important;
             }
             .screen {
                 padding-top: env(safe-area-inset-top);
@@ -397,9 +401,14 @@
                 padding-right: env(safe-area-inset-right);
                 padding-bottom: env(safe-area-inset-bottom);
                 overflow: visible !important;
+                border-radius: 0 !important;
             }
             .dynamic-island, .home-indicator {
                 display: none !important;
+            }
+            /* 输入栏底部预留安全区 */
+            .chat-input-bar {
+                padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
             }
         }
     </style>
