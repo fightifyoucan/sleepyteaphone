@@ -71,7 +71,7 @@
         .app-header-520 .close-btn-520 { text-align: left; }
         .app-header-520 .add-btn-520 { text-align: right; font-size: 22px; }
         
-        .bottom-nav-520 { display: flex; justify-content: space-around; align-items: center; background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 62px; padding: 0 0 env(safe-area-inset-bottom, 0px) 0; box-sizing: content-box; flex-shrink: 0; z-index: 10; }
+        .bottom-nav-520 { display: flex; justify-content: space-around; align-items: center; background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 56px; padding: 0 0 env(safe-area-inset-bottom, 0px) 0; box-sizing: content-box; flex-shrink: 0; z-index: 10; }
         .nav-item-520 { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #775C56; cursor: pointer; }
         .nav-item-520.active { color: #775C56; font-weight: 600; }
         .nav-item-520 .icon { font-size: 20px; margin-bottom: 2px; }
@@ -85,7 +85,7 @@
         .chat-list-info { flex-grow: 1; overflow: hidden; }
         
         .chat-conversation-page { display: flex; flex-direction: column; background-color: #FBF9F4; overflow: hidden; width: 100%; height: 100%; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 86px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 70px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
         .message-timestamp {
             align-self: center;
             color: #B89B95;
@@ -190,7 +190,7 @@
         /* 底部输入栏 */
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
-        .chat-input-bar { display: flex; align-items: center; min-height: 56px; padding: 8px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
+        .chat-input-bar { display: flex; align-items: center; min-height: 52px; padding: 8px 10px calc(18px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
         .chat-input-bar.panel-open { padding-top: 4px !important; padding-bottom: 4px !important; }
         .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
@@ -468,23 +468,17 @@
 
     <script>
         // 表情包存储：优先 localStorage（持久化），失败时回退到内存
-        let _stickerCache = [];
+        window._userStickers = [];
         try {
             const saved = localStorage.getItem('user_stickers');
-            if (saved) _stickerCache = JSON.parse(saved);
-        } catch(e) {}
-        window._userStickers = new Proxy(_stickerCache, {
-            set(target, prop, value) {
-                target[prop] = value;
-                try { localStorage.setItem('user_stickers', JSON.stringify(target)); } catch(e) {}
-                return true;
-            },
-            deleteProperty(target, prop) {
-                delete target[prop];
-                try { localStorage.setItem('user_stickers', JSON.stringify(target)); } catch(e) {}
-                return true;
-            }
-        });
+            if (saved) window._userStickers = JSON.parse(saved);
+        } catch(e) { console.warn('读取表情包失败', e); }
+        // 主动保存函数，所有添加/删除操作后调用
+        window._saveStickers = function() {
+            try {
+                localStorage.setItem('user_stickers', JSON.stringify(window._userStickers));
+            } catch(e) { console.warn('保存表情包失败', e); }
+        };
 
         let tempIcons = {};
 
@@ -1543,7 +1537,7 @@
                                     <div class="plus-item" id="p-music"><div class="plus-icon-box">🎵</div><div class="plus-label">音乐</div></div>
                                 </div>
                             </div>
-                            <div class="plus-panel" id="emoji-p" style="height:0; overflow-y:auto;"></div>
+                            <div class="plus-panel" id="emoji-p" style="height:0; overflow-y:auto; padding:0 !important;"></div>
                         </div>
                         <div class="select-bar" id="select-bar">
                             <span id="select-count" style="color:#775C56;font-size:13px;">已选0条</span>
@@ -1716,18 +1710,20 @@
 
                     const history = DB.getChatById(id) || [];
                     
-                    // 只绑一次：处理 voice 气泡展开（事件委托）
+                    // 只绑一次：voice气泡展开 + 关闭面板
                     box.addEventListener('click', (e) => {
                         const voiceBubble = e.target.closest('.message-bubble.voice');
                         if (voiceBubble && !selectMode) {
-                            const wrapper = voiceBubble.parentElement;
-                            const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
-                            if (tray) {
-                                tray.classList.toggle('open');
-                                return;
+                            const wrapper = voiceBubble.closest('.message-bubble-wrapper');
+                            if (wrapper) {
+                                const tray = wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                                if (tray) {
+                                    tray.classList.toggle('open');
+                                    e.stopPropagation();
+                                    return;
+                                }
                             }
                         }
-                        // 点其他地方关闭面板
                         if (typeof plus !== 'undefined') plus.classList.remove('open');
                         if (typeof emojiP !== 'undefined') {
                             emojiP.classList.remove('open');
@@ -1735,7 +1731,7 @@
                         }
                         const ib = box.parentElement.querySelector('.chat-input-bar');
                         if (ib) ib.classList.remove('panel-open');
-                    });
+                    }, true); // 用捕获阶段，让它最先执行
                     
                     const render = () => {
                         // Anchor to first visible message
@@ -2156,15 +2152,9 @@
                             }, {passive:true});
                             bubble.addEventListener('touchend', () => clearTimeout(touchTimer));
                             bubble.addEventListener('touchmove', () => clearTimeout(touchTimer));
-                            // 语音气泡点击展开/收起转文字（优先于 select-mode 监听）
-                            if (bubble.dataset.voice === '1') {
-                                bubble.addEventListener('click', (e) => {
-                                    if (selectMode) return; // 选择模式下不展开
-                                    e.stopPropagation();
-                                    const wrapper = bubble.parentElement;
-                                    const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
-                                    if (tray) tray.classList.toggle('open');
-                                });
+                            // voice气泡的cursor样式（点击展开逻辑在box事件委托里）
+                            if (bubble.classList.contains('voice')) {
+                                bubble.style.cursor = 'pointer';
                             }
                             // Click to toggle when in select mode
                             bubble.addEventListener('click', (e) => {
@@ -2176,7 +2166,7 @@
                             });
                         });
 
-                        // AI撤回消息点击展开/收起
+                        // AI撤回消息长按查看（不再是单击）
                         box.querySelectorAll('.revoked-clickable, .revoked-peeked').forEach(el => {
                             const toggle = (e) => {
                                 e.stopPropagation();
@@ -2187,8 +2177,15 @@
                                 DB.saveChats({...DB.getChats(),[id]:history});
                                 render();
                             };
-                            el.addEventListener('click', toggle);
-                            el.addEventListener('touchend', toggle);
+                            // 桌面：右键
+                            el.addEventListener('contextmenu', (e) => { e.preventDefault(); toggle(e); });
+                            // 移动：长按
+                            let revokedTimer;
+                            el.addEventListener('touchstart', (e) => {
+                                revokedTimer = setTimeout(() => toggle(e), 500);
+                            }, {passive:true});
+                            el.addEventListener('touchend', () => clearTimeout(revokedTimer));
+                            el.addEventListener('touchmove', () => clearTimeout(revokedTimer));
                         });
 
                         // Attach long-press to transfer-card and gift-card too (they have transparent bubble wrappers)
@@ -2473,7 +2470,7 @@
                     p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';updateInputBarPanel();setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=window._userStickers||[];if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px 12px;padding:14px 12px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=window._userStickers||[];if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px 14px;padding:14px 14px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:transparent;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:contain;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
                         updateInputBarPanel();
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';document.body.appendChild(fi);fi.onchange=e=>{const f=e.target.files[0];if(!f){document.body.removeChild(fi);return;}const r=new FileReader();r.onerror=()=>{alert('图片读取失败');document.body.removeChild(fi);};r.onload=ev=>{
@@ -3450,6 +3447,7 @@
                                     const memo = prompt("给这个表情包写个描述（AI 会根据描述决定什么时候发这个表情，例如：开心大笑/委屈/无语/比心）", "");
                                     const newSticker = { src: ev.target.result, memo: memo || "" };
                                     window._userStickers.push(newSticker);
+                                    window._saveStickers();
                                     go('me');
                                 }; 
                                 r.readAsDataURL(f); 
@@ -3461,6 +3459,7 @@
                                 e.stopPropagation(); 
                                 const idx = parseInt(e.target.dataset.idx);
                                 window._userStickers.splice(idx, 1);
+                                window._saveStickers();
                                 go('me');
                             };
                         });
