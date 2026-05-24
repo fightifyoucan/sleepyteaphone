@@ -55,7 +55,7 @@
         .app-page.closing { animation: close-app 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards; }
         @keyframes open-app { from { opacity: 0; transform: scale(0.1); border-radius: 44px; } to { opacity: 1; transform: scale(1); border-radius: 0; } }
         @keyframes close-app { from { opacity: 1; transform: scale(1); border-radius: 0; } to { opacity: 0; transform: scale(0.1); border-radius: 44px; } }
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 30px 15px 15px; background-color: #FBF9F4; border-bottom: 1px solid #e8e0d0; flex-shrink: 0; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 15px 15px; background-color: #FBF9F4; border-bottom: 1px solid #e8e0d0; flex-shrink: 0; }
         .app-content { flex-grow: 1; overflow-y: auto; color: #775C56; }
 
         /* --- 520 App 基础框架 --- */
@@ -184,7 +184,8 @@
         /* 底部输入栏 */
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
-        .chat-input-bar { display: flex; align-items: center; min-height: 62px; padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; }
+        .chat-input-bar { display: flex; align-items: center; min-height: 62px; padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
+        .chat-input-bar.panel-open { padding-bottom: 4px !important; }
         .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
         .chat-voice-btn:active { background: #f0e8e8; }
@@ -2269,6 +2270,8 @@
                             plus.classList.remove('open');
                             emojiP.classList.remove('open');
                             emojiP.style.height = '0';
+                            const ib = box.parentElement.querySelector('.chat-input-bar');
+                            if (ib) ib.classList.remove('panel-open');
                         });
                         box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
                             avatarEl.onclick = () => {
@@ -2426,12 +2429,47 @@
                         });
                         inp.value='';
                     }};
-                    p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
+                    const inputBar = p.querySelector('.chat-input-bar');
+                    let keyboardOpen = false;
+                    const updateInputBarPanel = () => {
+                        if (plus.classList.contains('open') || emojiP.classList.contains('open') || keyboardOpen) {
+                            inputBar.classList.add('panel-open');
+                        } else {
+                            inputBar.classList.remove('panel-open');
+                        }
+                    };
+                    // 键盘弹起/收起时同步紧凑模式
+                    inp.addEventListener('focus', () => { keyboardOpen = true; updateInputBarPanel(); });
+                    inp.addEventListener('blur', () => { keyboardOpen = false; updateInputBarPanel(); });
+                    p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';updateInputBarPanel();setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='260px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:15px;overflow-y:auto;max-height:260px;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='320px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:15px;overflow-y:auto;max-height:320px;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        updateInputBarPanel();
                     };
-                    p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const imgData=ev.target.result;send({id:`m_${Date.now()}`,sender:'me',type:'image',content:imgData,text:'',time:new Date()});plus.classList.remove('open');try{const album=JSON.parse(localStorage.getItem('chat_album')||'[]');album.push({src:imgData,contact:c.name,time:new Date().toISOString()});localStorage.setItem('chat_album',JSON.stringify(album));}catch(e){console.warn('Album save failed:',e);}};r.readAsDataURL(f);};fi.click();};
+                    p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';fi.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{
+                        // 压缩图片避免localStorage溢出
+                        const img = new Image();
+                        img.onload = () => {
+                            const maxW = 800;
+                            let w = img.width, h = img.height;
+                            if (w > maxW) { h = h * (maxW/w); w = maxW; }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            const imgData = canvas.toDataURL('image/jpeg', 0.78);
+                            try {
+                                send({id:`m_${Date.now()}`,sender:'me',type:'image',content:imgData,text:'',time:new Date()});
+                                plus.classList.remove('open');
+                                const ib = p.querySelector('.chat-input-bar');
+                                if (ib) ib.classList.remove('panel-open');
+                                try{const album=JSON.parse(localStorage.getItem('chat_album')||'[]');album.push({src:imgData,contact:c.name,time:new Date().toISOString()});localStorage.setItem('chat_album',JSON.stringify(album));}catch(e){console.warn('Album save failed:',e);}
+                            } catch(err) {
+                                alert('图片发送失败：存储空间不足，请清理聊天记录');
+                            }
+                        };
+                        img.src = ev.target.result;
+                    };r.readAsDataURL(f);};fi.click();};
                     p.querySelector('#p-cam').onclick=()=>{
                         const favs=JSON.parse(localStorage.getItem('favorites')||'[]');
                         if(!favs.length){alert('暂无收藏，请先在"我"页面添加');return;}
