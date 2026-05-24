@@ -1691,6 +1691,27 @@
 
                     const history = DB.getChatById(id) || [];
                     
+                    // 只绑一次：处理 voice 气泡展开（事件委托）
+                    box.addEventListener('click', (e) => {
+                        const voiceBubble = e.target.closest('.message-bubble.voice');
+                        if (voiceBubble && !selectMode) {
+                            const wrapper = voiceBubble.parentElement;
+                            const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                            if (tray) {
+                                tray.classList.toggle('open');
+                                return;
+                            }
+                        }
+                        // 点其他地方关闭面板
+                        if (typeof plus !== 'undefined') plus.classList.remove('open');
+                        if (typeof emojiP !== 'undefined') {
+                            emojiP.classList.remove('open');
+                            emojiP.style.height = '0';
+                        }
+                        const ib = box.parentElement.querySelector('.chat-input-bar');
+                        if (ib) ib.classList.remove('panel-open');
+                    });
+                    
                     const render = () => {
                         // Anchor to first visible message
                         let anchorIdx = null;
@@ -2255,23 +2276,6 @@
                                 const cb = row.querySelector('.msg-checkbox');
                                 if(cb) { cb.classList.toggle('checked', selectedIdxs.has(idx)); }
                             });
-                        });
-                        box.addEventListener('click', (e) => {
-                            // 事件委托处理 voice 气泡点击展开转文字
-                            const voiceBubble = e.target.closest('.message-bubble.voice');
-                            if (voiceBubble && !selectMode) {
-                                const wrapper = voiceBubble.parentElement;
-                                const tray = wrapper && wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
-                                if (tray) {
-                                    tray.classList.toggle('open');
-                                    return;
-                                }
-                            }
-                            plus.classList.remove('open');
-                            emojiP.classList.remove('open');
-                            emojiP.style.height = '0';
-                            const ib = box.parentElement.querySelector('.chat-input-bar');
-                            if (ib) ib.classList.remove('panel-open');
                         });
                         box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
                             avatarEl.onclick = () => {
