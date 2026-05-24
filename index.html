@@ -14,6 +14,8 @@
     <link rel="apple-touch-icon" sizes="152x152" href="favicon.png">
     <link rel="apple-touch-icon" sizes="120x120" href="favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Dexie：浏览器大容量数据库（用于存图片，可存几百MB） -->
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
     <style>
         /* --- 核心基础 --- */
         html { background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); height: 100%; min-height: -webkit-fill-available; }
@@ -90,7 +92,7 @@
             align-self: center;
             color: #B89B95;
             font-size: 11px;
-            margin: 4px 0 14px 0;
+            margin: -8px 0 10px 0;
             text-align: center;
             width: 100%;
         }
@@ -174,7 +176,7 @@
         .message-bubble.location { background-color: #FBF9F4; padding: 5px; border: 1px solid #ddd; }
 
         /* --- 统一间距 CSS --- */
-        .message { margin-bottom: 10px !important; display: flex; width: 100%; align-items: flex-start; }
+        .message { margin-bottom: 18px !important; display: flex; width: 100%; align-items: flex-start; }
         .message.sent { flex-direction: row-reverse; }
         .message.received { flex-direction: row; }
         .message.sent .message-avatar { margin-left: 10px; }
@@ -467,6 +469,400 @@
     </div>
 
     <script>
+        // ===============================
+        // ImageDB 模块（基于 IndexedDB / Dexie）
+        // 用于存储图片这种大数据，避免 localStorage 5MB 上限
+        // 容量可达几百 MB
+        // ===============================
+        window.ImageDB = (function() {
+            let db = null;
+            let ready = false;
+            const readyPromise = (async () => {
+                try {
+                    if (typeof Dexie === 'undefined') {
+                        console.warn('[ImageDB] Dexie 库未加载，图片功能将回退到 localStorage');
+                        return null;
+                    }
+                    db = new Dexie('MianChaJiDB');
+                    db.version(1).stores({
+                        images: 'id',          // 图片仓库：id 是主键
+                        meta: 'key'            // 元数据仓库：用来存设置之类的
+                    });
+                    await db.open();
+                    ready = true;
+                    console.log('[ImageDB] ✅ 初始化成功');
+                    return db;
+                } catch(e) {
+                    console.error('[ImageDB] 初始化失败：', e);
+                    return null;
+                }
+            })();
+
+            // 保存图片：id 任意字符串，dataUrl 是 base64 图片数据
+            async function save(id, dataUrl) {
+                await readyPromise;
+                if (!ready) return false;
+                try {
+                    await db.images.put({ id, data: dataUrl, time: Date.now() });
+                    return true;
+                } catch(e) {
+                    console.error('[ImageDB] 保存失败：', e);
+                    return false;
+                }
+            }
+
+            // 读取图片：返回 dataUrl 或 null
+            async function get(id) {
+                await readyPromise;
+                if (!ready) return null;
+                try {
+                    const rec = await db.images.get(id);
+                    return rec ? rec.data : null;
+                } catch(e) {
+                    console.error('[ImageDB] 读取失败：', e);
+                    return null;
+                }
+            }
+
+            // 删除图片
+            async function remove(id) {
+                await readyPromise;
+                if (!ready) return false;
+                try {
+                    await db.images.delete(id);
+                    return true;
+                } catch(e) {
+                    console.error('[ImageDB] 删除失败：', e);
+                    return false;
+                }
+            }
+
+            // 列出所有图片
+            async function list() {
+                await readyPromise;
+                if (!ready) return [];
+                try {
+                    return await db.images.toArray();
+                } catch(e) {
+                    console.error('[ImageDB] 列表失败：', e);
+                    return [];
+                }
+            }
+
+            // 查询当前存储用量（粗略）
+            async function size() {
+                await readyPromise;
+                if (!ready) return 0;
+                try {
+                    const all = await db.images.toArray();
+                    return all.reduce((sum, r) => sum + (r.data ? r.data.length : 0), 0);
+                } catch(e) {
+                    return 0;
+                }
+            }
+
+            // 生成新的图片 id
+            function newId() {
+                return 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+            }
+
+            // 解析 content：如果是 imgdb://xxx 就异步从 IndexedDB 加载；否则原样返回
+            // 用法：把图片渲染为 <img data-imgsrc="imgdb://xxx">，然后调用 hydrateImages(rootEl) 来加载
+            async function hydrateImages(rootEl) {
+                if (!rootEl) return;
+                const imgs = rootEl.querySelectorAll('img[data-imgsrc]');
+                for (const img of imgs) {
+                    const src = img.dataset.imgsrc;
+                    if (!src) continue;
+                    if (src.startsWith('imgdb://')) {
+                        const id = src.slice(8);
+                        const data = await get(id);
+                        if (data) {
+                            img.src = data;
+                        } else {
+                            console.warn('[ImageDB] 找不到图片:', id);
+                            img.alt = '图片丢失';
+                        }
+                    } else {
+                        img.src = src; // 兼容旧的 base64 直接塞
+                    }
+                    delete img.dataset.imgsrc;
+                }
+            }
+
+            // 直接根据可能是 imgdb:// 或 base64 的 value 解析出真正的 dataUrl
+            async function resolve(value) {
+                if (typeof value !== 'string') return value;
+                if (value.startsWith('imgdb://') && ready) {
+                    const id = value.slice(8);
+                    return await get(id) || '';
+                }
+                return value;
+            }
+
+            // 保存图片并返回 imgdb:// 引用字符串。如果 IndexedDB 不可用则原样返回 base64。
+            async function saveAndRef(dataUrl) {
+                if (!ready || !dataUrl || typeof dataUrl !== 'string') {
+                    await readyPromise;
+                    if (!ready) return dataUrl;
+                }
+                // 如果已经是 imgdb:// 就直接返回
+                if (dataUrl.startsWith('imgdb://')) return dataUrl;
+                const id = newId();
+                const ok = await save(id, dataUrl);
+                return ok ? ('imgdb://' + id) : dataUrl;
+            }
+
+            // 一个特殊的 img 元素：设 setSrc(value) 自动处理 imgdb:// 前缀
+            function setImgSrc(imgEl, value) {
+                if (!imgEl) return;
+                if (typeof value === 'string' && value.startsWith('imgdb://')) {
+                    imgEl.dataset.imgsrc = value;
+                    resolve(value).then(real => {
+                        if (real) imgEl.src = real;
+                    });
+                } else if (value) {
+                    imgEl.src = value;
+                }
+            }
+
+            return { save, get, remove, list, size, newId, hydrateImages, resolve, saveAndRef, setImgSrc, readyPromise };
+        })();
+
+        // ===============================
+        // 一次性数据迁移：把 localStorage 里的 base64 图片搬到 IndexedDB
+        // 迁移完成后会设置一个标记，下次启动不会重复迁移
+        // ===============================
+        window._migrateImagesV1 = async function() {
+            if (localStorage.getItem('_imgdb_migration_v1_done')) {
+                console.log('[迁移] 已完成过，跳过');
+                return;
+            }
+            await ImageDB.readyPromise;
+            console.log('[迁移] 开始把旧图片搬到 IndexedDB...');
+            const startSize = Object.keys(localStorage).reduce((s, k) => s + (localStorage.getItem(k) || '').length, 0);
+            let migrated = 0;
+            
+            const isBase64Img = (v) => typeof v === 'string' && v.startsWith('data:image/') && v.length > 1000;
+            const migrateOne = async (value) => {
+                if (!isBase64Img(value)) return value;
+                migrated++;
+                return await ImageDB.saveAndRef(value);
+            };
+            
+            try {
+                // 1. user_avatar
+                const av = localStorage.getItem('user_avatar');
+                if (isBase64Img(av)) {
+                    const ref = await migrateOne(av);
+                    localStorage.setItem('user_avatar', ref);
+                }
+                
+                // 2. moments_cover
+                const mc = localStorage.getItem('moments_cover');
+                if (isBase64Img(mc)) {
+                    const ref = await migrateOne(mc);
+                    localStorage.setItem('moments_cover', ref);
+                }
+                
+                // 3. 所有 icon_xxx
+                const iconKeys = Object.keys(localStorage).filter(k => k.startsWith('icon_'));
+                for (const k of iconKeys) {
+                    const v = localStorage.getItem(k);
+                    if (isBase64Img(v)) {
+                        const ref = await migrateOne(v);
+                        localStorage.setItem(k, ref);
+                    }
+                }
+                
+                // 4. icon_settings 里如果有 base64（JSON 对象）
+                const iconSet = localStorage.getItem('icon_settings');
+                if (iconSet) {
+                    try {
+                        const parsed = JSON.parse(iconSet);
+                        let changed = false;
+                        for (const k in parsed) {
+                            if (isBase64Img(parsed[k])) {
+                                parsed[k] = await migrateOne(parsed[k]);
+                                changed = true;
+                            }
+                        }
+                        if (changed) localStorage.setItem('icon_settings', JSON.stringify(parsed));
+                    } catch(e) {}
+                }
+                
+                // 5. user_stickers
+                try {
+                    const stickers = JSON.parse(localStorage.getItem('user_stickers') || '[]');
+                    let stickersChanged = false;
+                    for (const s of stickers) {
+                        if (isBase64Img(s.src)) {
+                            s.src = await migrateOne(s.src);
+                            stickersChanged = true;
+                        }
+                    }
+                    if (stickersChanged) {
+                        localStorage.setItem('user_stickers', JSON.stringify(stickers));
+                        window._userStickers = stickers;
+                    }
+                } catch(e) {}
+                
+                // 6. chat_album
+                try {
+                    const album = JSON.parse(localStorage.getItem('chat_album') || '[]');
+                    let albumChanged = false;
+                    for (const p of album) {
+                        if (isBase64Img(p.src)) {
+                            p.src = await migrateOne(p.src);
+                            albumChanged = true;
+                        }
+                    }
+                    if (albumChanged) localStorage.setItem('chat_album', JSON.stringify(album));
+                } catch(e) {}
+                
+                // 7. moments_list 里的图片
+                try {
+                    const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
+                    let momentsChanged = false;
+                    for (const m of moments) {
+                        if (m.images && Array.isArray(m.images)) {
+                            for (let i = 0; i < m.images.length; i++) {
+                                if (isBase64Img(m.images[i])) {
+                                    m.images[i] = await migrateOne(m.images[i]);
+                                    momentsChanged = true;
+                                }
+                            }
+                        }
+                        if (isBase64Img(m.avatar)) {
+                            m.avatar = await migrateOne(m.avatar);
+                            momentsChanged = true;
+                        }
+                    }
+                    if (momentsChanged) localStorage.setItem('moments_list', JSON.stringify(moments));
+                } catch(e) {}
+                
+                // 8. m-tea-chats-v2 里的图片消息
+                try {
+                    const chats = JSON.parse(localStorage.getItem('m-tea-chats-v2') || '{}');
+                    let chatsChanged = false;
+                    for (const cid in chats) {
+                        for (const msg of chats[cid]) {
+                            if ((msg.type === 'image' || msg.type === 'photo' || msg.type === 'sticker') && isBase64Img(msg.content)) {
+                                msg.content = await migrateOne(msg.content);
+                                chatsChanged = true;
+                            }
+                        }
+                    }
+                    if (chatsChanged) localStorage.setItem('m-tea-chats-v2', JSON.stringify(chats));
+                } catch(e) {}
+                
+                // 9. m-tea-contacts-v2 里的头像
+                try {
+                    const contacts = JSON.parse(localStorage.getItem('m-tea-contacts-v2') || '[]');
+                    let contactsChanged = false;
+                    for (const c of contacts) {
+                        if (isBase64Img(c.avatar)) {
+                            c.avatar = await migrateOne(c.avatar);
+                            contactsChanged = true;
+                        }
+                        if (isBase64Img(c.chatBackground)) {
+                            c.chatBackground = await migrateOne(c.chatBackground);
+                            contactsChanged = true;
+                        }
+                    }
+                    if (contactsChanged) localStorage.setItem('m-tea-contacts-v2', JSON.stringify(contacts));
+                } catch(e) {}
+                
+                localStorage.setItem('_imgdb_migration_v1_done', '1');
+                const endSize = Object.keys(localStorage).reduce((s, k) => s + (localStorage.getItem(k) || '').length, 0);
+                console.log(`[迁移] ✅ 完成！迁移 ${migrated} 张图片，localStorage 从 ${(startSize/1024).toFixed(1)}KB 减少到 ${(endSize/1024).toFixed(1)}KB`);
+                return { migrated, startKB: startSize/1024, endKB: endSize/1024 };
+            } catch(e) {
+                console.error('[迁移] 失败:', e);
+                return null;
+            }
+        };
+        
+        // 页面加载后自动执行一次迁移
+        if (typeof Dexie !== 'undefined') {
+            window.addEventListener('load', () => {
+                setTimeout(() => window._migrateImagesV1(), 500);
+            });
+        }
+
+        // ===============================
+        // 全局图片自动解析：扫描整个文档，找到 src="imgdb://xxx" 的 img 元素，
+        // 自动从 IndexedDB 加载真图。
+        // 这样所有现有代码不用改 — 它们继续写 src="imgdb://xxx"，浏览器先报错，
+        // 然后这个监听器自动把它替换成真正的 base64 dataUrl。
+        // ===============================
+        (function() {
+            const cache = new Map(); // 缓存已解析的图片，避免重复读取
+            
+            async function resolveOne(img) {
+                const src = img.getAttribute('src') || '';
+                if (!src.startsWith('imgdb://')) return;
+                const id = src.slice(8);
+                
+                // 防止重复处理
+                if (img.dataset.imgdbResolving === id) return;
+                img.dataset.imgdbResolving = id;
+                
+                try {
+                    let data = cache.get(id);
+                    if (!data) {
+                        await ImageDB.readyPromise;
+                        data = await ImageDB.get(id);
+                        if (data) cache.set(id, data);
+                    }
+                    if (data) {
+                        img.src = data;
+                    }
+                    delete img.dataset.imgdbResolving;
+                } catch(e) {
+                    console.warn('[ImageDB] 解析 img src 失败:', id, e);
+                    delete img.dataset.imgdbResolving;
+                }
+            }
+            
+            // 监听整个文档的 img 变化
+            const observer = new MutationObserver((mutations) => {
+                for (const mut of mutations) {
+                    // 新增的节点
+                    for (const node of mut.addedNodes) {
+                        if (node.nodeType !== 1) continue;
+                        if (node.tagName === 'IMG') {
+                            resolveOne(node);
+                        } else if (node.querySelectorAll) {
+                            node.querySelectorAll('img').forEach(resolveOne);
+                        }
+                    }
+                    // src 属性变化
+                    if (mut.type === 'attributes' && mut.attributeName === 'src' && mut.target.tagName === 'IMG') {
+                        resolveOne(mut.target);
+                    }
+                }
+            });
+            
+            // 文档加载后启动观察
+            const startObserve = () => {
+                document.querySelectorAll('img').forEach(resolveOne);
+                observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+            };
+            if (document.body) startObserve();
+            else document.addEventListener('DOMContentLoaded', startObserve);
+            
+            // 也处理 background-image: url(imgdb://...)
+            window.resolveBgImage = async function(el, value) {
+                if (typeof value !== 'string' || !value.startsWith('imgdb://')) {
+                    el.style.backgroundImage = value ? `url(${value})` : '';
+                    return;
+                }
+                const real = await ImageDB.resolve(value);
+                if (real) el.style.backgroundImage = `url(${real})`;
+            };
+        })();
+
         // 表情包存储：优先 localStorage（持久化），失败时回退到内存
         window._userStickers = [];
         try {
@@ -1828,8 +2224,14 @@
                                 // 检测心声 / 动作描写气泡（用于特殊样式）
                                 const isThoughtBubble = (!m.type || m.type === 'text') && typeof m.text === 'string' && /^〈[\s\S]*〉$/.test(m.text.trim());
                                 const isActionBubble = (!m.type || m.type === 'text') && typeof m.text === 'string' && /^[（(][\s\S]*[）)]$/.test(m.text.trim());
-                                if(m.type==='image') body=`<img src="${m.content}" style="max-width:150px;border-radius:12px;display:block;">`;
-                                if(m.type==='photo') body=`<img src="${m.content}" style="max-width:150px;border-radius:12px;display:block;" class="photo-tap">`;
+                                // 工具函数：根据 content 生成 img 标签。imgdb://开头的用 data-imgsrc 延迟加载，否则直接 src
+                                const _imgTag = (content, style, extraClass) => {
+                                    const isDb = typeof content === 'string' && content.startsWith('imgdb://');
+                                    const srcAttr = isDb ? `data-imgsrc="${content}"` : `src="${content}"`;
+                                    return `<img ${srcAttr} style="${style}"${extraClass?` class="${extraClass}"`:''}>`;
+                                };
+                                if(m.type==='image') body = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;');
+                                if(m.type==='photo') body = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;', 'photo-tap');
                                 if(m.type==='sticker') body=`<img src="${m.content}" style="width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;">`;
                                 if(m.type==='voice') { const w = Math.min(200, 48 + (m.duration||1) * 4); body=`<div class="voice-body" style="display:flex;align-items:center;gap:5px;width:${w}px;">${m.duration}"</div>`; }
                                 if(m.type==='transfer') {
@@ -1943,7 +2345,7 @@
                                     const isMe = group.sender === 'me';
                                     // Reuse full bubble rendering from main render path
                                     let sb = m.text||'';
-                                    if(m.type==='image'||m.type==='photo') sb='<img src="'+m.content+'" style="max-width:150px;border-radius:12px;display:block;">';
+                                    if(m.type==='image'||m.type==='photo') sb = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;');
                                     if(m.type==='sticker') sb='<img src="'+m.content+'" style="width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;">';
                                     if(m.type==='voice') { const sw=Math.min(200,48+(m.duration||1)*4); sb='<div style="display:flex;align-items:center;gap:5px;width:'+sw+'px;">'+m.duration+'"</div>'; }
                                     if(m.type==='transfer') {
@@ -1976,6 +2378,11 @@
                                 return `<div class="message ${me?'sent':'received'}" style="margin-bottom:1px;">${avatarHtml}<div class="bubble-group">${bubbleEls[mIdx]||''}</div></div>`;
                             }).join('');
                         }).join('');
+
+                        // 异步加载 IndexedDB 中的图片（imgdb:// 前缀）
+                        if (window.ImageDB) {
+                            ImageDB.hydrateImages(box).catch(e => console.warn('图片加载失败:', e));
+                        }
 
                         if(wasAtBottom) { box.scrollTop = box.scrollHeight; }
                         else if(anchorIdx !== null) {
@@ -2474,26 +2881,55 @@
                         updateInputBarPanel();
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';document.body.appendChild(fi);fi.onchange=e=>{const f=e.target.files[0];if(!f){document.body.removeChild(fi);return;}const r=new FileReader();r.onerror=()=>{alert('图片读取失败');document.body.removeChild(fi);};r.onload=ev=>{
-                        // 压缩图片避免localStorage溢出
+                        // 压缩图片
                         const img = new Image();
                         img.onerror = () => { alert('图片解析失败'); document.body.removeChild(fi); };
-                        img.onload = () => {
-                            try {
-                                const maxW = 800;
-                                let w = img.width, h = img.height;
+                        img.onload = async () => {
+                            const compress = (maxW, quality) => {
+                                const w0 = img.width, h0 = img.height;
+                                let w = w0, h = h0;
                                 if (w > maxW) { h = h * (maxW/w); w = maxW; }
                                 const canvas = document.createElement('canvas');
                                 canvas.width = w; canvas.height = h;
                                 canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                                const imgData = canvas.toDataURL('image/jpeg', 0.78);
-                                send({id:`m_${Date.now()}`,sender:'me',type:'image',content:imgData,text:'',time:new Date()});
+                                return canvas.toDataURL('image/jpeg', quality);
+                            };
+                            try {
+                                const imgData = compress(800, 0.82); // IndexedDB容量大，可以保留更好画质
+                                console.log('图片压缩后大小:', (imgData.length/1024).toFixed(1), 'KB');
+                                
+                                // 优先存到 IndexedDB（容量大）；失败则回退到旧方式（直接塞base64）
+                                let contentToStore;
+                                if (window.ImageDB) {
+                                    const imgId = ImageDB.newId();
+                                    const ok = await ImageDB.save(imgId, imgData);
+                                    if (ok) {
+                                        // 用特殊前缀 "imgdb://" 标识这是 IndexedDB 里的图片
+                                        contentToStore = 'imgdb://' + imgId;
+                                        console.log('图片已存入 IndexedDB:', imgId);
+                                    } else {
+                                        contentToStore = imgData; // 回退
+                                    }
+                                } else {
+                                    contentToStore = imgData;
+                                }
+                                
+                                // 发送消息（content 是 id 或 base64）
+                                send({id:`m_${Date.now()}`,sender:'me',type:'image',content:contentToStore,text:'',time:new Date()});
                                 plus.classList.remove('open');
                                 const ib = p.querySelector('.chat-input-bar');
                                 if (ib) ib.classList.remove('panel-open');
-                                try{const album=JSON.parse(localStorage.getItem('chat_album')||'[]');album.push({src:imgData,contact:c.name,time:new Date().toISOString()});localStorage.setItem('chat_album',JSON.stringify(album));}catch(e){console.warn('Album save failed:',e);}
+                                
+                                // 相册保存（用同样的 id 引用，不重复存大数据）
+                                try{
+                                    const album=JSON.parse(localStorage.getItem('chat_album')||'[]');
+                                    if (album.length >= 100) album.shift();
+                                    album.push({src:contentToStore,contact:c.name,time:new Date().toISOString()});
+                                    localStorage.setItem('chat_album',JSON.stringify(album));
+                                }catch(e){console.warn('相册保存失败（不影响聊天）:',e);}
                             } catch(err) {
                                 console.error('发送图片失败:', err);
-                                alert('图片发送失败：' + (err.message || '存储空间不足'));
+                                alert('图片发送失败：' + err.message);
                             } finally {
                                 if (document.body.contains(fi)) document.body.removeChild(fi);
                             }
@@ -3868,9 +4304,18 @@
                             const albumTime = appPage.querySelector('#album-time');
                             let currentIdx = 0;
 
-                            const showPhoto = (idx) => {
+                            // 辅助：把 imgdb://xxx 解析为真正的 src，否则原样返回
+                            const resolveSrc = async (src) => {
+                                if (typeof src === 'string' && src.startsWith('imgdb://') && window.ImageDB) {
+                                    const data = await ImageDB.get(src.slice(8));
+                                    return data || '';
+                                }
+                                return src;
+                            };
+
+                            const showPhoto = async (idx) => {
                                 currentIdx = Math.max(0, Math.min(idx, album.length-1));
-                                bigImg.src = album[currentIdx].src;
+                                bigImg.src = await resolveSrc(album[currentIdx].src);
                                 const d = new Date(album[currentIdx].time);
                                 albumTime.textContent = d.toLocaleString('zh-CN', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
                                 viewer.style.display = 'flex';
@@ -3890,14 +4335,14 @@
                             else {
                                 const groups = {};
                                 album.forEach(ph => { const d=new Date(ph.time).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'}); if(!groups[d])groups[d]=[]; groups[d].push(ph); });
-                                let flatIdx = 0;
                                 const allPhotos = album;
                                 gridEl.innerHTML = Object.entries(groups).map(([date,photos])=>`
                                     <div style="margin-bottom:12px;"><div style="font-size:12px;color:#775C56;opacity:0.7;padding:6px 4px;">${date}</div>
-                                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">${photos.map(ph=>{const idx=allPhotos.indexOf(ph);return`<img data-idx="${idx}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;cursor:pointer;">`;}).join('')}</div></div>`).join('');
-                                gridEl.querySelectorAll('img[data-idx]').forEach(img => {
+                                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">${photos.map(ph=>{const idx=allPhotos.indexOf(ph);return`<img data-idx="${idx}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;cursor:pointer;background:#eee;">`;}).join('')}</div></div>`).join('');
+                                // 异步加载缩略图（支持 imgdb://）
+                                gridEl.querySelectorAll('img[data-idx]').forEach(async img => {
                                     const idx = parseInt(img.dataset.idx);
-                                    img.src = allPhotos[idx].src;
+                                    img.src = await resolveSrc(allPhotos[idx].src);
                                     img.onclick = () => { showPhoto(idx); };
                                 });
                             }
