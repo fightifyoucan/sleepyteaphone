@@ -55,7 +55,13 @@
         .app-page.closing { animation: close-app 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards; }
         @keyframes open-app { from { opacity: 0; transform: scale(0.1); border-radius: 44px; } to { opacity: 1; transform: scale(1); border-radius: 0; } }
         @keyframes close-app { from { opacity: 1; transform: scale(1); border-radius: 0; } to { opacity: 0; transform: scale(0.1); border-radius: 44px; } }
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 55px 15px 18px; background-color: #FBF9F4; border-bottom: 1px solid #e8e0d0; flex-shrink: 0; }
+        .app-header { background-color: #FBF9F4; border-bottom: 1.5px solid #e8e0d0; padding: 22px 15px 14px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 100; box-sizing: border-box; flex-shrink: 0; }
+        .app-header .close-btn, .app-header #back-to-contacts { font-size: 22px !important; color: #775C56 !important; padding: 0; width: 40px !important; text-align: left; cursor: pointer; line-height: 1 !important; box-sizing: border-box; margin-top: 4px; }
+        .app-header h2 { font-size: 17px !important; font-weight: 600 !important; color: #775C56 !important; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 8px 0 0 0 !important; line-height: 1 !important; padding: 0 !important; }
+        /* 520 header也一样 */
+        .app-header-520 { padding: 22px 15px 14px !important; }
+        .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 0 !important; line-height: 1 !important; margin-top: 4px; }
+        .app-header-520 .title { top: 50% !important; transform: translate(-50%, -50%) !important; line-height: 1 !important; margin: 8px 0 0 0 !important; }
         .app-content { flex-grow: 1; overflow-y: auto; color: #775C56; }
 
         /* --- 520 App 基础框架 --- */
@@ -63,9 +69,9 @@
         .app-header-520 .title { font-size: 17px; font-weight: 600; color: #775C56; position: absolute; left: 50%; top: 50%; transform: translateX(-50%); }
         .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 4px; font-size: 22px; cursor: pointer; color: #775C56; width: 40px; }
         .app-header-520 .close-btn-520 { text-align: left; }
-        .app-header-520 .add-btn-520 { text-align: right; font-size: 24px; }
+        .app-header-520 .add-btn-520 { text-align: right; font-size: 22px; }
         
-        .bottom-nav-520 { display: flex; justify-content: space-around; align-items: center; background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 62px; padding: 0; flex-shrink: 0; z-index: 10; box-sizing: border-box; }
+        .bottom-nav-520 { display: flex; justify-content: space-around; align-items: center; background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; height: 62px; padding: 0 0 env(safe-area-inset-bottom, 0px) 0; box-sizing: content-box; flex-shrink: 0; z-index: 10; }
         .nav-item-520 { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: #775C56; cursor: pointer; }
         .nav-item-520.active { color: #775C56; font-weight: 600; }
         .nav-item-520 .icon { font-size: 20px; margin-bottom: 2px; }
@@ -184,14 +190,14 @@
         /* 底部输入栏 */
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
-        .chat-input-bar { display: flex; align-items: center; min-height: 62px; padding: 8px 10px calc(16px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
-        .chat-input-bar.panel-open { padding-bottom: 4px !important; }
-        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 8px 14px; border-radius: 18px; font-size: 16px; color: #775C56; background: white; min-height: 38px; max-height: 100px; overflow-y: auto; }
+        .chat-input-bar { display: flex; align-items: center; min-height: 56px; padding: 8px 10px calc(24px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
+        .chat-input-bar.panel-open { padding-top: 4px !important; padding-bottom: 4px !important; }
+        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
         .chat-voice-btn:active { background: #f0e8e8; }
         
         .chat-action-btn {
-            width: 34px; height: 34px;
+            width: 26px; height: 26px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -203,8 +209,8 @@
         .chat-action-btn:active { transform: scale(0.9); }
         #voice-sw-btn { background: #D5EBE4; border: 1.5px solid #775C56; box-sizing: border-box; }
         #emoji-btn { background: none; border: none; padding: 0; }
-        #plus-btn { background: #D5EBE4; border: 1.5px solid #775C56; font-size: 22px; color: #775C56; line-height: 1; box-sizing: border-box; }
-        #ai-btn { background: #D5EBE4; border: 1.5px solid #775C56; color: #775C56; font-size: 13px; font-weight: bold; box-sizing: border-box; }
+        #plus-btn { background: #D5EBE4; border: 1.5px solid #775C56; font-size: 18px; color: #775C56; line-height: 1; box-sizing: border-box; }
+        #ai-btn { background: #D5EBE4; border: 1.5px solid #775C56; color: #775C56; font-size: 11px; font-weight: bold; box-sizing: border-box; }
 
         .wave-icon {
             position: relative;
@@ -314,7 +320,7 @@
         .wallet-label { font-size: 12px; opacity: 0.9; }
         .wallet-amount { font-size: 32px; font-weight: bold; margin-top: 5px; }
 
-        .sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 15px; background: #FBF9F4; }
+        .sticker-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 16px 20px; background: #FBF9F4; }
         .sticker-item { aspect-ratio: 1/1; border-radius: 12px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; }
         .sticker-img { width: 100%; height: 100%; object-fit: cover; }
         .sticker-add { font-size: 24px; color: #ccc; }
@@ -461,6 +467,25 @@
     </div>
 
     <script>
+        // 表情包存储：优先 localStorage（持久化），失败时回退到内存
+        let _stickerCache = [];
+        try {
+            const saved = localStorage.getItem('user_stickers');
+            if (saved) _stickerCache = JSON.parse(saved);
+        } catch(e) {}
+        window._userStickers = new Proxy(_stickerCache, {
+            set(target, prop, value) {
+                target[prop] = value;
+                try { localStorage.setItem('user_stickers', JSON.stringify(target)); } catch(e) {}
+                return true;
+            },
+            deleteProperty(target, prop) {
+                delete target[prop];
+                try { localStorage.setItem('user_stickers', JSON.stringify(target)); } catch(e) {}
+                return true;
+            }
+        });
+
         let tempIcons = {};
 
         function showCall(c, callType, send) {
@@ -1108,7 +1133,7 @@
                 
                 // 初始化数据
                 if(!localStorage.getItem('user_wallet')) localStorage.setItem('user_wallet', '0');
-                if(!localStorage.getItem('user_stickers')) localStorage.setItem('user_stickers', '[]');
+                // user_stickers 使用内存存储 window._userStickers
                 if(!localStorage.getItem('moments_list')) localStorage.setItem('moments_list', '[]');
                 // 默认朋友圈封面（小毛毛球）
                 const DEFAULT_MOMENTS_COVER = '';
@@ -1486,10 +1511,10 @@
                     p.style.display = 'flex';
                     
                     p.innerHTML = `
-                        <div class="app-header-520" style="background:#FBF9F4;border-bottom:1px solid #e8e0d0;">
-                            <span class="close-btn-520" id="chat-back" style="font-size:22px; cursor:pointer; color:#775C56;">‹</span>
-                            <h2 class="title" style="transform: translateX(-50%);">${c.notes||c.name}</h2>
-                            <span class="add-btn-520" id="chat-more" style="font-size:20px;">•••</span>
+                        <div class="app-header-520">
+                            <span class="close-btn-520" id="chat-back">‹</span>
+                            <h2 class="title">${c.notes||c.name}</h2>
+                            <span class="add-btn-520" id="chat-more" style="font-size:22px;">⋯</span>
                         </div>
                         <div class="chat-messages" id="chat-box" style="${c.chatBackground?`background:url(${c.chatBackground}) center/cover no-repeat`:''}"></div>
                         <div class="chat-footer">
@@ -2448,7 +2473,7 @@
                     p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';updateInputBarPanel();setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=JSON.parse(localStorage.getItem('user_stickers')||'[]');if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding:18px 22px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=window._userStickers||[];if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:22px 20px;padding:18px 22px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:#fff;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:cover;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
                         updateInputBarPanel();
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';document.body.appendChild(fi);fi.onchange=e=>{const f=e.target.files[0];if(!f){document.body.removeChild(fi);return;}const r=new FileReader();r.onerror=()=>{alert('图片读取失败');document.body.removeChild(fi);};r.onload=ev=>{
@@ -2809,7 +2834,7 @@
                                         }
                                         // AI 随机追加一个表情包（约20%概率，根据上下文从有描述的表情库里选）
                                         if (!hasMoneyIntent && !hasGiftIntent && finalMessages.length > 0 && Math.random() < 0.2) {
-                                            const stickerLib = JSON.parse(localStorage.getItem('user_stickers') || '[]');
+                                            const stickerLib = window._userStickers || [];
                                             const labeledStickers = stickerLib.filter(s => s.memo && s.memo.trim());
                                             // 上一条AI不能是表情包（防止连续发）
                                             const lastAiMsg = [...history].reverse().find(m => m.sender === 'ai');
@@ -3190,7 +3215,7 @@
                         const userPersona = localStorage.getItem('user_persona') || '';
                         const userNudge = localStorage.getItem('user_nudge') || '的脑袋';
                         const wallet = localStorage.getItem('user_wallet') || '0.00';
-                        const stickers = JSON.parse(localStorage.getItem('user_stickers') || '[]');
+                        const stickers = window._userStickers || [];
 
                         el.innerHTML = `
                             <div class="me-header">
@@ -3424,9 +3449,7 @@
                                 r.onload = ev => {
                                     const memo = prompt("给这个表情包写个描述（AI 会根据描述决定什么时候发这个表情，例如：开心大笑/委屈/无语/比心）", "");
                                     const newSticker = { src: ev.target.result, memo: memo || "" };
-                                    const list = JSON.parse(localStorage.getItem('user_stickers') || '[]');
-                                    list.push(newSticker);
-                                    localStorage.setItem('user_stickers', JSON.stringify(list));
+                                    window._userStickers.push(newSticker);
                                     go('me');
                                 }; 
                                 r.readAsDataURL(f); 
@@ -3437,9 +3460,7 @@
                             btn.onclick = (e) => {
                                 e.stopPropagation(); 
                                 const idx = parseInt(e.target.dataset.idx);
-                                const list = JSON.parse(localStorage.getItem('user_stickers')||'[]');
-                                list.splice(idx, 1);
-                                localStorage.setItem('user_stickers', JSON.stringify(list));
+                                window._userStickers.splice(idx, 1);
                                 go('me');
                             };
                         });
@@ -3808,7 +3829,7 @@
                         else if (appId === 'couple-space') setupCoupleSpaceApp(appPage);
                         else if (appId === 'api-settings') setupApiSettingsApp(appPage);
                         else if (appId === 'phone') {
-                            appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back" style="font-size:28px;line-height:1;">‹</span><h2 class="title" style="position:static;transform:none;flex:1;text-align:center;margin:0;">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
+                            appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
                             appPage.querySelector('#phone-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
                             const renderPhoneLog = () => {
                                 const log = JSON.parse(localStorage.getItem('call_log')||'[]');
