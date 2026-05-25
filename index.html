@@ -61,7 +61,7 @@
         .app-header .close-btn, .app-header #back-to-contacts { font-size: 22px !important; color: #775C56 !important; padding: 0; width: 40px !important; text-align: left; cursor: pointer; line-height: 1 !important; box-sizing: border-box; margin-top: 4px; }
         .app-header h2 { font-size: 17px !important; font-weight: 600 !important; color: #775C56 !important; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 8px 0 0 0 !important; line-height: 1 !important; padding: 0 !important; }
         /* 520 header也一样 */
-        .app-header-520 { padding: 22px 15px 14px !important; }
+        .app-header-520 { padding: 32px 15px 14px !important; }
         .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 0 !important; line-height: 1 !important; margin-top: 4px; }
         .app-header-520 .title { top: 50% !important; transform: translate(-50%, -50%) !important; line-height: 1 !important; margin: 8px 0 0 0 !important; }
         .app-content { flex-grow: 1; overflow-y: auto; color: #775C56; }
@@ -87,7 +87,7 @@
         .chat-list-info { flex-grow: 1; overflow: hidden; }
         
         .chat-conversation-page { display: flex; flex-direction: column; background-color: #FBF9F4; overflow: hidden; width: 100%; height: 100%; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 70px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 80px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
         .message-timestamp {
             align-self: center;
             color: #B89B95;
@@ -192,7 +192,7 @@
         /* 底部输入栏 */
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
-        .chat-input-bar { display: flex; align-items: center; min-height: 52px; padding: 8px 10px calc(18px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
+        .chat-input-bar { display: flex; align-items: center; min-height: 52px; padding: 8px 10px calc(28px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
         .chat-input-bar.panel-open { padding-top: 4px !important; padding-bottom: 4px !important; }
         .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
