@@ -57,13 +57,13 @@
         .app-page.closing { animation: close-app 0.4s cubic-bezier(0.8, 0, 0.2, 1) forwards; }
         @keyframes open-app { from { opacity: 0; transform: scale(0.1); border-radius: 44px; } to { opacity: 1; transform: scale(1); border-radius: 0; } }
         @keyframes close-app { from { opacity: 1; transform: scale(1); border-radius: 0; } to { opacity: 0; transform: scale(0.1); border-radius: 44px; } }
-        .app-header { background-color: #FBF9F4; border-bottom: 1.5px solid #e8e0d0; padding: 22px 15px 14px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 100; box-sizing: border-box; flex-shrink: 0; }
-        .app-header .close-btn, .app-header #back-to-contacts { font-size: 22px !important; color: #775C56 !important; padding: 0; width: 40px !important; text-align: left; cursor: pointer; line-height: 1 !important; box-sizing: border-box; margin-top: 4px; }
-        .app-header h2 { font-size: 17px !important; font-weight: 600 !important; color: #775C56 !important; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 8px 0 0 0 !important; line-height: 1 !important; padding: 0 !important; }
+        .app-header { background-color: #FBF9F4; border-bottom: 1.5px solid #e8e0d0; padding: 22px 15px 10px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 100; box-sizing: border-box; flex-shrink: 0; }
+        .app-header .close-btn, .app-header #back-to-contacts { font-size: 22px !important; color: #775C56 !important; padding: 0; width: 40px !important; text-align: left; cursor: pointer; line-height: 1 !important; box-sizing: border-box; margin-top: 8px; }
+        .app-header h2 { font-size: 17px !important; font-weight: 600 !important; color: #775C56 !important; position: absolute; left: 50%; bottom: 9px; transform: translateX(-50%); margin: 0 !important; line-height: 1 !important; padding: 0 !important; }
         /* 520 header也一样 */
-        .app-header-520 { padding: 32px 15px 14px !important; }
-        .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 0 !important; line-height: 1 !important; margin-top: 4px; }
-        .app-header-520 .title { top: 50% !important; transform: translate(-50%, -50%) !important; line-height: 1 !important; margin: 8px 0 0 0 !important; }
+        .app-header-520 { padding: 22px 15px 10px !important; }
+        .app-header-520 .close-btn-520, .app-header-520 .add-btn-520 { padding: 0 !important; line-height: 1 !important; margin-top: 8px; }
+        .app-header-520 .title { left: 50% !important; bottom: 9px !important; top: auto !important; transform: translateX(-50%) !important; line-height: 1 !important; margin: 0 !important; }
         .app-content { flex-grow: 1; overflow-y: auto; color: #775C56; }
 
         /* --- 520 App 基础框架 --- */
@@ -87,7 +87,7 @@
         .chat-list-info { flex-grow: 1; overflow: hidden; }
         
         .chat-conversation-page { display: flex; flex-direction: column; background-color: #FBF9F4; overflow: hidden; width: 100%; height: 100%; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 80px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 75px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
         .message-timestamp {
             align-self: center;
             color: #B89B95;
@@ -192,9 +192,9 @@
         /* 底部输入栏 */
         .chat-footer { background-color: #FBF9F4; border-top: 1.5px solid #e8e0d0; position: absolute; bottom: 0; left: 0; right: 0; z-index: 20; box-sizing: border-box; }
         .chat-footer::after { display: none; }
-        .chat-input-bar { display: flex; align-items: center; min-height: 52px; padding: 8px 10px calc(28px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
+        .chat-input-bar { display: flex; align-items: center; min-height: 40px; padding: 5px 10px calc(20px + env(safe-area-inset-bottom, 0px)) 10px; gap: 5px; box-sizing: border-box; transition: padding-bottom 0.2s; }
         .chat-input-bar.panel-open { padding-top: 4px !important; padding-bottom: 4px !important; }
-        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 4px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 28px; max-height: 100px; overflow-y: auto; }
+        .chat-input-field { flex-grow: 1; border: 1px solid #e8e0d0; padding: 2px 12px; border-radius: 14px; font-size: 16px; color: #775C56; background: white; min-height: 24px; max-height: 100px; overflow-y: auto; }
         .chat-voice-btn { flex-grow: 1; text-align: center; padding: 8px; background: #ffffff; border-radius: 20px; font-size: 14px; color: #775C56; border: 1px solid #e8e0d0; cursor: pointer; user-select: none; font-weight: 500; }
         .chat-voice-btn:active { background: #f0e8e8; }
         
@@ -295,14 +295,14 @@
         .chat-detail-item:last-child { border-bottom: none; }
 
         /* --- 202 朋友圈样式 --- */
-        .moments-header { position: relative; height: 260px; margin-bottom: 40px; }
-        .moments-cover { width: 100%; height: 100%; background-size: cover; background-position: center; cursor: pointer; background-color: #ccc; }
-        .moments-user { position: absolute; bottom: -20px; right: 20px; display: flex; align-items: center; gap: 10px; }
-        .moments-avatar { width: 70px; height: 70px; border-radius: 18px; border: 2px solid white; background-size: cover; background-position: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
-        .moments-nick { color: white; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-size: 18px; cursor: pointer; margin-right: 10px; margin-bottom: 25px;}
+        .moments-header { position: relative; width: 100%; padding-bottom: 85%; height: 0; margin-bottom: 40px; }
+        .moments-cover { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center; cursor: pointer; background-color: #ccc; }
+        .moments-user { position: absolute; bottom: -35px; right: 16px; display: flex; align-items: flex-end; gap: 10px; z-index: 5; }
+        .moments-avatar { width: 70px; height: 70px; border-radius: 14px; border: 2px solid white; background-size: cover; background-position: center; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; background-color: #fff; overflow: hidden; }
+        .moments-nick { color: white; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.5); font-size: 20px; cursor: pointer; margin-right: 10px; margin-bottom: 45px; }
 
         .moment-item { padding: 15px; border-bottom: 1px solid #f5f5f5; display: flex; gap: 10px; background: #FBF9F4; }
-        .moment-avatar { width: 40px; height: 40px; border-radius: 8px; background-size: cover; background-position: center; flex-shrink: 0; background-color: #eee; }
+        .moment-avatar { width: 40px; height: 40px; border-radius: 12px; background-size: cover; background-position: center; flex-shrink: 0; background-color: #eee; overflow: hidden; }
         .moment-content { flex: 1; }
         .moment-name { color: #576b95 !important; font-weight: 600; font-size: 15px; margin-bottom: 4px; }
         .moment-text { font-size: 15px; margin-bottom: 8px; line-height: 1.4; color: #775C56 !important; }
@@ -311,14 +311,15 @@
         .moment-likes { background: #f7f7f7; padding: 5px 8px; border-radius: 4px; margin-top: 5px; font-size: 13px; color: #775C56; }
 
         /* --- "我" 的界面样式 --- */
-        .me-header { background: #FBF9F4; color: #775C56; padding: 30px 20px; display: flex; align-items: center; gap: 15px; }
+        .me-header { background: #FBF9F4; color: #775C56; padding: 28px 20px 10px; display: flex; align-items: center; gap: 15px; }
         .me-avatar { width: 64px; height: 64px; border-radius: 16px; background-size: cover; background-position: center; border: none; background-color: #F2EDE4; cursor: pointer; overflow: hidden; display: flex; justify-content: center; align-items: center; font-size: 24px; color: #ccc;}
-        .me-info input { border: none; font-size: 18px; font-weight: bold; width: 150px; background: transparent; color: #775C56; }
+        .me-info { flex: 1; min-width: 0; }
+        .me-info input { border: none; font-size: 18px; font-weight: bold; width: 100%; background: transparent; color: #775C56; }
         .me-info input:focus { border-bottom: 1px solid #ccc; outline: none; }
-        .me-persona-box { margin-top: 5px; }
-        .me-persona-input { font-size: 12px; color: #775C56; width: 100%; border: none; background: #FBF9F4; padding: 4px; border-radius: 4px; }
+        .me-persona-box { margin-top: 5px; position: relative; }
+        .me-persona-input { font-size: 12px; color: #775C56; width: 100%; border: 1px solid #f0e8d8; background: #fff; padding: 6px 8px; border-radius: 6px; font-family: inherit; line-height: 1.5; resize: none; overflow-y: auto; height: calc(1.5em * 3 + 14px); }
 
-        .wallet-card { margin: 15px; background: #FFD3D4; padding: 20px; border-radius: 16px; color: white; box-shadow: 0 4px 10px rgba(255,180,180,0.4); }
+        .wallet-card { margin: 4px 15px 15px; background: #FFD3D4; padding: 20px; border-radius: 16px; color: white; box-shadow: 0 4px 10px rgba(255,180,180,0.4); }
         .wallet-label { font-size: 12px; opacity: 0.9; }
         .wallet-amount { font-size: 32px; font-weight: bold; margin-top: 5px; }
 
@@ -1200,44 +1201,150 @@
             const ov = document.createElement('div');
             ov.style.cssText = 'position:absolute;inset:0;background:#FBF9F4;z-index:600;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;';
             const avatarHtml = c.avatar
-                ? (c.avatar.includes('<') ? c.avatar : `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`)
-                : `<div style="width:100%;height:100%;background:#FFD3D4;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;">+</div>`;
+                ? (c.avatar.includes('<') ? c.avatar : `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">`)
+                : `<div style="width:100%;height:100%;background:#FFD3D4;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;">+</div>`;
+            
+            // 微信风格的时间格式化：「昨天」「21 5月」「2024 12月」
+            const formatWxDate = (timeStr) => {
+                const d = new Date(timeStr);
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+                const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                
+                if (dDay.getTime() === today.getTime()) {
+                    return { big: '今天', small: '' };
+                } else if (dDay.getTime() === yesterday.getTime()) {
+                    return { big: '昨天', small: '' };
+                } else if (d.getFullYear() === now.getFullYear()) {
+                    return { big: String(d.getDate()), small: (d.getMonth() + 1) + '月' };
+                } else {
+                    return { big: String(d.getFullYear()), small: (d.getMonth() + 1) + '月' };
+                }
+            };
+            
             const postsHtml = myMoments.length ? myMoments.map(p => {
-                const likesHtml = (p.likes && p.likes.length) ? `<div style="font-size:13px;color:#775C56;background:#fff;padding:5px 9px;border-radius:6px;margin-top:5px;">❤️ ${p.likes.join(', ')}</div>` : '';
-                const commentsHtml = (p.comments && p.comments.length) ? `<div style="margin-top:6px;background:#fff;border-radius:8px;padding:6px 10px;">${p.comments.map(cm => {
-                    if (typeof cm === 'string') return `<div style="font-size:13px;color:#775C56;line-height:1.6;"><span style="color:#576b95;font-weight:600;">路人</span>：${cm}</div>`;
-                    return `<div style="font-size:13px;color:#775C56;line-height:1.6;"><span style="color:#576b95;font-weight:600;">${cm.name}</span>：${cm.text}</div>`;
+                const t = formatWxDate(p.time);
+                const likesHtml = (p.likes && p.likes.length) ? `<div style="font-size:12px;color:#775C56;background:#f5ede0;padding:4px 8px;border-radius:6px;margin-top:6px;">❤️ ${p.likes.join(', ')}</div>` : '';
+                const commentsHtml = (p.comments && p.comments.length) ? `<div style="margin-top:5px;background:#f5ede0;border-radius:6px;padding:5px 8px;">${p.comments.map(cm => {
+                    if (typeof cm === 'string') return `<div style="font-size:12px;color:#775C56;line-height:1.5;"><span style="color:#576b95;font-weight:600;">路人</span>：${cm}</div>`;
+                    return `<div style="font-size:12px;color:#775C56;line-height:1.5;"><span style="color:#576b95;font-weight:600;">${cm.name}</span>：${cm.text}</div>`;
                 }).join('')}</div>` : '';
-                return `<div style="padding:12px 16px;border-bottom:1px solid #f0e8d8;">
-                    <div style="font-size:14px;color:#775C56;line-height:1.5;">${p.text}</div>
-                    ${p.img ? `<div style="margin:6px 0;"><img src="${p.img}" style="max-width:180px;max-height:180px;border-radius:10px;object-fit:cover;display:block;"></div>` : ''}
-                    <div style="font-size:11px;color:#B89B95;margin-top:6px;">${new Date(p.time).toLocaleString('zh-CN', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-                    ${likesHtml}
-                    ${commentsHtml}
+                const imgHtml = p.img ? `<div style="margin-bottom:6px;"><img src="${p.img}" style="width:90px;height:90px;border-radius:4px;object-fit:cover;display:block;"></div>` : '';
+                return `<div style="display:flex;padding:16px 16px;gap:14px;align-items:flex-start;">
+                    <div style="min-width:42px;text-align:left;flex-shrink:0;padding-top:2px;">
+                        <div style="font-size:22px;color:#775C56;font-weight:500;line-height:1;">${t.big}</div>
+                        ${t.small ? `<div style="font-size:11px;color:#B89B95;margin-top:3px;">${t.small}</div>` : ''}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        ${imgHtml}
+                        <div style="font-size:14px;color:#775C56;line-height:1.5;word-break:break-word;">${p.text || ''}</div>
+                        ${likesHtml}
+                        ${commentsHtml}
+                    </div>
                 </div>`;
             }).join('') : `<div style="text-align:center;padding:60px 20px;color:#B89B95;font-size:13px;">还没有朋友圈哦～</div>`;
 
             ov.innerHTML = `
-                <div style="display:flex;align-items:center;padding:26px 15px 8px;flex-shrink:0;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;">
-                    <span id="cm-back" style="font-size:28px;cursor:pointer;color:#775C56;width:40px;line-height:1;">‹</span>
-                    <div style="flex:1;text-align:center;font-size:17px;font-weight:600;color:#775C56;">${aiName}</div>
-                    <span style="width:40px;"></span>
-                </div>
-                <div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;">
-                    <div style="position:relative;height:160px;${cover ? `background:url(${cover}) center/cover no-repeat;` : 'background:#E5E5E5;display:flex;align-items:center;justify-content:center;'}cursor:pointer;" id="cm-cover">
-                        ${cover ? '' : '<span style="color:#aaa;font-size:34px;font-weight:300;line-height:1;">+</span>'}
-                        <div style="position:absolute;bottom:-30px;right:16px;width:62px;height:62px;border-radius:14px;overflow:hidden;border:3px solid #FBF9F4;background:#fff;">${avatarHtml}</div>
-                        <div style="position:absolute;bottom:8px;right:90px;color:${cover ? '#fff' : '#775C56'};font-size:15px;font-weight:600;${cover ? 'text-shadow:0 1px 3px rgba(0,0,0,0.4);' : ''}">${aiName}</div>
+                <div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;position:relative;">
+                    <div style="position:relative;width:100%;padding-bottom:85%;height:0;flex-shrink:0;${cover ? `background:url(${cover}) center/cover no-repeat;` : 'background:#ccc;'}cursor:pointer;" id="cm-cover">
+                        <span id="cm-back" style="position:absolute;top:22px;left:14px;font-size:32px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.6);z-index:5;padding:4px 10px;">‹</span>
+                        <div style="position:absolute;bottom:8px;right:100px;color:#fff;font-size:20px;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);">${aiName}</div>
                     </div>
-                    <div style="height:38px;background:#FBF9F4;"></div>
+                    <div style="position:relative;min-height:75px;background:#FBF9F4;">
+                        <div style="position:absolute;top:-35px;right:16px;width:70px;height:70px;border-radius:14px;overflow:hidden;border:2px solid #fff;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,0.15);">${avatarHtml}</div>
+                        <div id="cm-sig" style="position:absolute;top:42px;right:16px;font-size:13px;color:#9A7872;line-height:1.5;text-align:right;min-height:18px;max-width:60%;word-break:break-word;cursor:pointer;" title="点击让 ${aiName} 根据最近聊天写新个签">
+                            ${c.momentsSignature ? c.momentsSignature : '<span style="color:#C9B8B0;font-style:italic;">点击让 TA 写一句话</span>'}
+                        </div>
+                    </div>
                     ${postsHtml}
                 </div>
                 <input type="file" id="cm-cover-up" style="display:none;" accept="image/*">`;
             const appPage = document.querySelector('.app-page.active') || document.body;
             appPage.appendChild(ov);
-            ov.querySelector('#cm-back').onclick = () => ov.remove();
+            ov.querySelector('#cm-back').onclick = (e) => { e.stopPropagation(); ov.remove(); };
             // 点击封面更换
             ov.querySelector('#cm-cover').onclick = () => ov.querySelector('#cm-cover-up').click();
+            
+            // --- 点击个签让 AI 根据最近聊天生成新个签 ---
+            const sigEl = ov.querySelector('#cm-sig');
+            sigEl.onclick = async (e) => {
+                e.stopPropagation();
+                if (sigEl.dataset.loading === '1') return;
+                if (!c.persona) {
+                    sigEl.innerHTML = '<span style="color:#C9B8B0;font-style:italic;">需要先给 TA 设定人设哦~</span>';
+                    setTimeout(() => {
+                        sigEl.innerHTML = c.momentsSignature ? c.momentsSignature : '<span style="color:#C9B8B0;font-style:italic;">点击让 TA 写一句话</span>';
+                    }, 2000);
+                    return;
+                }
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) {
+                    sigEl.innerHTML = '<span style="color:#C9B8B0;font-style:italic;">请先设置 API Key</span>';
+                    setTimeout(() => {
+                        sigEl.innerHTML = c.momentsSignature ? c.momentsSignature : '<span style="color:#C9B8B0;font-style:italic;">点击让 TA 写一句话</span>';
+                    }, 2000);
+                    return;
+                }
+                sigEl.dataset.loading = '1';
+                sigEl.innerHTML = '<span style="color:#C9B8B0;">正在想…</span>';
+                
+                try {
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    const chatHist = (DB.getChatById(c.id) || []).filter(m => !m.revoked && m.type !== 'timestamp' && m.sender !== 'system');
+                    const recentDigest = chatHist.slice(-15).map(m => {
+                        const who = m.sender === 'me' ? userNick : (c.notes || c.name);
+                        const txt = m.text || (m.type==='image'?'[图片]':m.type==='voice'?'[语音]':m.type==='call'?'[通话]':'[消息]');
+                        return `${who}：${txt}`;
+                    }).join('\n');
+                    
+                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                    const ep = localStorage.getItem('apiEndpoint') || '';
+                    const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                    
+                    let sysPrompt = `你正在以角色"${c.name}"的身份给自己的朋友圈写一句个性签名。\n`;
+                    if (c.notes) sysPrompt += `备注：${c.notes}。\n`;
+                    if (c.persona) sysPrompt += `【人设】：${c.persona}\n`;
+                    if (c.memory?.manual) sysPrompt += `【记忆】：${c.memory.manual}\n`;
+                    if (recentDigest) sysPrompt += `\n【你最近和${userNick}的聊天记录】：\n${recentDigest}\n\n`;
+                    sysPrompt += `【任务】：根据当前的心情和最近聊天的氛围，写一句简短的个性签名（朋友圈背景图下方那种）。要求：\n`;
+                    sysPrompt += `1. 短小，最多 15 字。可以是一句话、一个状态、一个emoticon颜文字、一个心情标签。\n`;
+                    sysPrompt += `2. 符合人设和当前心情。可以含蓄、可以直接、可以隐喻、可以可爱。\n`;
+                    sysPrompt += `3. 不要写括号动作、不要解释。只输出签名本身。\n`;
+                    sysPrompt += `4. 例子风格：「(◉ω◉ )」「今天也想躺平」「想吃甜的」「嗯。」「在听歌🎧」「想你了」`;
+                    
+                    let messages;
+                    if (pPlat === 'gemini') {
+                        messages = [{ role: 'user', parts: [{ text: sysPrompt + '\n请直接输出签名。' }] }];
+                    } else {
+                        messages = [
+                            { role: 'system', content: sysPrompt },
+                            { role: 'user', content: '请直接输出签名。' }
+                        ];
+                    }
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) throw new Error('API 失败');
+                    const data = await resp.json();
+                    let text = ApiHandler.parseChatResponse(pPlat, data);
+                    if (!text) throw new Error('空回复');
+                    text = text.trim().replace(/^["'""「『]|["'""」』]$/g, '').replace(/[（(][^)）]*[)）]/g, '').replace(/〈[^〉]*〉/g, '').trim();
+                    if (!text) throw new Error('清洗后为空');
+                    
+                    c.momentsSignature = text;
+                    DB.saveContact(c);
+                    sigEl.textContent = text;
+                } catch(err) {
+                    console.error('生成个签失败', err);
+                    sigEl.innerHTML = '<span style="color:#C9B8B0;font-style:italic;">生成失败，再点一次试试~</span>';
+                    setTimeout(() => {
+                        sigEl.innerHTML = c.momentsSignature ? c.momentsSignature : '<span style="color:#C9B8B0;font-style:italic;">点击让 TA 写一句话</span>';
+                    }, 2500);
+                } finally {
+                    delete sigEl.dataset.loading;
+                }
+            };
+            
             ov.querySelector('#cm-cover-up').onchange = (e) => {
                 const f = e.target.files[0];
                 if (!f) return;
@@ -1538,14 +1645,18 @@
                 // 每个联系人有节流，避免短时间重复发
                 window.maybeAIPostMoment = async function(contactId, opts) {
                     opts = opts || {};
-                    const probability = opts.probability != null ? opts.probability : 0.35;
+                    const probability = opts.probability != null ? opts.probability : 0.15;
                     if (Math.random() > probability) return false;
                     const contact = DB.getContact(contactId);
                     if (!contact || !contact.persona) return false;
-                    // 节流：同一联系人 30 分钟内只能发一次
+                    // 节流：同一联系人 3 小时内只能发一次
                     const lastKey = `ai_moment_last_${contactId}`;
                     const last = parseInt(localStorage.getItem(lastKey) || '0');
-                    if (Date.now() - last < 30 * 60 * 1000) return false;
+                    if (Date.now() - last < 3 * 60 * 60 * 1000) return false;
+                    // 全局节流：所有AI加起来30分钟内最多发1条
+                    const globalLastKey = 'ai_moment_global_last';
+                    const globalLast = parseInt(localStorage.getItem(globalLastKey) || '0');
+                    if (Date.now() - globalLast < 30 * 60 * 1000) return false;
                     // 拿最近的聊天历史
                     const chatHist = (DB.getChatById(contactId) || []).filter(m => !m.revoked && m.type !== 'timestamp' && m.sender !== 'system');
                     if (chatHist.length < 2) return false;
@@ -1600,6 +1711,7 @@
                         });
                         try { localStorage.setItem('moments_list', JSON.stringify(moments)); } catch(e){ return false; }
                         localStorage.setItem(lastKey, Date.now().toString());
+                        localStorage.setItem('ai_moment_global_last', Date.now().toString());
                         return true;
                     } catch(e) { console.error('AI 朋友圈生成失败', e); return false; }
                 };
@@ -2829,7 +2941,7 @@
                         go('200');
                         // 退出聊天时，当前联系人有概率发一条朋友圈
                         if (window.maybeAIPostMoment) {
-                            window.maybeAIPostMoment(id, { probability: 0.3 });
+                            window.maybeAIPostMoment(id, { probability: 0.15 });
                         }
                     };
                     p.querySelector('#quote-cancel').onclick=()=>{currentQuote=null; quotePreview.style.display='none'; render();}; 
@@ -3388,6 +3500,10 @@
                     navs.forEach(n => n.classList.toggle('active', n.dataset.page===pid));
                     pages.forEach(p => p.classList.toggle('active', p.id===`page-${pid}`));
                     
+                    // 默认显示 header（202会单独隐藏）
+                    const _hdr = appPage.querySelector('.app-header-520');
+                    if (_hdr) _hdr.style.display = '';
+                    
                     const el = document.getElementById(`page-${pid}`); 
                     el.innerHTML=''; // 清空重绘
 
@@ -3438,6 +3554,8 @@
                         header.querySelectorAll('.add-btn-520').forEach(e => {
                             if (e.id !== 'add-contact-btn') e.remove();
                         });
+                        // 朋友圈页隐藏顶部 header，让封面顶到顶
+                        header.style.display = 'none';
 
                         // 进入朋友圈页：有概率让一个 AI 发朋友圈（基于聊天历史）
                         // 也让 AI 对最近几条朋友圈进行点赞/评论互动
@@ -3447,7 +3565,7 @@
 
                             // 1. 随机挑一个 AI 发新朋友圈
                             const candidate = allContacts[Math.floor(Math.random() * allContacts.length)];
-                            const posted = await window.maybeAIPostMoment(candidate.id, { probability: 0.5 });
+                            const posted = await window.maybeAIPostMoment(candidate.id, { probability: 0.2 });
 
                             // 2. 对最近 3 条朋友圈让所有 AI 尝试互动
                             const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
@@ -3466,8 +3584,9 @@
 
                         
                         const camBtn = document.createElement('span');
-                        camBtn.className = 'add-btn-520';
-                        camBtn.innerHTML = '📷'; 
+                        camBtn.id = 'moments-cam-btn';
+                        camBtn.innerHTML = '📷';
+                        camBtn.style.cssText = 'position:absolute;top:22px;right:14px;font-size:22px;cursor:pointer;z-index:10;padding:6px 10px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));';
                         camBtn.onclick = () => {
                             // 弹出发朋友圈对话框
                             const dlg = document.createElement('div');
@@ -3569,8 +3688,6 @@
                             };
                         };
                         
-                        header.appendChild(camBtn);
-
                         const coverUrl = localStorage.getItem('moments_cover');
                         const userAvatar = localStorage.getItem('user_avatar');
                         const userNick = localStorage.getItem('user_nick') || '';
@@ -3580,7 +3697,7 @@
 
                         el.innerHTML = `
                             <div class="moments-header">
-                                <div class="moments-cover" style="${coverUrl ? `background-image:url(${coverUrl});` : 'background:#E5E5E5;display:flex;align-items:center;justify-content:center;'}">${coverUrl ? '' : '<span style="color:#aaa;font-size:42px;font-weight:300;line-height:1;">+</span>'}</div>
+                                <div class="moments-cover" style="${coverUrl ? `background-image:url(${coverUrl});` : 'background:#ccc;display:flex;align-items:center;justify-content:center;'}">${coverUrl ? '' : '<span style="color:#aaa;font-size:42px;font-weight:300;line-height:1;">+</span>'}</div>
                                 <div class="moments-user">
                                     <div class="moments-nick">${displayNick}</div>
                                     <div class="moments-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : avatarFallback}</div>
@@ -3599,7 +3716,7 @@
                                     }).join('')}</div>` : '';
                                     return `
                                     <div class="moment-item" ${isMine ? 'data-author="me"' : ''}>
-                                        <div class="moment-avatar" ${isMine ? 'data-user-avatar="true"' : ''}>${isMine && userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : (p.avatar && p.avatar.includes('<')?p.avatar:`<img src="${p.avatar||''}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`)}</div>
+                                        <div class="moment-avatar" ${isMine ? 'data-user-avatar="true"' : ''}>${isMine && userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : (p.avatar && p.avatar.includes('<')?p.avatar:`<img src="${p.avatar||''}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`)}</div>
                                         <div class="moment-content">
                                             <div class="moment-name">${p.name}</div>
                                             <div class="moment-text">${p.text}</div>
@@ -3618,6 +3735,8 @@
                         `;
 
                         el.querySelector('.moments-cover').onclick = () => el.querySelector('#cover-up').click();
+                        // 把相机按钮加到封面右上角
+                        el.querySelector('.moments-header').appendChild(camBtn);
                         el.querySelector('#cover-up').onchange = (e) => {
                             const f = e.target.files[0];
                             if(f) { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('moments_cover', ev.target.result); go('202');}; r.readAsDataURL(f); }
@@ -3652,14 +3771,14 @@
 
                         el.innerHTML = `
                             <div class="me-header">
-                                <label for="me-avatar-upload" class="me-avatar" data-user-avatar="true">
+                                <div id="me-avatar" class="me-avatar" data-user-avatar="true">
                                     ${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;">` : '<span style="color:#775C56;font-size:26px;font-weight:300;line-height:1;">+</span>'}
-                                </label>
+                                </div>
                                 <input type="file" id="me-avatar-upload" class="hidden" accept="image/*">
                                 <div class="me-info">
                                     <input type="text" id="me-name-input" value="${userNick}" placeholder="名字">
                                     <div class="me-persona-box">
-                                        <input type="text" id="me-persona-input" class="me-persona-input" value="${userPersona}" placeholder="我的人设...">
+                                        <textarea id="me-persona-input" class="me-persona-input" placeholder="我的人设...">${userPersona}</textarea>
                                     </div>
                                 </div>
                             </div>
@@ -3694,6 +3813,7 @@
                             </div>
                         `;
 
+                        el.querySelector('#me-avatar').onclick = () => el.querySelector('#me-avatar-upload').click();
                         el.querySelector('#me-avatar-upload').onchange = (e) => {
                             const file = e.target.files[0];
                             if (!file) return;
@@ -3718,7 +3838,7 @@
                             reader.readAsDataURL(file);
                         };
                         el.querySelector('#me-name-input').onchange = (e) => localStorage.setItem('user_nick', e.target.value);
-                        el.querySelector('#me-persona-input').onchange = (e) => localStorage.setItem('user_persona', e.target.value);
+                        el.querySelector('#me-persona-input').onblur = (e) => localStorage.setItem('user_persona', e.target.value);
                         el.querySelector('#me-nudge-row').onclick = () => {
                             const cur = localStorage.getItem('user_nudge') || '的脑袋';
                             const v = prompt(`修改拍一拍内容\n预览：「对方」拍了拍我___`, cur);
@@ -3913,6 +4033,560 @@
                 go('200');
             }
 
+
+            // ============ 查手机功能 ============
+            function setupCheckPhoneApp(appPage) {
+                renderCheckPhoneList(appPage);
+            }
+            
+            function renderCheckPhoneList(appPage) {
+                const contacts = DB.getContacts();
+                appPage.innerHTML = `
+                    <div class="app-header"><span class="close-btn w-10 inline-block" style="color:#775C56;cursor:pointer;">‹</span><h2 class="font-bold" style="color:#775C56;">查手机</h2><span class="w-10"></span></div>
+                    <div class="app-content" style="background:#FBF9F4;padding:10px 0;">
+                        <div style="padding:10px 16px;color:#9A7872;font-size:13px;">选一个人看看 TA 的手机～</div>
+                        ${contacts.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:#B89B95;">还没有联系人哦</div>' : contacts.map(c => {
+                            const avatarHtml = c.avatar
+                                ? (c.avatar.includes('<') ? c.avatar : `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`)
+                                : `<div style="width:100%;height:100%;background:#F2EDE4;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#775C56;">👤</div>`;
+                            return `<div class="cp-item" data-id="${c.id}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #f0e8d8;border-bottom:1px solid #f0e8d8;cursor:pointer;background:#FBF9F4;margin-top:-1px;">
+                                <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;">${avatarHtml}</div>
+                                <div style="flex:1;color:#775C56;font-weight:500;">${c.notes || c.name}</div>
+                                <span style="color:#B89B95;font-size:18px;">›</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                `;
+                appPage.querySelectorAll('.cp-item').forEach(item => {
+                    item.onclick = () => openAIPhone(appPage, item.dataset.id);
+                });
+            }
+            
+            // 打开 AI 的"手机"——一个全屏的手机主屏界面
+            function openAIPhone(appPage, contactId) {
+                const c = DB.getContact(contactId);
+                if (!c) return;
+                const phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                const dockApps = [
+                    { id: 'ai520', name: '520', emoji: '💬' },
+                    { id: 'aiphone', name: '电话', emoji: '📞' },
+                    { id: 'aialbum', name: '相册', emoji: '🖼️' },
+                    { id: 'aisettings', name: '设置', emoji: '🔧' }
+                ];
+                
+                const wallpaper = phoneData.wallpaper || '';
+                const wpStyle = wallpaper 
+                    ? `background:url(${wallpaper}) center/cover no-repeat;`
+                    : `background:linear-gradient(180deg,#FFD3D4 0%,#FBF9F4 100%);`;
+                
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;${wpStyle}display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="display:flex;align-items:center;padding:18px 14px 8px;flex-shrink:0;position:relative;z-index:5;">
+                            <span id="cp-back" style="font-size:28px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.5);padding:4px 10px;">‹</span>
+                            <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:15px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.4);">${c.notes || c.name} 的手机</div>
+                        </div>
+                        <div style="flex:1;"></div>
+                        <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin:0 14px 24px;padding:14px 10px;border-radius:24px;display:flex;justify-content:space-around;align-items:center;flex-shrink:0;">
+                            ${dockApps.map(app => {
+                                const customIcon = phoneData.icons && phoneData.icons[app.id];
+                                const iconInner = customIcon 
+                                    ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:15px;">`
+                                    : `<span style="font-size:30px;">${app.emoji}</span>`;
+                                return `<div class="ai-dock-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+                                    <div style="width:60px;height:60px;border-radius:15px;background:${customIcon ? 'transparent' : 'rgba(255,255,255,0.6)'};display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,0.1);">${iconInner}</div>
+                                    <span style="color:#fff;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,0.3);">${app.name}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                appPage.querySelector('#cp-back').onclick = () => renderCheckPhoneList(appPage);
+                appPage.querySelectorAll('.ai-dock-app').forEach(dock => {
+                    dock.onclick = () => openAIPhoneApp(appPage, contactId, dock.dataset.app);
+                });
+            }
+            
+            // 打开 AI 手机里的某个 app
+            function openAIPhoneApp(appPage, contactId, aiAppId) {
+                const c = DB.getContact(contactId);
+                if (!c) return;
+                
+                if (aiAppId === 'ai520') {
+                    openAI520(appPage, contactId);
+                } else if (aiAppId === 'aiphone') {
+                    openAIPhonePhone(appPage, contactId);
+                } else if (aiAppId === 'aialbum') {
+                    openAIAlbum(appPage, contactId);
+                } else if (aiAppId === 'aisettings') {
+                    openAISettings(appPage, contactId);
+                }
+            }
+            
+            // 虚拟联系人定义（每个 AI 都有）
+            const AI_VIRTUAL_CONTACTS = [
+                { id: 'user', name: '【用户】', emoji: '💖' }, // 跟"我"的聊天，特殊处理
+                { id: 'friend', name: '朋友', emoji: '🍀' },
+                { id: 'dad', name: '爸爸', emoji: '👨' },
+                { id: 'mom', name: '妈妈', emoji: '👩' }
+            ];
+            
+            // AI 的 520：跟用户和虚拟联系人的聊天列表
+            function openAI520(appPage, contactId) {
+                const c = DB.getContact(contactId);
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const userAvatar = localStorage.getItem('user_avatar') || '';
+                const myChat = DB.getChatById(contactId) || [];
+                const vChats = c.virtualChats || {};
+                
+                // 构造聊天列表
+                const items = AI_VIRTUAL_CONTACTS.map(v => {
+                    let last = '点进去让 TA 聊几句', time = '', name = v.name, emoji = v.emoji, avatar = '';
+                    if (v.id === 'user') {
+                        name = userNick;
+                        avatar = userAvatar;
+                        if (myChat.length > 0) {
+                            const lastMsg = myChat.filter(m => !m.revoked && m.type !== 'timestamp')[myChat.filter(m => !m.revoked && m.type !== 'timestamp').length - 1];
+                            if (lastMsg) {
+                                last = lastMsg.text || (lastMsg.type === 'image' ? '[图片]' : '[消息]');
+                                time = new Date(lastMsg.time).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+                            }
+                        }
+                    } else {
+                        const vc = vChats[v.id] || [];
+                        if (vc.length > 0) {
+                            const lastMsg = vc[vc.length - 1];
+                            last = lastMsg.text || '[消息]';
+                            time = new Date(lastMsg.time).toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
+                        }
+                    }
+                    return { id: v.id, name, emoji, avatar, last, time };
+                });
+                
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                            <span id="ai520-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">${c.notes || c.name} 的 520</div>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;background:#FBF9F4;">
+                            ${items.map(item => {
+                                const avHtml = item.avatar
+                                    ? (item.avatar.includes('<') ? item.avatar : `<img src="${item.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`)
+                                    : `<div style="width:100%;height:100%;background:#F2EDE4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;">${item.emoji}</div>`;
+                                return `<div class="ai520-chat-item" data-vid="${item.id}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #f0e8d8;border-bottom:1px solid #f0e8d8;margin-top:-1px;cursor:pointer;background:#FBF9F4;">
+                                    <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;flex-shrink:0;">${avHtml}</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;"><span style="color:#775C56;font-weight:500;">${item.name}</span><span style="font-size:11px;color:#9A7872;">${item.time}</span></div>
+                                        <div style="color:#9A7872;font-size:13px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.last}</div>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                appPage.querySelector('#ai520-back').onclick = () => openAIPhone(appPage, contactId);
+                appPage.querySelectorAll('.ai520-chat-item').forEach(item => {
+                    item.onclick = () => {
+                        const vid = item.dataset.vid;
+                        if (vid === 'user') {
+                            openAI520ChatView(appPage, contactId);
+                        } else {
+                            openAIVirtualChat(appPage, contactId, vid);
+                        }
+                    };
+                });
+            }
+            
+            // AI 视角看跟"我"的聊天（只读）
+            function openAI520ChatView(appPage, contactId) {
+                const c = DB.getContact(contactId);
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const userAvatar = localStorage.getItem('user_avatar') || '';
+                const msgs = (DB.getChatById(contactId) || []).filter(m => !m.revoked && m.type !== 'timestamp');
+                
+                const msgHtml = renderReadOnlyMessages(msgs, c, userNick, userAvatar, true);
+                
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                            <span id="ai520-chat-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">${userNick}</div>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;padding:15px;background:#FBF9F4;">${msgHtml || '<div style="text-align:center;padding:40px;color:#B89B95;">还没有消息</div>'}</div>
+                        <div style="padding:10px;text-align:center;font-size:11px;color:#B89B95;border-top:1px solid #e8e0d0;background:#FBF9F4;">👁️ 仅查看模式</div>
+                    </div>
+                `;
+                appPage.querySelector('#ai520-chat-back').onclick = () => openAI520(appPage, contactId);
+            }
+            
+            // 渲染只读消息（AI视角：sender='me'是用户在左，sender !== 'me'是AI自己在右）
+            function renderReadOnlyMessages(msgs, c, userNick, userAvatar, aiPerspective) {
+                return msgs.map(m => {
+                    const isAISelf = aiPerspective ? (m.sender !== 'me') : (m.sender === 'me');
+                    const align = isAISelf ? 'flex-end' : 'flex-start';
+                    const bubbleStyle = isAISelf 
+                        ? 'background:#FFD3D4;color:#775C56;' 
+                        : 'background:#fff;color:#775C56;';
+                    const avatar = isAISelf 
+                        ? (c.avatar && c.avatar.includes('<') ? c.avatar : (c.avatar ? `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'))
+                        : (userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤');
+                    let content = m.text || '';
+                    if (m.type === 'image') content = '[图片]';
+                    if (m.type === 'voice') content = `🔊 ${m.text || ''}`;
+                    return `<div style="display:flex;justify-content:${align};margin-bottom:10px;align-items:flex-start;gap:8px;${isAISelf ? 'flex-direction:row-reverse;' : ''}">
+                        <div style="width:36px;height:36px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;">${avatar}</div>
+                        <div style="max-width:70%;padding:8px 12px;border-radius:10px;${bubbleStyle}word-break:break-word;font-size:14px;line-height:1.5;">${content}</div>
+                    </div>`;
+                }).join('');
+            }
+            
+            // 渲染虚拟聊天消息（AI 在右、虚拟联系人在左）
+            function renderVirtualMessages(msgs, c, vName, vEmoji) {
+                return msgs.map(m => {
+                    const isAISelf = m.sender === 'ai';
+                    const align = isAISelf ? 'flex-end' : 'flex-start';
+                    const bubbleStyle = isAISelf 
+                        ? 'background:#FFD3D4;color:#775C56;' 
+                        : 'background:#fff;color:#775C56;';
+                    const avatar = isAISelf 
+                        ? (c.avatar && c.avatar.includes('<') ? c.avatar : (c.avatar ? `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">` : '👤'))
+                        : `<div style="width:100%;height:100%;background:#F2EDE4;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;">${vEmoji}</div>`;
+                    return `<div style="display:flex;justify-content:${align};margin-bottom:10px;align-items:flex-start;gap:8px;${isAISelf ? 'flex-direction:row-reverse;' : ''}">
+                        <div style="width:36px;height:36px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;">${avatar}</div>
+                        <div style="max-width:70%;padding:8px 12px;border-radius:10px;${bubbleStyle}word-break:break-word;font-size:14px;line-height:1.5;">${m.text || ''}</div>
+                    </div>`;
+                }).join('');
+            }
+            
+            // 打开虚拟聊天（朋友/爸爸/妈妈）
+            function openAIVirtualChat(appPage, contactId, vid) {
+                const c = DB.getContact(contactId);
+                const vConfig = AI_VIRTUAL_CONTACTS.find(x => x.id === vid);
+                const vChats = c.virtualChats || {};
+                const msgs = vChats[vid] || [];
+                
+                const renderPage = (currentMsgs, isLoading) => {
+                    const msgHtml = renderVirtualMessages(currentMsgs, c, vConfig.name, vConfig.emoji);
+                    appPage.innerHTML = `
+                        <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                            <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                                <span id="vchat-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                                <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">${vConfig.name}</div>
+                                <span id="vchat-regen" style="margin-top:8px;font-size:18px;cursor:pointer;width:40px;text-align:right;" title="重新生成对话">🔄</span>
+                            </div>
+                            <div id="vchat-body" style="flex:1;overflow-y:auto;padding:15px;background:#FBF9F4;">
+                                ${currentMsgs.length === 0 && !isLoading ? '<div style="text-align:center;padding:60px 20px;color:#B89B95;font-size:14px;">还没有聊天记录<br><span style="color:#576b95;cursor:pointer;text-decoration:underline;" id="vchat-init">点这里让 ${c.notes || c.name} 和 ${vConfig.name} 聊几句</span></div>' : msgHtml}
+                                ${isLoading ? '<div style="text-align:center;padding:20px;color:#B89B95;">正在生成对话…</div>' : ''}
+                            </div>
+                            <div style="padding:10px;text-align:center;font-size:11px;color:#B89B95;border-top:1px solid #e8e0d0;background:#FBF9F4;">👁️ 仅查看模式</div>
+                        </div>
+                    `;
+                    appPage.querySelector('#vchat-back').onclick = () => openAI520(appPage, contactId);
+                    const initBtn = appPage.querySelector('#vchat-init');
+                    if (initBtn) initBtn.onclick = () => generateVirtualChat(appPage, contactId, vid, true);
+                    appPage.querySelector('#vchat-regen').onclick = () => {
+                        if (confirm(`重新生成 ${c.notes || c.name} 和 ${vConfig.name} 的聊天？\n（之前的会被覆盖）`)) {
+                            generateVirtualChat(appPage, contactId, vid, true);
+                        }
+                    };
+                    // 滚到底部
+                    const body = appPage.querySelector('#vchat-body');
+                    if (body) body.scrollTop = body.scrollHeight;
+                };
+                
+                renderPage(msgs, false);
+            }
+            
+            // 调 AI 生成虚拟聊天
+            async function generateVirtualChat(appPage, contactId, vid, replace) {
+                const c = DB.getContact(contactId);
+                const vConfig = AI_VIRTUAL_CONTACTS.find(x => x.id === vid);
+                
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) {
+                    alert('请先设置 API Key');
+                    return;
+                }
+                if (!c.persona) {
+                    alert('需要先给 TA 设定人设');
+                    return;
+                }
+                
+                // 显示 loading
+                const body = appPage.querySelector('#vchat-body');
+                if (body) body.innerHTML = '<div style="text-align:center;padding:40px;color:#B89B95;">正在让 ' + (c.notes || c.name) + ' 和 ' + vConfig.name + ' 聊起来…</div>';
+                
+                try {
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    const chatHist = (DB.getChatById(contactId) || []).filter(m => !m.revoked && m.type !== 'timestamp' && m.sender !== 'system');
+                    const recentDigest = chatHist.slice(-10).map(m => {
+                        const who = m.sender === 'me' ? userNick : (c.notes || c.name);
+                        return `${who}：${m.text || '[消息]'}`;
+                    }).join('\n');
+                    
+                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                    const ep = localStorage.getItem('apiEndpoint') || '';
+                    const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                    
+                    const relationDesc = {
+                        friend: '一个关系不错的朋友（同龄人、平辈、性别不限，可以是闺蜜也可以是哥们儿）',
+                        dad: '亲生爸爸（长辈，关心 TA 的生活但有点笨拙）',
+                        mom: '亲生妈妈（长辈，唠叨、关心吃饭睡觉、唠各种家长里短）'
+                    };
+                    
+                    let sysPrompt = `你要扮演两个角色之间的一段微信聊天对话。\n\n`;
+                    sysPrompt += `【角色 A："${c.name}"】\n`;
+                    if (c.notes) sysPrompt += `备注：${c.notes}\n`;
+                    sysPrompt += `人设：${c.persona}\n`;
+                    if (c.memory?.manual) sysPrompt += `记忆：${c.memory.manual}\n`;
+                    if (recentDigest) sysPrompt += `\nTA 最近和${userNick}的聊天（参考心情）：\n${recentDigest}\n`;
+                    
+                    sysPrompt += `\n【角色 B："${vConfig.name}"】\n`;
+                    sysPrompt += `${vConfig.name}是 ${c.name} 的${relationDesc[vid]}。请你为${vConfig.name}自然设定性格（不需要写出来）。\n\n`;
+                    
+                    sysPrompt += `【任务】：生成 ${c.name} 和 ${vConfig.name} 之间的一段微信日常对话，8-15 条消息。要求：\n`;
+                    sysPrompt += `1. 自然真实，符合两人关系。\n`;
+                    sysPrompt += `2. 可以是任何话题：日常吐槽、八卦、关心、约饭、回忆、抱怨等等。\n`;
+                    sysPrompt += `3. 内容可以呼应 ${c.name} 最近的心情/状态，但不要重复 TA 跟${userNick}聊的具体内容。\n`;
+                    sysPrompt += `4. 每条消息一行，前缀用 "A:" 表示 ${c.name}，"B:" 表示 ${vConfig.name}。\n`;
+                    sysPrompt += `5. 不要写括号动作、不要写解释、不要加标题。直接输出对话。\n`;
+                    sysPrompt += `\n示例格式：\nA: 在干嘛\nB: 刚下班\nA: 累不累\nB: 还行\n`;
+                    
+                    let messages;
+                    if (pPlat === 'gemini') {
+                        messages = [{ role: 'user', parts: [{ text: sysPrompt + '\n请直接输出对话。' }] }];
+                    } else {
+                        messages = [
+                            { role: 'system', content: sysPrompt },
+                            { role: 'user', content: '请直接输出对话。' }
+                        ];
+                    }
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) throw new Error('API 失败');
+                    const data = await resp.json();
+                    let text = ApiHandler.parseChatResponse(pPlat, data);
+                    if (!text) throw new Error('空回复');
+                    
+                    // 解析对话
+                    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                    const parsed = [];
+                    for (const line of lines) {
+                        const m = line.match(/^([AB])[:：]\s*(.+)$/);
+                        if (m) {
+                            parsed.push({
+                                sender: m[1] === 'A' ? 'ai' : 'other',
+                                text: m[2].trim(),
+                                time: new Date(Date.now() - (lines.length - parsed.length) * 60000).toISOString()
+                            });
+                        }
+                    }
+                    if (parsed.length === 0) throw new Error('解析失败');
+                    
+                    c.virtualChats = c.virtualChats || {};
+                    c.virtualChats[vid] = parsed;
+                    DB.saveContact(c);
+                    
+                    openAIVirtualChat(appPage, contactId, vid);
+                } catch (err) {
+                    console.error('生成虚拟聊天失败', err);
+                    if (body) body.innerHTML = `<div style="text-align:center;padding:40px;color:#B89B95;">生成失败：${err.message}<br><span style="color:#576b95;cursor:pointer;text-decoration:underline;" onclick="this.click();">点这里返回</span></div>`;
+                    setTimeout(() => openAIVirtualChat(appPage, contactId, vid), 2500);
+                }
+            }
+            
+            
+            // AI 的电话：通用户手机的电话页（看 AI 跟用户的通话记录）
+            function openAIPhonePhone(appPage, contactId) {
+                const c = DB.getContact(contactId);
+                const allLog = JSON.parse(localStorage.getItem('call_log') || '[]');
+                // 筛选跟当前 AI 的通话
+                const myLog = allLog.filter(l => l.contact === c.name || l.notes === c.notes);
+                
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                            <span id="aiphone-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">通话记录</div>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;background:#FBF9F4;">
+                            ${myLog.length === 0 ? '<div style="text-align:center;padding:60px 20px;color:#B89B95;">还没有通话记录</div>' : myLog.map(l => {
+                                const d = new Date(l.time);
+                                const dateStr = d.toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
+                                const timeStr = d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+                                return `<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #e8e0d0;">
+                                    <span style="font-size:24px;">${l.type==='video'?'📹':'📞'}</span>
+                                    <div style="flex:1;"><div style="font-weight:600;color:#775C56;">${localStorage.getItem('user_nick') || '我'}</div><div style="font-size:12px;color:#9A7872;margin-top:2px;">${l.missed?'未接':'已接'} · ${l.type==='video'?'视频':'语音'} · ${l.duration}</div></div>
+                                    <div style="font-size:11px;color:#999;text-align:right;">${dateStr}<br>${timeStr}</div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                appPage.querySelector('#aiphone-back').onclick = () => openAIPhone(appPage, contactId);
+            }
+            
+            // AI 的相册：空白占位
+            function openAIAlbum(appPage, contactId) {
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                            <span id="aialbum-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">相册</div>
+                        </div>
+                        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#B89B95;font-size:14px;background:#FBF9F4;">
+                            <div style="text-align:center;">
+                                <div style="font-size:48px;margin-bottom:12px;opacity:0.5;">🖼️</div>
+                                <div>这里空空的</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                appPage.querySelector('#aialbum-back').onclick = () => openAIPhone(appPage, contactId);
+            }
+            
+            // AI 的设置：换壁纸和 app 图标
+            function openAISettings(appPage, contactId) {
+                const c = DB.getContact(contactId);
+                const phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                const dockApps = [
+                    { id: 'ai520', name: '520', emoji: '💬' },
+                    { id: 'aiphone', name: '电话', emoji: '📞' },
+                    { id: 'aialbum', name: '相册', emoji: '🖼️' },
+                    { id: 'aisettings', name: '设置', emoji: '🔧' }
+                ];
+                
+                appPage.innerHTML = `
+                    <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
+                            <span id="aisettings-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">设置</div>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;padding:16px;background:#FBF9F4;">
+                            <div style="font-size:13px;color:#9A7872;margin-bottom:8px;">壁纸</div>
+                            <div id="ais-wp-box" style="background:#fff;border-radius:12px;padding:12px;margin-bottom:20px;display:flex;align-items:center;gap:12px;cursor:pointer;">
+                                <div id="ais-wp-preview" style="width:50px;height:80px;border-radius:8px;${phoneData.wallpaper ? `background:url(${phoneData.wallpaper}) center/cover no-repeat;` : 'background:linear-gradient(180deg,#FFD3D4,#FBF9F4);'}flex-shrink:0;border:1px solid #f0e8d8;"></div>
+                                <div style="flex:1;color:#775C56;font-size:14px;">${phoneData.wallpaper ? '已设置壁纸' : '默认壁纸'}<div style="font-size:12px;color:#9A7872;margin-top:4px;">点击更换</div></div>
+                                ${phoneData.wallpaper ? '<span id="ais-wp-clear" style="color:#B89B95;font-size:13px;cursor:pointer;padding:6px 10px;">清除</span>' : ''}
+                            </div>
+                            <input type="file" id="ais-wp-input" style="display:none;" accept="image/*">
+                            
+                            <div style="font-size:13px;color:#9A7872;margin-bottom:8px;">App 图标</div>
+                            <div style="background:#fff;border-radius:12px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+                                ${dockApps.map(app => {
+                                    const customIcon = phoneData.icons && phoneData.icons[app.id];
+                                    return `<div class="ais-icon-item" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;">
+                                        <div style="width:54px;height:54px;border-radius:13px;background:${customIcon ? 'transparent' : '#F2EDE4'};display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px dashed ${customIcon ? 'transparent' : '#ddd'};">
+                                            ${customIcon ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:13px;">` : `<span style="font-size:26px;">${app.emoji}</span>`}
+                                        </div>
+                                        <span style="font-size:11px;color:#775C56;">${app.name}</span>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                            <input type="file" id="ais-icon-input" style="display:none;" accept="image/*">
+                            <div style="margin-top:16px;font-size:11px;color:#B89B95;text-align:center;">点击图标更换 · 长按图标恢复默认</div>
+                        </div>
+                    </div>
+                `;
+                
+                appPage.querySelector('#aisettings-back').onclick = () => openAIPhone(appPage, contactId);
+                
+                // 壁纸
+                const wpBox = appPage.querySelector('#ais-wp-box');
+                const wpInput = appPage.querySelector('#ais-wp-input');
+                wpBox.onclick = (e) => {
+                    if (e.target.id === 'ais-wp-clear') return;
+                    wpInput.click();
+                };
+                wpInput.onchange = async (e) => {
+                    const f = e.target.files[0]; if (!f) return;
+                    const dataUrl = await new Promise((res) => {
+                        const r = new FileReader();
+                        r.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const maxW = 800;
+                                let w = img.width, h = img.height;
+                                if (w > maxW) { h = h * (maxW/w); w = maxW; }
+                                const cv = document.createElement('canvas');
+                                cv.width = w; cv.height = h;
+                                cv.getContext('2d').drawImage(img, 0, 0, w, h);
+                                res(cv.toDataURL('image/jpeg', 0.78));
+                            };
+                            img.src = ev.target.result;
+                        };
+                        r.readAsDataURL(f);
+                    });
+                    const ref = await (window.ImageDB && window.ImageDB.saveAndRef ? window.ImageDB.saveAndRef(dataUrl) : Promise.resolve(dataUrl));
+                    c.phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                    c.phoneData.wallpaper = ref;
+                    DB.saveContact(c);
+                    openAISettings(appPage, contactId);
+                };
+                const clearBtn = appPage.querySelector('#ais-wp-clear');
+                if (clearBtn) clearBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    c.phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                    c.phoneData.wallpaper = '';
+                    DB.saveContact(c);
+                    openAISettings(appPage, contactId);
+                };
+                
+                // App 图标
+                const iconInput = appPage.querySelector('#ais-icon-input');
+                let currentIconApp = null;
+                appPage.querySelectorAll('.ais-icon-item').forEach(item => {
+                    let pressTimer = null;
+                    const startPress = () => {
+                        pressTimer = setTimeout(() => {
+                            // 长按恢复默认
+                            c.phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                            if (c.phoneData.icons && c.phoneData.icons[item.dataset.app]) {
+                                delete c.phoneData.icons[item.dataset.app];
+                                DB.saveContact(c);
+                                openAISettings(appPage, contactId);
+                            }
+                            pressTimer = null;
+                        }, 600);
+                    };
+                    const cancelPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+                    item.addEventListener('mousedown', startPress);
+                    item.addEventListener('touchstart', startPress);
+                    item.addEventListener('mouseup', cancelPress);
+                    item.addEventListener('mouseleave', cancelPress);
+                    item.addEventListener('touchend', cancelPress);
+                    item.onclick = () => {
+                        // 没触发长按就当短按
+                        currentIconApp = item.dataset.app;
+                        iconInput.click();
+                    };
+                });
+                iconInput.onchange = async (e) => {
+                    const f = e.target.files[0]; if (!f || !currentIconApp) return;
+                    const dataUrl = await new Promise((res) => {
+                        const r = new FileReader();
+                        r.onload = (ev) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const cv = document.createElement('canvas');
+                                cv.width = 200; cv.height = 200;
+                                cv.getContext('2d').drawImage(img, 0, 0, 200, 200);
+                                res(cv.toDataURL('image/jpeg', 0.82));
+                            };
+                            img.src = ev.target.result;
+                        };
+                        r.readAsDataURL(f);
+                    });
+                    const ref = await (window.ImageDB && window.ImageDB.saveAndRef ? window.ImageDB.saveAndRef(dataUrl) : Promise.resolve(dataUrl));
+                    c.phoneData = c.phoneData || { wallpaper: '', icons: {} };
+                    c.phoneData.icons = c.phoneData.icons || {};
+                    c.phoneData.icons[currentIconApp] = ref;
+                    DB.saveContact(c);
+                    iconInput.value = '';
+                    openAISettings(appPage, contactId);
+                };
+            }
 
             function setupApiSettingsApp(appPage) {
                 const platform = appPage.querySelector('#api-platform');
@@ -4263,6 +4937,7 @@
                         else if (appId === 'world-book') setupWorldBookApp(appPage);
                         else if (appId === 'couple-space') setupCoupleSpaceApp(appPage);
                         else if (appId === 'api-settings') setupApiSettingsApp(appPage);
+                        else if (appId === 'check-phone') setupCheckPhoneApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
                             appPage.querySelector('#phone-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
