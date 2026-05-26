@@ -1679,7 +1679,7 @@
                     sysPrompt += `【任务】：请基于以上聊天的氛围、话题、心情，以角色的口吻写一条**纯文字**朋友圈。要求：\n`;
                     sysPrompt += `1. 内容必须自然、符合人设和当前心情。如果你们刚才聊得开心，朋友圈也应该是积极的；如果聊到难过的事或起了争执，朋友圈应避免发"今天好开心"这种割裂内容。\n`;
                     sysPrompt += `2. 不要直接复述聊天内容，也不要 @${userNick}。是带着这次聊天留下的情绪/感想，写给"所有朋友"看的。\n`;
-                    sysPrompt += `3. 长度控制在 50 字以内。可以加 1-2 个 emoji，但不强求。\n`;
+                    sysPrompt += `3. 长度控制在 50 字以内。**严禁使用任何 emoji、颜文字、特殊符号表情**，只用纯中文文字（可以用中文标点）。\n`;
                     sysPrompt += `4. 不要写任何动作描写括号、不要心声尖括号、不要解释、不要标题。只输出朋友圈正文。\n`;
                     try {
                         let messages;
@@ -1698,6 +1698,8 @@
                         let text = ApiHandler.parseChatResponse(pPlat, data);
                         if (!text) return false;
                         text = text.trim().replace(/^["'""]|["'""]$/g, '').replace(/[（(][^)）]*[)）]/g, '').replace(/〈[^〉]*〉/g, '').trim();
+                        // 兜底：剥掉 emoji 和其他符号表情（朋友圈禁用）
+                        text = text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{1FA00}-\u{1FAFF}]/gu, '').replace(/\s+$/, '').trim();
                         if (!text) return false;
                         const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
                         moments.unshift({
@@ -1778,7 +1780,7 @@
                             }
                             sysPrompt += `\n【任务】：以你的人设写一句朋友圈评论。要求：\n`;
                             sysPrompt += `1. 自然、口语化、符合人设，像真实朋友间的评论。\n`;
-                            sysPrompt += `2. 长度 25 字以内，可以加 1 个 emoji，但不强求。\n`;
+                            sysPrompt += `2. 长度 25 字以内。**严禁使用任何 emoji、颜文字、符号表情**，只用纯中文文字。\n`;
                             sysPrompt += `3. 不要写动作描写括号、不要心声尖括号、不要解释、不要引号。只输出评论正文。\n`;
                             sysPrompt += `4. 这是公开评论，不要写过于亲密、私密的内容。\n`;
                             if (!isAuthorUser) {
@@ -1801,6 +1803,8 @@
                                     let text = ApiHandler.parseChatResponse(pPlat, data);
                                     if (text) {
                                         text = text.trim().replace(/^["'""]|["'""]$/g, '').replace(/[（(][^)）]*[)）]/g, '').replace(/〈[^〉]*〉/g, '').trim();
+                                        // 兜底：剥掉 emoji（朋友圈评论禁用）
+                                        text = text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{1FA00}-\u{1FAFF}]/gu, '').replace(/\s+$/, '').trim();
                                         if (text) {
                                             m.comments.push({ name: aiName, avatar: contact.avatar || '', text: text });
                                             didSomething = true;
@@ -1834,6 +1838,77 @@
                 };
 
                 // 弹出用户评论对话框
+                // 微信风格的点赞/评论弹出菜单（从⋯按钮旁边弹出）
+                window.showMomentActionMenu = function(btnEl, momentId, onDone) {
+                    // 移除已有的菜单
+                    document.querySelectorAll('.moment-action-menu').forEach(e => e.remove());
+                    
+                    const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
+                    const m = moments.find(x => x.id === momentId);
+                    if (!m) return;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    const iLiked = (m.likes || []).includes(userNick);
+                    
+                    const menu = document.createElement('div');
+                    menu.className = 'moment-action-menu';
+                    menu.style.cssText = 'position:absolute;background:#4a4a4a;border-radius:8px;padding:6px 0;display:flex;align-items:center;z-index:9998;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+                    menu.innerHTML = `
+                        <div class="mm-like" style="color:#fff;font-size:13px;padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:14px;">${iLiked ? '💔' : '❤️'}</span><span>${iLiked ? '取消' : '赞'}</span>
+                        </div>
+                        <div style="width:1px;height:14px;background:rgba(255,255,255,0.3);"></div>
+                        <div class="mm-cmt" style="color:#fff;font-size:13px;padding:6px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:14px;">💬</span><span>评论</span>
+                        </div>
+                    `;
+                    
+                    // 定位到按钮左边
+                    const btnRect = btnEl.getBoundingClientRect();
+                    const appPage = document.querySelector('.app-page.active') || document.body;
+                    const pageRect = appPage.getBoundingClientRect();
+                    menu.style.top = (btnRect.top - pageRect.top - 2) + 'px';
+                    menu.style.right = (pageRect.right - btnRect.left + 6) + 'px';
+                    appPage.appendChild(menu);
+                    
+                    // 点击外部关闭
+                    const closeMenu = (e) => {
+                        if (!menu.contains(e.target) && e.target !== btnEl) {
+                            menu.remove();
+                            document.removeEventListener('click', closeMenu, true);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener('click', closeMenu, true), 50);
+                    
+                    menu.querySelector('.mm-like').onclick = () => {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu, true);
+                        toggleMomentLike(momentId, onDone);
+                    };
+                    menu.querySelector('.mm-cmt').onclick = () => {
+                        menu.remove();
+                        document.removeEventListener('click', closeMenu, true);
+                        showMomentCommentDialog(momentId, onDone);
+                    };
+                };
+                
+                // 点赞/取消赞
+                window.toggleMomentLike = function(momentId, onDone) {
+                    const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
+                    const idx = moments.findIndex(x => x.id === momentId);
+                    if (idx < 0) return;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    moments[idx].likes = moments[idx].likes || [];
+                    const myIdx = moments[idx].likes.indexOf(userNick);
+                    const wasLiked = myIdx >= 0;
+                    if (wasLiked) {
+                        moments[idx].likes.splice(myIdx, 1);
+                    } else {
+                        moments[idx].likes.push(userNick);
+                    }
+                    try { localStorage.setItem('moments_list', JSON.stringify(moments)); } catch(e) { alert('存储失败'); return; }
+                    if (onDone) onDone();
+                };
+                
                 window.showMomentCommentDialog = function(momentId, onDone) {
                     const moments = JSON.parse(localStorage.getItem('moments_list') || '[]');
                     const m = moments.find(x => x.id === momentId);
@@ -1916,6 +1991,7 @@
                     sysPrompt += `2. 长度 25 字以内。\n`;
                     sysPrompt += `3. 不要动作描写括号、不要心声尖括号、不要引号。只输出评论正文。\n`;
                     sysPrompt += `4. 这是公开评论，不要过于亲密私密。\n`;
+                    sysPrompt += `5. **严禁使用任何 emoji、颜文字、符号表情**，只用纯中文文字。\n`;
                     try {
                         let messages;
                         if (pPlat === 'gemini') {
@@ -1933,6 +2009,8 @@
                         let text = ApiHandler.parseChatResponse(pPlat, data);
                         if (!text) return false;
                         text = text.trim().replace(/^["'""]|["'""]$/g, '').replace(/[（(][^)）]*[)）]/g, '').replace(/〈[^〉]*〉/g, '').trim();
+                        // 兜底：剥掉 emoji（朋友圈评论禁用）
+                        text = text.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}\u{1FA00}-\u{1FAFF}]/gu, '').replace(/\s+$/, '').trim();
                         if (!text) return false;
                         const moments2 = JSON.parse(localStorage.getItem('moments_list') || '[]');
                         const idx2 = moments2.findIndex(x => x.id === momentId);
@@ -2218,20 +2296,10 @@
 
                     const history = DB.getChatById(id) || [];
                     
-                    // 只绑一次：voice气泡展开 + 关闭面板
+                    // 只绑一次：点击box（非voice气泡）时关闭面板
                     box.addEventListener('click', (e) => {
-                        const voiceBubble = e.target.closest('.message-bubble.voice');
-                        if (voiceBubble && !selectMode) {
-                            const wrapper = voiceBubble.closest('.message-bubble-wrapper');
-                            if (wrapper) {
-                                const tray = wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
-                                if (tray) {
-                                    tray.classList.toggle('open');
-                                    e.stopPropagation();
-                                    return;
-                                }
-                            }
-                        }
+                        // voice气泡的展开由气泡自己处理，这里不再插手
+                        if (e.target.closest('.message-bubble.voice')) return;
                         if (typeof plus !== 'undefined') plus.classList.remove('open');
                         if (typeof emojiP !== 'undefined') {
                             emojiP.classList.remove('open');
@@ -2239,7 +2307,7 @@
                         }
                         const ib = box.parentElement.querySelector('.chat-input-bar');
                         if (ib) ib.classList.remove('panel-open');
-                    }, true); // 用捕获阶段，让它最先执行
+                    }, true);
                     
                     const render = () => {
                         // Anchor to first visible message
@@ -2671,9 +2739,36 @@
                             }, {passive:true});
                             bubble.addEventListener('touchend', () => clearTimeout(touchTimer));
                             bubble.addEventListener('touchmove', () => clearTimeout(touchTimer));
-                            // voice气泡的cursor样式（点击展开逻辑在box事件委托里）
+                            // voice气泡的cursor样式 + 直接绑点击展开（手机端可靠性更高）
                             if (bubble.classList.contains('voice')) {
                                 bubble.style.cursor = 'pointer';
+                                bubble.addEventListener('click', (e) => {
+                                    if (selectMode) return;
+                                    const wrapper = bubble.closest('.message-bubble-wrapper');
+                                    if (!wrapper) return;
+                                    const tray = wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                                    if (tray) {
+                                        tray.classList.toggle('open');
+                                        e.stopPropagation();
+                                    }
+                                });
+                                // 手机端额外保险：touchend 也触发（防止 click 被吞）
+                                let touchMoved = false;
+                                bubble.addEventListener('touchstart', () => { touchMoved = false; }, {passive:true});
+                                bubble.addEventListener('touchmove', () => { touchMoved = true; }, {passive:true});
+                                bubble.addEventListener('touchend', (e) => {
+                                    if (touchMoved || selectMode) return;
+                                    const wrapper = bubble.closest('.message-bubble-wrapper');
+                                    if (!wrapper) return;
+                                    const tray = wrapper.querySelector('.voice-content-tray:not(.photo-tray)');
+                                    if (tray && !tray.dataset.justToggled) {
+                                        tray.classList.toggle('open');
+                                        tray.dataset.justToggled = '1';
+                                        setTimeout(() => { delete tray.dataset.justToggled; }, 350);
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                    }
+                                });
                             }
                             // Click to toggle when in select mode
                             bubble.addEventListener('click', (e) => {
@@ -2989,7 +3084,7 @@
                     p.querySelector('#plus-btn').onclick=()=>{plus.classList.toggle('open');emojiP.classList.remove('open');emojiP.style.height='0';updateInputBarPanel();setTimeout(()=>box.scrollTop=box.scrollHeight,270);};
                     p.querySelector('#emoji-btn').onclick=()=>{
                         emojiP.classList.toggle('open');plus.classList.remove('open');
-                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=window._userStickers||[];if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px 14px;padding:14px 14px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>`<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:transparent;cursor:pointer;"><img src="${s.src}" style="width:100%;height:100%;object-fit:contain;display:block;" data-src="${s.src}"></div>`).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
+                        if(emojiP.classList.contains('open')){emojiP.style.height='210px';const st=window._userStickers||[];if(!st.length){emojiP.innerHTML='<div style="text-align:center;padding:20px;color:#775C56;opacity:0.6;">暂无表情，去"我"的界面添加</div>';}else{emojiP.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px 14px;padding:14px 14px;overflow-y:auto;max-height:210px;box-sizing:border-box;">${st.map(s=>{const isDb=typeof s.src==='string'&&s.src.startsWith('imgdb://');const srcAttr=isDb?`data-imgsrc="${s.src}"`:`src="${s.src}"`;return `<div style="aspect-ratio:1/1;border-radius:8px;overflow:hidden;background:transparent;cursor:pointer;"><img ${srcAttr} style="width:100%;height:100%;object-fit:cover;display:block;" data-realsrc="${s.src}"></div>`;}).join('')}</div>`;emojiP.querySelectorAll('img').forEach(img=>img.onclick=e=>send({id:`m_${Date.now()}`,sender:'me',type:'sticker',content:e.target.dataset.realsrc||e.target.src,time:new Date()}));}}else{emojiP.style.height='0';}
                         updateInputBarPanel();
                     };
                     p.querySelector('#p-pic').onclick=()=>{const fi=document.createElement('input');fi.type='file';fi.accept='image/*';document.body.appendChild(fi);fi.onchange=e=>{const f=e.target.files[0];if(!f){document.body.removeChild(fi);return;}const r=new FileReader();r.onerror=()=>{alert('图片读取失败');document.body.removeChild(fi);};r.onload=ev=>{
@@ -3586,7 +3681,7 @@
                         const camBtn = document.createElement('span');
                         camBtn.id = 'moments-cam-btn';
                         camBtn.innerHTML = '📷';
-                        camBtn.style.cssText = 'position:absolute;top:22px;right:14px;font-size:22px;cursor:pointer;z-index:10;padding:6px 10px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));';
+                        camBtn.style.cssText = 'position:absolute;top:48px;right:10px;font-size:24px;cursor:pointer;z-index:10;padding:10px 14px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));';
                         camBtn.onclick = () => {
                             // 弹出发朋友圈对话框
                             const dlg = document.createElement('div');
@@ -3709,11 +3804,15 @@
                                     const isMine = p.name === myNick;
                                     const likes = p.likes || [];
                                     const comments = p.comments || [];
+                                    const iLiked = likes.includes(myNick);
                                     // 评论可能是字符串（老数据）或对象 {name, avatar, text}
-                                    const commentsHtml = comments.length ? `<div class="moment-comments" style="margin-top:6px;background:#FBF9F4;border-radius:8px;padding:6px 10px;">${comments.map(c => {
-                                        if (typeof c === 'string') return `<div style="font-size:13px;color:#775C56;line-height:1.6;"><span style="color:#576b95;font-weight:600;">路人</span>：${c}</div>`;
-                                        return `<div style="font-size:13px;color:#775C56;line-height:1.6;"><span style="color:#576b95;font-weight:600;">${c.name}</span>：${c.text}</div>`;
+                                    const likesHtml = likes.length ? `<div style="font-size:13px;color:#576b95;padding:6px 10px 4px;display:flex;align-items:flex-start;gap:4px;line-height:1.5;">❤️ <span style="flex:1;">${likes.join('，')}</span></div>` : '';
+                                    const dividerHtml = (likes.length && comments.length) ? `<div style="height:1px;background:#e8e0d0;margin:0 10px;"></div>` : '';
+                                    const commentsHtml = comments.length ? `<div style="padding:4px 10px 6px;">${comments.map(c => {
+                                        if (typeof c === 'string') return `<div style="font-size:13px;color:#775C56;line-height:1.7;"><span style="color:#576b95;">路人</span>：${c}</div>`;
+                                        return `<div style="font-size:13px;color:#775C56;line-height:1.7;"><span style="color:#576b95;">${c.name}</span>：${c.text}</div>`;
                                     }).join('')}</div>` : '';
+                                    const interactionWrap = (likes.length || comments.length) ? `<div style="background:rgba(245,237,224,0.6);border-radius:8px;margin-top:6px;overflow:hidden;">${likesHtml}${dividerHtml}${commentsHtml}</div>` : '';
                                     return `
                                     <div class="moment-item" ${isMine ? 'data-author="me"' : ''}>
                                         <div class="moment-avatar" ${isMine ? 'data-user-avatar="true"' : ''}>${isMine && userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">` : (p.avatar && p.avatar.includes('<')?p.avatar:`<img src="${p.avatar||''}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`)}</div>
@@ -3721,12 +3820,11 @@
                                             <div class="moment-name">${p.name}</div>
                                             <div class="moment-text">${p.text}</div>
                                             ${p.img ? `<div style="margin:6px 0;"><img src="${p.img}" style="max-width:200px;max-height:200px;border-radius:12px;object-fit:cover;display:block;"></div>` : ''}
-                                            <div class="moment-meta">
+                                            <div class="moment-meta" style="display:flex;justify-content:space-between;align-items:center;">
                                                 <span>${new Date(p.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
-                                                <span style="font-size:16px;cursor:pointer;" class="moment-comment-btn" data-mid="${p.id}">💬</span>
+                                                <span class="moment-action-btn" data-mid="${p.id}" style="color:#9A7872;cursor:pointer;font-size:20px;padding:2px 8px;line-height:1;letter-spacing:1px;background:transparent;border:none;">⋯</span>
                                             </div>
-                                            ${likes.length ? `<div class="moment-likes">❤️ ${likes.join(', ')}</div>` : ''}
-                                            ${commentsHtml}
+                                            ${interactionWrap}
                                         </div>
                                     </div>
                                 `;}).join('')}
@@ -3747,11 +3845,11 @@
                         };
 
                         // 用户点击 💬 评论某条朋友圈
-                        el.querySelectorAll('.moment-comment-btn').forEach(btn => {
+                        el.querySelectorAll('.moment-action-btn').forEach(btn => {
                             btn.onclick = (ev) => {
                                 ev.stopPropagation();
                                 const mid = btn.dataset.mid;
-                                showMomentCommentDialog(mid, () => go('202'));
+                                showMomentActionMenu(btn, mid, () => go('202'));
                             };
                         });
                     }
