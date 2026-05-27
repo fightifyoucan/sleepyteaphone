@@ -49,7 +49,7 @@
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
         #tea-widget { width: 140px !important; height: 140px !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important; border-radius: 2rem; margin: 0 auto; }
-        .dock { position: absolute; bottom: 30px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 34px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
+        .dock { position: absolute; bottom: 30px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 30px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
 
         /* --- App 容器 --- */
         .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #FBF9F4; z-index: 350; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 0; pointer-events: none; transform-origin: center; }
@@ -4138,6 +4138,8 @@
             }
             
             function renderCheckPhoneList(appPage) {
+                // 恢复默认米色背景（从 AI 手机壁纸切回来时）
+                appPage.style.removeProperty('background-image'); appPage.style.setProperty('background-color', '#FBF9F4', 'important');
                 const contacts = DB.getContacts();
                 appPage.innerHTML = `
                     <div class="app-header"><span class="close-btn w-10 inline-block" style="color:#775C56;cursor:pointer;">‹</span><h2 class="font-bold" style="color:#775C56;">查手机</h2><span class="w-10"></span></div>
@@ -4158,6 +4160,14 @@
                 appPage.querySelectorAll('.cp-item').forEach(item => {
                     item.onclick = () => openAIPhone(appPage, item.dataset.id);
                 });
+                // 手动绑定关闭按钮（因为 innerHTML 重写后原全局绑定失效）
+                const closeBtn = appPage.querySelector('.close-btn');
+                if (closeBtn) {
+                    closeBtn.onclick = () => {
+                        const indicator = document.getElementById('app-home-indicator');
+                        if (indicator) indicator.click();
+                    };
+                }
             }
             
             // 打开 AI 的"手机"——一个全屏的手机主屏界面
@@ -4173,26 +4183,48 @@
                 ];
                 
                 const wallpaper = phoneData.wallpaper || '';
-                const wpStyle = wallpaper 
-                    ? `background:url(${wallpaper}) center/cover no-repeat;`
-                    : `background:linear-gradient(180deg,#FFD3D4 0%,#FBF9F4 100%);`;
+                
+                // 默认壁纸：Unsplash 沙滩风景照
+                const DEFAULT_WP = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=2673&auto=format&fit=crop';
+                
+                const finalWp = wallpaper || DEFAULT_WP;
+                
+                // 先清掉之前可能残留的 important 设置
+                appPage.style.removeProperty('background-image');
+                appPage.style.removeProperty('background-color');
+                appPage.style.removeProperty('background-size');
+                appPage.style.removeProperty('background-position');
+                appPage.style.removeProperty('background-repeat');
+                
+                appPage.style.backgroundSize = 'cover';
+                appPage.style.backgroundPosition = 'center';
+                appPage.style.backgroundRepeat = 'no-repeat';
+                
+                // 如果是 imgdb:// 引用，需要先从 IndexedDB 解析成真实图片
+                if (finalWp.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                    window.ImageDB.resolve(finalWp).then(realUrl => {
+                        if (realUrl) appPage.style.backgroundImage = `url('${realUrl}')`;
+                    }).catch(e => console.warn('壁纸解析失败:', e));
+                } else {
+                    appPage.style.backgroundImage = `url('${finalWp}')`;
+                }
                 
                 appPage.innerHTML = `
-                    <div style="position:absolute;inset:0;${wpStyle}display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
-                        <div style="display:flex;align-items:center;padding:18px 14px 8px;flex-shrink:0;position:relative;z-index:5;">
-                            <span id="cp-back" style="font-size:28px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.5);padding:4px 10px;">‹</span>
-                            <div style="position:absolute;left:50%;transform:translateX(-50%);font-size:15px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.4);">${c.notes || c.name} 的手机</div>
+                    <div style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;display:flex;flex-direction:column;pointer-events:none;">
+                        <div style="display:flex;align-items:flex-end;padding:32px 15px 10px;flex-shrink:0;position:relative;pointer-events:auto;">
+                            <span id="cp-back" style="font-size:22px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.5);width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:11px;transform:translateX(-50%);font-size:17px;color:#fff;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.4);line-height:1;">${c.notes || c.name} 的手机</div>
                         </div>
                         <div style="flex:1;"></div>
-                        <div style="background:rgba(255,255,255,0.25);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);margin:0 14px 24px;padding:14px 10px;border-radius:24px;display:flex;justify-content:space-around;align-items:center;flex-shrink:0;">
+                        <div style="position:absolute;bottom:30px;left:10px;right:10px;height:90px;background-color:rgba(255,255,255,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:30px;display:flex;justify-content:space-around;align-items:flex-start;padding:6px 10px 16px;pointer-events:auto;box-sizing:border-box;">
                             ${dockApps.map(app => {
                                 const customIcon = phoneData.icons && phoneData.icons[app.id];
                                 const iconInner = customIcon 
                                     ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:15px;">`
-                                    : `<span style="font-size:30px;">${app.emoji}</span>`;
-                                return `<div class="ai-dock-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
-                                    <div style="width:60px;height:60px;border-radius:15px;background:${customIcon ? 'transparent' : 'rgba(255,255,255,0.6)'};display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,0.1);">${iconInner}</div>
-                                    <span style="color:#fff;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,0.3);">${app.name}</span>
+                                    : `<span style="font-size:16px;">${app.emoji}</span>`;
+                                return `<div class="ai-dock-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;text-align:center;font-size:12px;color:#775C56;text-shadow:0 1px 2px rgba(255,255,255,0.3);cursor:pointer;flex-shrink:0;width:60px;gap:4px;">
+                                    <div style="width:60px;height:60px;border-radius:15px;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;aspect-ratio:1/1;flex-shrink:0;">${iconInner}</div>
+                                    <span>${app.name}</span>
                                 </div>`;
                             }).join('')}
                         </div>
@@ -4231,6 +4263,7 @@
             
             // AI 的 520：跟用户和虚拟联系人的聊天列表
             function openAI520(appPage, contactId) {
+                appPage.style.removeProperty('background-image'); appPage.style.setProperty('background-color', '#FBF9F4', 'important');
                 const c = DB.getContact(contactId);
                 const userNick = localStorage.getItem('user_nick') || '我';
                 const userAvatar = localStorage.getItem('user_avatar') || '';
@@ -4497,6 +4530,7 @@
             
             // AI 的电话：通用户手机的电话页（看 AI 跟用户的通话记录）
             function openAIPhonePhone(appPage, contactId) {
+                appPage.style.removeProperty('background-image'); appPage.style.setProperty('background-color', '#FBF9F4', 'important');
                 const c = DB.getContact(contactId);
                 const allLog = JSON.parse(localStorage.getItem('call_log') || '[]');
                 // 筛选跟当前 AI 的通话
@@ -4527,6 +4561,7 @@
             
             // AI 的相册：空白占位
             function openAIAlbum(appPage, contactId) {
+                appPage.style.removeProperty('background-image'); appPage.style.setProperty('background-color', '#FBF9F4', 'important');
                 appPage.innerHTML = `
                     <div style="position:absolute;inset:0;background:#FBF9F4;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;">
                         <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;">
@@ -4546,6 +4581,7 @@
             
             // AI 的设置：换壁纸和 app 图标
             function openAISettings(appPage, contactId) {
+                appPage.style.removeProperty('background-image'); appPage.style.setProperty('background-color', '#FBF9F4', 'important');
                 const c = DB.getContact(contactId);
                 const phoneData = c.phoneData || { wallpaper: '', icons: {} };
                 const dockApps = [
@@ -4988,13 +5024,27 @@
                     return `
                     <div class="flex flex-col items-center gap-1">
                         <label class="relative w-12 h-12 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100"
-                               style="${savedIcon ? `background-image: url(${savedIcon}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                               data-icon-app="${app.id}" data-current-icon="${savedIcon || ''}">
                             <input type="file" class="hidden icon-input" data-app="${app.id}" accept="image/*">
                             <span class="text-gray-400 text-xl ${savedIcon ? 'hidden' : ''}">+</span>
                         </label>
                         <span class="text-[10px] text-gray-500">${app.name}</span>
                     </div>
                 `}).join('');
+                
+                // 异步解析 imgdb:// 引用，设置图标背景
+                appIconList.querySelectorAll('label[data-icon-app]').forEach(async lbl => {
+                    const ic = lbl.dataset.currentIcon;
+                    if (!ic) return;
+                    let realUrl = ic;
+                    if (ic.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { realUrl = await window.ImageDB.resolve(ic) || ic; } catch(e) {}
+                    }
+                    lbl.style.backgroundImage = `url(${realUrl})`;
+                    lbl.style.backgroundSize = 'cover';
+                    lbl.style.backgroundPosition = 'center';
+                    lbl.style.borderStyle = 'solid';
+                });
 
                 appIconList.querySelectorAll('.icon-input').forEach(input => {
                     input.onchange = (e) => {
@@ -5158,8 +5208,22 @@
                                 
                                 appIconList.innerHTML = appsToChange.map(app => {
                                     const currentIcon = tempIcons[app.id] || localStorage.getItem(`icon_${app.id}`);
-                                    return `<div class="flex flex-col items-center gap-1"><label class="relative w-12 h-12 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${currentIcon ? `background-image: url(${currentIcon}); background-size: cover; background-position: center; border-style: solid;` : ''}"><input type="file" class="hidden icon-input" data-app="${app.id}" accept="image/*"><span class="text-gray-400 text-xl ${currentIcon ? 'hidden' : ''}">+</span></label><span class="text-[10px] text-gray-500">${app.name}</span></div>`;
+                                    return `<div class="flex flex-col items-center gap-1"><label class="relative w-12 h-12 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" data-icon-app="${app.id}" data-current-icon="${currentIcon || ''}"><input type="file" class="hidden icon-input" data-app="${app.id}" accept="image/*"><span class="text-gray-400 text-xl ${currentIcon ? 'hidden' : ''}">+</span></label><span class="text-[10px] text-gray-500">${app.name}</span></div>`;
                                 }).join('');
+                                
+                                // 异步解析 imgdb:// 引用，设置图标背景
+                                appIconList.querySelectorAll('label[data-icon-app]').forEach(async lbl => {
+                                    const ic = lbl.dataset.currentIcon;
+                                    if (!ic) return;
+                                    let realUrl = ic;
+                                    if (ic.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                        try { realUrl = await window.ImageDB.resolve(ic) || ic; } catch(e) {}
+                                    }
+                                    lbl.style.backgroundImage = `url(${realUrl})`;
+                                    lbl.style.backgroundSize = 'cover';
+                                    lbl.style.backgroundPosition = 'center';
+                                    lbl.style.borderStyle = 'solid';
+                                });
 
                                 appIconList.querySelectorAll('.icon-input').forEach(input => {
                                     input.onchange = (e) => handleImageUpload(e.target.files[0], input.dataset.app, tempIcons, input.parentElement);
