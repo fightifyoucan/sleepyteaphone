@@ -4340,12 +4340,24 @@
                                 { id: 'ainotes', name: '备忘录', emoji: '📝' },
                                 { id: 'aishop', name: '购物车', emoji: '🛒' },
                                 { id: 'aibrowser', name: '浏览器', emoji: '🔍' },
-                                { id: 'aibooks', name: '书单', emoji: '📚' }
+                                { id: 'aibooks', name: '书单', emoji: '📚' },
+                                { id: 'aimoney', name: '记账', emoji: '💰' },
+                                { id: 'aimovie', name: '影单', emoji: '🎬' },
+                                { id: 'aimusic', name: '音乐', emoji: '🎵' },
+                                { id: 'aidiary', name: '日记', emoji: '📔' },
+                                { id: 'airemind', name: '提醒事项', emoji: '⏰' },
+                                { id: 'aisport', name: '运动', emoji: '🏃' },
+                                { id: 'aisleep', name: '睡眠监测', emoji: '😴' },
+                                { id: 'aisocial', name: '社交媒体', emoji: '📱' },
+                                { id: 'aischedule', name: '日程', emoji: '📅' },
+                                { id: 'aicloset', name: '衣柜', emoji: '👗' },
+                                { id: 'aiperfume', name: '香水柜', emoji: '🌸' },
+                                { id: 'ainavi', name: '导航', emoji: '🗺️' }
                             ].map(app => {
                                 const customIcon = phoneData.icons && phoneData.icons[app.id];
                                 const iconInner = customIcon 
                                     ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`
-                                    : `<div style="width:100%;height:100%;background:rgba(255,255,255,0.35);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid rgba(255,255,255,0.3);">${app.emoji}</div>`;
+                                    : `<div style="width:100%;height:100%;background:rgba(255,255,255,0.35);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(255,255,255,0.3);">${app.emoji}</div>`;
                                 const labelColor = phoneData.textBrown ? '#775C56' : '#fff';
                                 const labelShadow = phoneData.textBrown ? 'text-shadow:0 1px 2px rgba(255,255,255,0.4);' : 'text-shadow:0 1px 3px rgba(0,0,0,0.5);';
                                 return `<div class="ai-home-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;text-align:center;font-size:11px;color:${labelColor};${labelShadow}cursor:pointer;gap:4px;">
@@ -4400,6 +4412,30 @@
                     openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.browser);
                 } else if (aiAppId === 'aibooks') {
                     openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.books);
+                } else if (aiAppId === 'aimoney') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.money);
+                } else if (aiAppId === 'aimovie') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.movie);
+                } else if (aiAppId === 'aimusic') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.music);
+                } else if (aiAppId === 'aidiary') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.diary);
+                } else if (aiAppId === 'airemind') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.remind);
+                } else if (aiAppId === 'aisport') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.sport);
+                } else if (aiAppId === 'aisleep') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.sleep);
+                } else if (aiAppId === 'aisocial') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.social);
+                } else if (aiAppId === 'aischedule') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.schedule);
+                } else if (aiAppId === 'aicloset') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.closet);
+                } else if (aiAppId === 'aiperfume') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.perfume);
+                } else if (aiAppId === 'ainavi') {
+                    openAIGenericApp(appPage, contactId, AI_APP_CONFIGS.navi);
                 }
             }
             
@@ -4515,6 +4551,575 @@
                         ${item.author ? `<div style="font-size:12px;color:#9A7872;margin-bottom:14px;">${item.author}</div>` : '<div style="margin-bottom:14px;"></div>'}
                         <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">读后感</div>
                         <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.review}</div>`
+                },
+                money: {
+                    storageKey: 'aiMoney',
+                    title: '记账',
+                    emptyHint: '还没有账单',
+                    genHint: '点右上角"生成"让 TA 记一笔',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记一笔账（收入或支出都行，但支出更常见）。\n要求：\n1. 内容要贴合人设/性格/最近心情/生活轨迹。可以是吃饭买菜咖啡打车交通日用品衣服化妆品、给${userNick}买礼物、和朋友AA、报销/工资进账、追星周边、宠物用品等等。\n2. 严格按以下格式输出，每行一个字段：\n类型：（"支出"或"收入"，只能选一个）\n金额：（人民币数字，写"¥XX"或"¥XX.XX"，符合该项目合理价位）\n类别：（一个2-4字的分类标签：餐饮/交通/购物/娱乐/医疗/礼物/工资/红包/转账/咖啡/零食/水电等）\n备注：（TA 的真实想法，第一人称，自然口语，15-50字。可以体现情绪，比如"这周第三杯了再喝就破产"/"给${userNick}买的，希望ta喜欢"/"工资到啦呜呜呜"）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let type = '支出', amount = '', category = '', note = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(类型|金额|类别|备注)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '类型') type = m[2].includes('收入') ? '收入' : '支出';
+                                else if (m[1] === '金额') amount = m[2];
+                                else if (m[1] === '类别') category = m[2];
+                                else if (m[1] === '备注') note = m[2];
+                            }
+                        }
+                        if (!amount) amount = '¥??';
+                        if (!category) category = '其他';
+                        return { type, amount, category, note, content: note };
+                    },
+                    listItem: (item, idx) => {
+                        const isIncome = item.type === '收入';
+                        const sign = isIncome ? '+' : '-';
+                        const color = isIncome ? '#7CB17C' : '#E89B6C';
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FFFAEF;border-radius:10px;cursor:pointer;border:1px solid #f0e5c8;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="font-size:11px;color:#fff;background:${color};padding:2px 7px;border-radius:8px;flex-shrink:0;">${item.category}</span>
+                                    <span style="font-size:12px;color:#9A7872;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.note}</span>
+                                </div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:6px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                            <div style="font-size:15px;color:${color};font-weight:600;flex-shrink:0;">${sign}${(item.amount||'').replace(/^[¥￥]?/,'¥')}</div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const isIncome = item.type === '收入';
+                        const sign = isIncome ? '+' : '-';
+                        const color = isIncome ? '#7CB17C' : '#E89B6C';
+                        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                            <span style="font-size:11px;color:#fff;background:${color};padding:3px 10px;border-radius:10px;">${item.category}</span>
+                            <span style="font-size:11px;color:#9A7872;">${item.type}</span>
+                        </div>
+                        <div style="font-size:26px;color:${color};font-weight:600;margin-bottom:14px;">${sign}${(item.amount||'').replace(/^[¥￥]?/,'¥')}</div>
+                        <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">备注</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.note}</div>`;
+                    }
+                },
+                movie: {
+                    storageKey: 'aiMovie',
+                    title: '影单',
+                    emptyHint: '影单还是空的',
+                    genHint: '点右上角"生成"让 TA 加一部',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，往 TA 的影单里加一部影视作品（电影/电视剧/动画/纪录片都行）。\n要求：\n1. 贴合人设/性格/兴趣/最近心情。可以是真实作品也可以编一个有真实感的名字。\n2. 严格按以下格式输出，每行一个字段：\n标题：（影视作品名，3-15字）\n类型：（电影/电视剧/动画/纪录片/综艺，只能选一个）\n评分：（1-5的整数星星数，直接写数字，比如"4"或"5"）\n短评：（TA 看完的真实感受，第一人称，自然口语，30-80字。可以是被某段戳到/想推荐给${userNick}/熬夜追完/失望吐槽等等。要有真实观感）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let title = '', kind = '电影', rating = 4, review = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(标题|类型|评分|短评)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '标题') title = m[2];
+                                else if (m[1] === '类型') kind = m[2];
+                                else if (m[1] === '评分') { const r = parseInt(m[2]); if (!isNaN(r) && r >= 1 && r <= 5) rating = r; }
+                                else if (m[1] === '短评') review = m[2];
+                            }
+                        }
+                        if (!title) title = lines[0] || '一部作品';
+                        return { title, kind, rating, review, content: review };
+                    },
+                    listItem: (item, idx) => {
+                        const stars = '★'.repeat(item.rating || 0) + '☆'.repeat(5 - (item.rating || 0));
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FCF2F0;border-radius:10px;cursor:pointer;border:1px solid #f0d6d0;">
+                            <div style="display:flex;gap:10px;align-items:flex-start;">
+                                <div style="font-size:18px;flex-shrink:0;">🎬</div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.title}</div>
+                                    <div style="font-size:11px;color:#E89B6C;margin-top:2px;">${stars} <span style="color:#B89B95;margin-left:4px;">${item.kind}</span></div>
+                                    <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const stars = '★'.repeat(item.rating || 0) + '☆'.repeat(5 - (item.rating || 0));
+                        return `<div style="font-size:16px;color:#775C56;font-weight:600;margin-bottom:4px;">${item.title}</div>
+                            <div style="font-size:12px;color:#9A7872;margin-bottom:10px;">${item.kind}</div>
+                            <div style="font-size:18px;color:#E89B6C;margin-bottom:14px;letter-spacing:2px;">${stars}</div>
+                            <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">观后感</div>
+                            <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.review}</div>`;
+                    }
+                },
+                music: {
+                    storageKey: 'aiMusic',
+                    title: '音乐',
+                    emptyHint: '还没有收藏的歌',
+                    genHint: '点右上角"生成"让 TA 加一首',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，往 TA 的音乐收藏里加一首歌。\n要求：\n1. 贴合人设/性格/最近心情。可以是真实歌曲也可以编一个有真实感的名字。歌手风格要符合人物气质。\n2. 严格按以下格式输出，每行一个字段：\n歌名：（歌的名字，3-15字）\n歌手：（歌手名，2-8字）\n心情标签：（一个3-6字的心情标签：循环上头/深夜emo/治愈系/上班通勤/想念他/单曲循环/泪目/欢快/平静/愤怒等）\n感受：（TA 听这首歌的真实感受，第一人称，自然口语，25-70字。可以说哪句词戳到/想到了谁/为什么单曲循环/想发给${userNick}听等等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let song = '', artist = '', mood = '', feeling = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(歌名|歌手|心情标签|感受)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '歌名') song = m[2];
+                                else if (m[1] === '歌手') artist = m[2];
+                                else if (m[1] === '心情标签') mood = m[2];
+                                else if (m[1] === '感受') feeling = m[2];
+                            }
+                        }
+                        if (!song) song = lines[0] || '一首歌';
+                        return { song, artist, mood, feeling, content: feeling };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#F0F5FF;border-radius:10px;cursor:pointer;border:1px solid #d6e0f5;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <div style="font-size:18px;flex-shrink:0;">🎵</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:13px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.song}</div>
+                                <div style="font-size:11px;color:#9A7872;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.artist}${item.mood ? ` · <span style="color:#7C92B8;">${item.mood}</span>` : ''}</div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="font-size:16px;color:#775C56;font-weight:600;margin-bottom:4px;">${item.song}</div>
+                        <div style="font-size:12px;color:#9A7872;margin-bottom:10px;">${item.artist}</div>
+                        ${item.mood ? `<div style="font-size:12px;color:#fff;background:#7C92B8;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:14px;">${item.mood}</div>` : ''}
+                        <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">想说的话</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.feeling}</div>`
+                },
+                diary: {
+                    storageKey: 'aiDiary',
+                    title: '日记',
+                    emptyHint: '还没有日记',
+                    genHint: '点右上角"生成"让 TA 写一篇',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的第一人称视角，写一篇真实的私人日记。\n要求：\n1. 内容要贴合人设/性格/最近心情/和${userNick}的关系。要比备忘录更长、更完整、更有情绪深度。可以写今天发生的事、和${userNick}的相处片段、内心独白、对未来的想法、烦恼困惑、小确幸、做的梦等等。\n2. 真实、有温度。可以提到具体细节（吃了什么、天气、衣服颜色、对方说的某句话），这些细节让日记真实。\n3. 长度 100~250 字，可以分段。语气自然口语化，像真的在写给自己看的日记，不需要起伏跌宕，可以平淡也可以有情绪。\n4. 不要加标题、不要加日期（系统会自动加时间）、不要加emoji、不要加引号。直接输出日记正文。`,
+                    parse: (text) => ({ content: text.trim() }),
+                    listItem: (item, idx) => {
+                        const preview = (item.content || '').slice(0, 50).replace(/\n/g, ' ');
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#F7F2EC;border-radius:10px;cursor:pointer;border:1px solid #e8dcc8;">
+                            <div style="display:flex;gap:10px;align-items:flex-start;">
+                                <div style="font-size:18px;flex-shrink:0;">📔</div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;color:#775C56;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${preview}${item.content.length > 50 ? '…' : ''}</div>
+                                    <div style="font-size:10px;color:#B89B95;margin-top:6px;">${formatRelativeTime(item.time)}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const d = new Date(item.time);
+                        const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 · ' + ['日','一','二','三','四','五','六'][d.getDay()] + '曜日';
+                        return `<div style="font-size:12px;color:#9A7872;margin-bottom:14px;text-align:center;letter-spacing:1px;">${dateStr}</div>
+                            <div style="font-size:14px;color:#775C56;line-height:1.9;white-space:pre-wrap;font-family:'Songti SC','宋体',serif;">${item.content}</div>`;
+                    }
+                },
+                remind: {
+                    storageKey: 'aiRemind',
+                    title: '提醒事项',
+                    emptyHint: '还没有要提醒的事',
+                    genHint: '点右上角"生成"让 TA 加一条',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，加一条 TA 给自己设的提醒事项。\n要求：\n1. 贴合人设/生活/最近正在做的事/和${userNick}的关系。可以是：要做的事（明天交报告/记得吃药/周三体检）、给${userNick}相关的（${userNick}生日记得订蛋糕/${userNick}爱吃的菜买一下）、自我督促（少喝咖啡/早睡/健身）、日程（朋友聚会/家庭聚餐）等。\n2. 严格按以下格式输出，每行一个字段：\n事项：（要提醒的内容，10-30字，简洁有目的性）\n时间：（提醒时间，自然描述：今天下午/明天早上/这周末/3月20日/睡前/午饭后等）\n备注：（可选，为什么要做这件事或要注意什么，10-40字。如果没什么备注就写"无"）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let title = '', when = '', note = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(事项|时间|备注)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '事项') title = m[2];
+                                else if (m[1] === '时间') when = m[2];
+                                else if (m[1] === '备注') note = m[2] === '无' ? '' : m[2];
+                            }
+                        }
+                        if (!title) title = lines[0] || '一件事';
+                        return { title, when, note, content: title };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FFF7E8;border-radius:10px;cursor:pointer;border:1px solid #f0e0c0;">
+                        <div style="display:flex;gap:10px;align-items:flex-start;">
+                            <div style="font-size:16px;flex-shrink:0;margin-top:1px;">⏰</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:13px;color:#775C56;font-weight:500;line-height:1.4;">${item.title}</div>
+                                ${item.when ? `<div style="font-size:11px;color:#D4A26A;margin-top:4px;font-weight:500;">${item.when}</div>` : ''}
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="font-size:15px;color:#775C56;font-weight:600;line-height:1.5;margin-bottom:14px;">${item.title}</div>
+                        ${item.when ? `<div style="font-size:11px;color:#B89B95;margin-bottom:4px;">提醒时间</div>
+                            <div style="font-size:14px;color:#D4A26A;margin-bottom:14px;padding:8px 12px;background:#FFF7E8;border-radius:8px;font-weight:500;">⏰ ${item.when}</div>` : ''}
+                        ${item.note ? `<div style="font-size:11px;color:#B89B95;margin-bottom:6px;">备注</div>
+                            <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.note}</div>` : ''}`
+                },
+                sport: {
+                    storageKey: 'aiSport',
+                    title: '运动',
+                    emptyHint: '还没有运动记录',
+                    genHint: '点右上角"生成"让 TA 记一次',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记一条 TA 个人的运动记录。\n要求：\n1. 这是 ${c.name} 个人的运动数据，不包含${userNick}。运动类型贴合人设（懒散的人可能是散步/瑜伽，运动型的可能是跑步/健身/游泳/篮球等）。\n2. 严格按以下格式输出，每行一个字段：\n项目：（运动项目名，2-6字：跑步/瑜伽/健身/游泳/骑行/打球/散步/拳击/普拉提等）\n时长：（运动时长，如"30分钟"/"1小时15分"）\n数据：（一个核心数据：跑步写"5.2公里"，健身写"消耗320卡"，瑜伽写"完成12个体式"，散步写"6800步"，根据项目自然选择）\n感想：（运动后的真实感受，第一人称，自然口语，20-60字。可以是累/爽/想坚持/想偷懒/比上次进步了等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let kind = '', duration = '', data = '', feeling = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(项目|时长|数据|感想)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '项目') kind = m[2];
+                                else if (m[1] === '时长') duration = m[2];
+                                else if (m[1] === '数据') data = m[2];
+                                else if (m[1] === '感想') feeling = m[2];
+                            }
+                        }
+                        if (!kind) kind = lines[0] || '运动';
+                        return { kind, duration, data, feeling, content: feeling };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#EEF7EF;border-radius:10px;cursor:pointer;border:1px solid #d0e8d4;">
+                        <div style="display:flex;gap:10px;align-items:center;">
+                            <div style="font-size:18px;flex-shrink:0;">🏃</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:13px;color:#775C56;font-weight:500;">${item.kind}</span>
+                                    <span style="font-size:11px;color:#7CB17C;">· ${item.duration}</span>
+                                </div>
+                                <div style="font-size:12px;color:#5A9A66;margin-top:3px;font-weight:500;">${item.data}</div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                        <span style="font-size:22px;">🏃</span>
+                        <div>
+                            <div style="font-size:16px;color:#775C56;font-weight:600;">${item.kind}</div>
+                            <div style="font-size:11px;color:#9A7872;margin-top:2px;">${item.duration}</div>
+                        </div>
+                    </div>
+                    <div style="font-size:24px;color:#5A9A66;font-weight:600;margin-bottom:14px;padding:10px 14px;background:#EEF7EF;border-radius:10px;text-align:center;">${item.data}</div>
+                    <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">运动手记</div>
+                    <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.feeling}</div>`
+                },
+                sleep: {
+                    storageKey: 'aiSleep',
+                    title: '睡眠监测',
+                    emptyHint: '还没有睡眠记录',
+                    genHint: '点右上角"生成"让 TA 记一晚',
+                    prompt: (c, userNick) => {
+                        // 判断 AI 和用户是否是伴侣关系
+                        const personaText = (c.persona || '') + ' ' + (c.memory?.manual || '') + ' ' + (c.notes || '');
+                        const hasPartnerKeyword = /已婚|结婚|妻子|丈夫|老婆|老公|媳妇|爱人|配偶|未婚妻|未婚夫|有对象|有男朋友|有女朋友|恋爱中|在一起|交往中|伴侣|另一半|恋人|情人|爱侣|男友|女友|喜欢的人|心上人|喜欢用户|爱用户|和.{0,4}相恋|与.{0,4}相恋|谈恋爱/.test(personaText);
+                        const explicitSingle = /单身|未婚|没对象|没有对象|没男朋友|没女朋友|分手|失恋|前任/.test(personaText);
+                        const mentionsUser = /用户|玩家/.test(personaText) || (userNick.length >= 2 && personaText.includes(userNick));
+                        const noteSuggestsPartner = c.notes && /老婆|老公|媳妇|对象|男朋友|女朋友|男友|女友|恋人|爱人|宝宝|宝贝|心肝|亲爱|配偶|未婚妻|未婚夫|另一半/.test(c.notes);
+                        const isPartner = (hasPartnerKeyword && mentionsUser && !explicitSingle) || noteSuggestsPartner;
+                        
+                        let p = `【任务】：以 "${c.name}" 的视角，记一晚的睡眠监测数据。\n要求：\n1. 这是 ${c.name} 的睡眠数据（手表/手环自动记录的）。\n`;
+                        if (isPartner) {
+                            p += `2. ${c.name} 和 ${userNick} 是伴侣，所以记录里可以体现：是不是和${userNick}一起睡的、是不是被${userNick}吵醒/抱着睡得很香/${userNick}打呼噜睡不着、${userNick}没在身边失眠等等。也可以是 ${c.name} 自己一个人睡的某一晚。这两种都行，自然分布。\n`;
+                        } else {
+                            p += `2. ${c.name} 是一个人睡的，可以体现：熬夜了/失眠/做梦/被吵醒/睡得很沉/早醒等。\n`;
+                        }
+                        p += `3. 严格按以下格式输出，每行一个字段：\n入睡：（入睡时间，如"23:45"/"01:20"）\n起床：（起床时间，如"07:15"）\n总时长：（总睡眠时长，如"7小时30分"）\n质量：（睡眠质量评价：极好/良好/一般/较差，只能选一个）\n备注：（${c.name}的真实感受和睡眠片段，第一人称，自然口语，30-80字。可以提到做的梦、几点醒过、心情、${isPartner ? '是否和'+userNick+'相关' : '熬夜原因'}等）\n4. 不要加额外说明、不要加引号或编号。`;
+                        return p;
+                    },
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let sleepAt = '', wakeAt = '', total = '', quality = '一般', note = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(入睡|起床|总时长|质量|备注)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '入睡') sleepAt = m[2];
+                                else if (m[1] === '起床') wakeAt = m[2];
+                                else if (m[1] === '总时长') total = m[2];
+                                else if (m[1] === '质量') quality = m[2];
+                                else if (m[1] === '备注') note = m[2];
+                            }
+                        }
+                        return { sleepAt, wakeAt, total, quality, note, content: note };
+                    },
+                    listItem: (item, idx) => {
+                        const qColors = { '极好':'#7CB17C', '良好':'#A8C68F', '一般':'#D4A26A', '较差':'#E89B6C' };
+                        const qColor = qColors[item.quality] || '#9A7872';
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#F0EFF7;border-radius:10px;cursor:pointer;border:1px solid #d6d4e8;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+                                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                                    <div style="font-size:18px;flex-shrink:0;">😴</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:500;">${item.sleepAt || '?'} - ${item.wakeAt || '?'}</div>
+                                        <div style="font-size:11px;color:#9A7872;margin-top:3px;">${item.total || ''}</div>
+                                        <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                                    </div>
+                                </div>
+                                <span style="font-size:11px;color:#fff;background:${qColor};padding:3px 10px;border-radius:10px;flex-shrink:0;">${item.quality}</span>
+                            </div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const qColors = { '极好':'#7CB17C', '良好':'#A8C68F', '一般':'#D4A26A', '较差':'#E89B6C' };
+                        const qColor = qColors[item.quality] || '#9A7872';
+                        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                            <span style="font-size:22px;">😴</span>
+                            <div>
+                                <div style="font-size:16px;color:#775C56;font-weight:600;">${item.sleepAt} - ${item.wakeAt}</div>
+                                <div style="font-size:11px;color:#9A7872;margin-top:2px;">总共睡了 ${item.total}</div>
+                            </div>
+                        </div>
+                        <div style="margin-bottom:14px;padding:10px 14px;background:#F0EFF7;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:12px;color:#9A7872;">睡眠质量</span>
+                            <span style="font-size:13px;color:#fff;background:${qColor};padding:3px 12px;border-radius:10px;font-weight:500;">${item.quality}</span>
+                        </div>
+                        <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">睡眠手记</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.note}</div>`;
+                    }
+                },
+                social: {
+                    storageKey: 'aiSocial',
+                    title: '社交媒体',
+                    emptyHint: '还没有刷过任何内容',
+                    genHint: '点右上角"生成"让 TA 刷一刷',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记一条 TA 在社交媒体上看到的内容（小红书/抖音/微博/B站/Instagram/Twitter之类）。\n要求：\n1. 贴合人设/兴趣/最近心情。可以是搞笑视频、八卦帖子、教程、美食、风景、宠物、emo文案、和${userNick}有关的（情侣帖/送礼物攻略）等等。\n2. 严格按以下格式输出，每行一个字段：\n平台：（来源平台：小红书/抖音/微博/B站/朋友圈/Instagram/Twitter等，2-4字）\n类型：（内容形式：视频/帖子/文章/图文，只能选一个）\n标题：（${c.name}看到的内容是什么，简洁概括，10-30字。可以是视频标题/帖子标题/up主名+主题）\n反应：（${c.name}看完的真实反应，第一人称，自然口语，20-60字。可以是被戳到/笑死/想转发给${userNick}/收藏了/没意思下一个等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let platform = '', kind = '帖子', title = '', reaction = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(平台|类型|标题|反应)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '平台') platform = m[2];
+                                else if (m[1] === '类型') kind = m[2];
+                                else if (m[1] === '标题') title = m[2];
+                                else if (m[1] === '反应') reaction = m[2];
+                            }
+                        }
+                        if (!title) title = lines[0] || '看了点什么';
+                        return { platform, kind, title, reaction, content: reaction };
+                    },
+                    listItem: (item, idx) => {
+                        const kindIcon = item.kind === '视频' ? '▶' : (item.kind === '文章' ? '📄' : '📌');
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FDF0F4;border-radius:10px;cursor:pointer;border:1px solid #f0d0dd;">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                                ${item.platform ? `<span style="font-size:10px;color:#fff;background:#D08FA5;padding:2px 8px;border-radius:8px;">${item.platform}</span>` : ''}
+                                <span style="font-size:11px;color:#9A7872;">${kindIcon} ${item.kind}</span>
+                            </div>
+                            <div style="font-size:13px;color:#775C56;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${item.title}</div>
+                            <div style="font-size:10px;color:#B89B95;margin-top:6px;">${formatRelativeTime(item.time)}</div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const kindIcon = item.kind === '视频' ? '▶' : (item.kind === '文章' ? '📄' : '📌');
+                        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+                            ${item.platform ? `<span style="font-size:11px;color:#fff;background:#D08FA5;padding:3px 10px;border-radius:10px;">${item.platform}</span>` : ''}
+                            <span style="font-size:11px;color:#9A7872;">${kindIcon} ${item.kind}</span>
+                        </div>
+                        <div style="font-size:14px;color:#775C56;font-weight:500;line-height:1.5;margin-bottom:14px;padding:10px 14px;background:#FDF0F4;border-radius:10px;">${item.title}</div>
+                        <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">${'TA'}的反应</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.reaction}</div>`;
+                    }
+                },
+                schedule: {
+                    storageKey: 'aiSchedule',
+                    title: '日程',
+                    emptyHint: '今天还没安排',
+                    genHint: '点右上角"生成"让 TA 记一天',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记录 TA 一天的日程（不是单一事件，是一整天做了什么）。\n要求：\n1. 贴合人设/生活节奏/职业。要像真人写一天的备忘——上班族会有上班/会议/通勤/午饭，学生有上课/自习/约朋友，自由职业者可能更随性。\n2. 严格按以下格式输出，每行一个字段：\n标题：（这一天的主题/概括，4-12字，比如"普通的周三"、"加班到爆"、"和${userNick}约会"、"睡了一天"）\n安排：（一天的事项列表，每件事一行，格式"HH:MM 做了什么"，5-10条事项，从早到晚。事项要具体生活化：起床/早饭/上班/开会/午饭吃了什么/下午茶/下班/晚饭/和${userNick}视频/追剧/睡觉等。可以体现 TA 的性格和最近心情）\n感想：（一天结束的总结感受，第一人称，自然口语，20-50字，比如累/充实/想偷懒/想${userNick}了等）\n3. 不要加额外说明、不要加引号或编号。"安排"那段就直接换行写不要加破折号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let title = '', schedule = [], summary = '';
+                        let mode = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(标题|安排|感想)[:：]\s*(.*)$/);
+                            if (m) {
+                                if (m[1] === '标题') { title = m[2]; mode = ''; }
+                                else if (m[1] === '安排') { mode = 'schedule'; if (m[2]) schedule.push(m[2]); }
+                                else if (m[1] === '感想') { summary = m[2]; mode = ''; }
+                            } else if (mode === 'schedule') {
+                                // 收集后续的时间事项
+                                if (/^\d{1,2}[:：]/.test(line) || /^[•·\-]/.test(line)) {
+                                    schedule.push(line.replace(/^[•·\-]\s*/, ''));
+                                }
+                            }
+                        }
+                        if (!title) title = '某一天';
+                        return { title, schedule, summary, content: summary };
+                    },
+                    listItem: (item, idx) => {
+                        const count = (item.schedule || []).length;
+                        return `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#F5F8F0;border-radius:10px;cursor:pointer;border:1px solid #d8e0c8;">
+                            <div style="display:flex;gap:10px;align-items:flex-start;">
+                                <div style="font-size:18px;flex-shrink:0;">📅</div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.title}</div>
+                                    <div style="font-size:11px;color:#9A7872;margin-top:3px;">${count}条安排</div>
+                                    <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    },
+                    detailBody: (item) => {
+                        const d = new Date(item.time);
+                        const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 · 星期' + ['日','一','二','三','四','五','六'][d.getDay()];
+                        const scheduleHtml = (item.schedule || []).map(s => {
+                            const m = s.match(/^(\d{1,2}[:：]\d{2})\s*(.*)$/);
+                            if (m) {
+                                return `<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed #e8dcc8;">
+                                    <span style="font-size:12px;color:#7A9460;font-weight:500;flex-shrink:0;width:46px;">${m[1].replace('：',':')}</span>
+                                    <span style="font-size:13px;color:#775C56;flex:1;">${m[2]}</span>
+                                </div>`;
+                            }
+                            return `<div style="font-size:13px;color:#775C56;padding:6px 0;border-bottom:1px dashed #e8dcc8;">${s}</div>`;
+                        }).join('');
+                        return `<div style="font-size:15px;color:#775C56;font-weight:600;margin-bottom:4px;">${item.title}</div>
+                            <div style="font-size:11px;color:#9A7872;margin-bottom:14px;">${dateStr}</div>
+                            <div style="margin-bottom:14px;">${scheduleHtml}</div>
+                            ${item.summary ? `<div style="font-size:11px;color:#B89B95;margin-bottom:6px;">一天的感想</div>
+                                <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.summary}</div>` : ''}`;
+                    }
+                },
+                closet: {
+                    storageKey: 'aiCloset',
+                    title: '衣柜',
+                    emptyHint: '衣柜里还没有穿搭',
+                    genHint: '点右上角"生成"记一套今日穿搭',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记录一套穿搭。\n要求：\n1. 贴合人设/性别/性格/职业/场合。可以是上班通勤、和${userNick}约会、宅家、运动、聚会等场合的穿搭。风格要符合人物气质。\n2. 严格按以下格式输出，每行一个字段：\n场合：（这套穿搭的场合，4-8字，比如"周三上班"/"和${userNick}约会"/"周末居家"/"出门买菜"/"朋友聚餐"）\n上衣：（上身穿了什么，可以带颜色/品牌/材质，5-15字）\n下装：（下身穿了什么，5-15字）\n鞋子：（鞋子描述，3-10字）\n配饰：（包/首饰/帽子/外套/眼镜等，没有就写"无"，可写多个用顿号分隔，5-25字）\n心情：（穿这套的心情/想法，第一人称，自然口语，20-50字，比如"穿这套自信爆棚"/"想被${userNick}夸"/"懒人穿搭就这么对付了"等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let occasion = '', top = '', bottom = '', shoes = '', accessory = '', mood = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(场合|上衣|下装|鞋子|配饰|心情)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '场合') occasion = m[2];
+                                else if (m[1] === '上衣') top = m[2];
+                                else if (m[1] === '下装') bottom = m[2];
+                                else if (m[1] === '鞋子') shoes = m[2];
+                                else if (m[1] === '配饰') accessory = m[2] === '无' ? '' : m[2];
+                                else if (m[1] === '心情') mood = m[2];
+                            }
+                        }
+                        return { occasion, top, bottom, shoes, accessory, mood, content: mood };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FAF3F8;border-radius:10px;cursor:pointer;border:1px solid #ebd6e3;">
+                        <div style="display:flex;gap:10px;align-items:flex-start;">
+                            <div style="font-size:18px;flex-shrink:0;">👗</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:13px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.occasion || '日常穿搭'}</div>
+                                <div style="font-size:11px;color:#9A7872;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.top} · ${item.bottom}</div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="font-size:15px;color:#775C56;font-weight:600;margin-bottom:14px;">${item.occasion || '日常穿搭'}</div>
+                        <div style="background:#FAF3F8;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                            <div style="display:flex;gap:10px;padding:4px 0;font-size:13px;">
+                                <span style="color:#B89B95;flex-shrink:0;width:38px;">上衣</span>
+                                <span style="color:#775C56;flex:1;">${item.top}</span>
+                            </div>
+                            <div style="display:flex;gap:10px;padding:4px 0;font-size:13px;border-top:1px dashed #ebd6e3;">
+                                <span style="color:#B89B95;flex-shrink:0;width:38px;">下装</span>
+                                <span style="color:#775C56;flex:1;">${item.bottom}</span>
+                            </div>
+                            <div style="display:flex;gap:10px;padding:4px 0;font-size:13px;border-top:1px dashed #ebd6e3;">
+                                <span style="color:#B89B95;flex-shrink:0;width:38px;">鞋子</span>
+                                <span style="color:#775C56;flex:1;">${item.shoes}</span>
+                            </div>
+                            ${item.accessory ? `<div style="display:flex;gap:10px;padding:4px 0;font-size:13px;border-top:1px dashed #ebd6e3;">
+                                <span style="color:#B89B95;flex-shrink:0;width:38px;">配饰</span>
+                                <span style="color:#775C56;flex:1;">${item.accessory}</span>
+                            </div>` : ''}
+                        </div>
+                        ${item.mood ? `<div style="font-size:11px;color:#B89B95;margin-bottom:6px;">穿搭心情</div>
+                            <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.mood}</div>` : ''}`
+                },
+                perfume: {
+                    storageKey: 'aiPerfume',
+                    title: '香水柜',
+                    emptyHint: '还没有收藏香水',
+                    genHint: '点右上角"生成"加一瓶',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记一瓶 TA 在用或想用的香水。\n要求：\n1. 贴合人设/性别/性格/气质/季节。可以是真实存在的香水（祖马龙/爱马仕/迪奥/diptyque/Le Labo等）也可以编一个有真实感的名字。\n2. 严格按以下格式输出，每行一个字段：\n品牌：（香水品牌，2-10字）\n名称：（香水名字，3-15字）\n香调：（核心香调描述，比如"柑橘+雪松"/"白茶+牡丹"/"东方木质"，6-15字）\n场合：（适合什么时候用，比如"约会用"/"上班通勤"/"睡前一喷"/"想${userNick}的时候"，4-12字）\n感受：（TA 对这瓶香水的真实评价，第一人称，自然口语，30-70字。可以说前调中调后调的变化/被夸/想送给${userNick}/留香时间/价格肉疼等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let brand = '', name = '', notes = '', occasion = '', feeling = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(品牌|名称|香调|场合|感受)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '品牌') brand = m[2];
+                                else if (m[1] === '名称') name = m[2];
+                                else if (m[1] === '香调') notes = m[2];
+                                else if (m[1] === '场合') occasion = m[2];
+                                else if (m[1] === '感受') feeling = m[2];
+                            }
+                        }
+                        if (!name) name = lines[0] || '一瓶香水';
+                        return { brand, name, notes, occasion, feeling, content: feeling };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#FBF6FF;border-radius:10px;cursor:pointer;border:1px solid #e2d6f0;">
+                        <div style="display:flex;gap:10px;align-items:flex-start;">
+                            <div style="font-size:18px;flex-shrink:0;">🌸</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:13px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</div>
+                                <div style="font-size:11px;color:#9A7872;margin-top:2px;">${item.brand}${item.notes ? ` · <span style="color:#A78FBE;">${item.notes}</span>` : ''}</div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="font-size:16px;color:#775C56;font-weight:600;margin-bottom:4px;">${item.name}</div>
+                        <div style="font-size:12px;color:#9A7872;margin-bottom:14px;">${item.brand}</div>
+                        ${item.notes ? `<div style="background:#FBF6FF;border-radius:10px;padding:10px 14px;margin-bottom:10px;">
+                            <div style="font-size:11px;color:#B89B95;margin-bottom:4px;">香调</div>
+                            <div style="font-size:13px;color:#A78FBE;font-weight:500;">${item.notes}</div>
+                        </div>` : ''}
+                        ${item.occasion ? `<div style="font-size:12px;color:#fff;background:#A78FBE;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:14px;">${item.occasion}</div>` : ''}
+                        <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">使用感受</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.feeling}</div>`
+                },
+                navi: {
+                    storageKey: 'aiNavi',
+                    title: '导航',
+                    emptyHint: '还没有出行记录',
+                    genHint: '点右上角"生成"记一次出行',
+                    prompt: (c, userNick) => `【任务】：以 "${c.name}" 的视角，记一次开车（或打车）出门的导航记录。\n要求：\n1. 贴合人设/生活/最近行程。可以是上下班通勤、去超市、去医院、约会、回家、出差等。\n2. 严格按以下格式输出，每行一个字段：\n起点：（出发地名字，5-15字，比如"家"/"公司"/"星巴克(国贸店)"）\n终点：（目的地名字，5-15字，比如"${userNick}家楼下"/"丽华苑小区"/"机场T2"/"妈妈家"）\n距离：（公里数，写"X.X公里"或"XX公里"）\n用时：（开车用时，比如"25分钟"/"1小时10分"）\n路况：（路况描述，4-10字，比如"一路畅通"/"堵成狗"/"小雨慢行"/"地库出门就堵"）\n备注：（这次出行的心情/目的/感想，第一人称，自然口语，25-60字。可以说为什么去/堵车有多烦/路上想什么/到了之后干嘛等）\n3. 不要加额外说明、不要加引号或编号。`,
+                    parse: (text) => {
+                        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                        let from = '', to = '', distance = '', duration = '', traffic = '', note = '';
+                        for (const line of lines) {
+                            const m = line.match(/^(起点|终点|距离|用时|路况|备注)[:：]\s*(.+)$/);
+                            if (m) {
+                                if (m[1] === '起点') from = m[2];
+                                else if (m[1] === '终点') to = m[2];
+                                else if (m[1] === '距离') distance = m[2];
+                                else if (m[1] === '用时') duration = m[2];
+                                else if (m[1] === '路况') traffic = m[2];
+                                else if (m[1] === '备注') note = m[2];
+                            }
+                        }
+                        return { from, to, distance, duration, traffic, note, content: note };
+                    },
+                    listItem: (item, idx) => `<div class="ai-app-item" data-idx="${idx}" style="padding:14px 16px;background:#EEF4F7;border-radius:10px;cursor:pointer;border:1px solid #cfdde6;">
+                        <div style="display:flex;gap:10px;align-items:flex-start;">
+                            <div style="font-size:18px;flex-shrink:0;">🗺️</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <span style="font-size:12px;color:#775C56;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px;">${item.from}</span>
+                                    <span style="font-size:11px;color:#7896A8;">→</span>
+                                    <span style="font-size:12px;color:#775C56;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${item.to}</span>
+                                </div>
+                                <div style="font-size:11px;color:#9A7872;margin-top:3px;">${item.distance}${item.duration ? ' · ' + item.duration : ''}</div>
+                                <div style="font-size:10px;color:#B89B95;margin-top:4px;">${formatRelativeTime(item.time)}</div>
+                            </div>
+                        </div>
+                    </div>`,
+                    detailBody: (item) => `<div style="background:#EEF4F7;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:#7896A8;flex-shrink:0;"></span>
+                            <span style="font-size:13px;color:#775C56;">${item.from}</span>
+                        </div>
+                        <div style="margin-left:3px;border-left:2px dashed #cfdde6;height:14px;"></div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:#E89B9B;flex-shrink:0;"></span>
+                            <span style="font-size:13px;color:#775C56;font-weight:500;">${item.to}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-bottom:14px;">
+                        ${item.distance ? `<div style="flex:1;background:#fff;padding:8px;border-radius:8px;text-align:center;border:1px solid #e8e0d0;">
+                            <div style="font-size:11px;color:#B89B95;">距离</div>
+                            <div style="font-size:14px;color:#7896A8;font-weight:600;margin-top:2px;">${item.distance}</div>
+                        </div>` : ''}
+                        ${item.duration ? `<div style="flex:1;background:#fff;padding:8px;border-radius:8px;text-align:center;border:1px solid #e8e0d0;">
+                            <div style="font-size:11px;color:#B89B95;">用时</div>
+                            <div style="font-size:14px;color:#7896A8;font-weight:600;margin-top:2px;">${item.duration}</div>
+                        </div>` : ''}
+                    </div>
+                    ${item.traffic ? `<div style="font-size:12px;color:#fff;background:#7896A8;padding:3px 10px;border-radius:10px;display:inline-block;margin-bottom:14px;">${item.traffic}</div>` : ''}
+                    ${item.note ? `<div style="font-size:11px;color:#B89B95;margin-bottom:6px;">出行手记</div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${item.note}</div>` : ''}`
                 }
             };
             
@@ -5205,12 +5810,27 @@
                 const c = DB.getContact(contactId);
                 const phoneData = c.phoneData || { wallpaper: '', icons: {}, textBrown: false };
                 const allApps = [
-                    // 主屏 4 个
+                    // 主屏第一行
                     { id: 'ainotes', name: '备忘录', emoji: '📝' },
                     { id: 'aishop', name: '购物车', emoji: '🛒' },
                     { id: 'aibrowser', name: '浏览器', emoji: '🔍' },
                     { id: 'aibooks', name: '书单', emoji: '📚' },
-                    // dock 4 个
+                    // 主屏第二行
+                    { id: 'aimoney', name: '记账', emoji: '💰' },
+                    { id: 'aimovie', name: '影单', emoji: '🎬' },
+                    { id: 'aimusic', name: '音乐', emoji: '🎵' },
+                    { id: 'aidiary', name: '日记', emoji: '📔' },
+                    // 主屏第三行
+                    { id: 'airemind', name: '提醒事项', emoji: '⏰' },
+                    { id: 'aisport', name: '运动', emoji: '🏃' },
+                    { id: 'aisleep', name: '睡眠监测', emoji: '😴' },
+                    { id: 'aisocial', name: '社交媒体', emoji: '📱' },
+                    // 主屏第四行
+                    { id: 'aischedule', name: '日程', emoji: '📅' },
+                    { id: 'aicloset', name: '衣柜', emoji: '👗' },
+                    { id: 'aiperfume', name: '香水柜', emoji: '🌸' },
+                    { id: 'ainavi', name: '导航', emoji: '🗺️' },
+                    // dock
                     { id: 'ai520', name: '520', emoji: '💬' },
                     { id: 'aiphone', name: '电话', emoji: '📞' },
                     { id: 'aialbum', name: '相册', emoji: '🖼️' },
