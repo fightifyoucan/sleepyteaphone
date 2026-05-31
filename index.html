@@ -758,12 +758,14 @@
         // 迁移完成后会设置一个标记，下次启动不会重复迁移
         // ===============================
         window._migrateImagesV1 = async function() {
-            if (localStorage.getItem('_imgdb_migration_v1_done')) {
-                console.log('[迁移] 已完成过，跳过');
+            // v2: 即使v1完成过也会再扫一遍清理新混入的base64
+            const isV2Done = localStorage.getItem('_imgdb_migration_v2_done');
+            if (isV2Done && !window._forceMigration) {
+                console.log('[迁移] 已完成 v2，跳过');
                 return;
             }
             await ImageDB.readyPromise;
-            console.log('[迁移] 开始把旧图片搬到 IndexedDB...');
+            console.log('[迁移] 开始把旧图片搬到 IndexedDB (v2)...');
             const startSize = Object.keys(localStorage).reduce((s, k) => s + (localStorage.getItem(k) || '').length, 0);
             let migrated = 0;
             
@@ -865,10 +867,12 @@
                     if (momentsChanged) localStorage.setItem('moments_list', JSON.stringify(moments));
                 } catch(e) {}
                 
-                // 8. m-tea-chats-v2 里的图片消息
+                // 8. m-tea-chats-v2 里的图片消息（兼容老localStorage和新DB）
                 try {
-                    const chats = JSON.parse(localStorage.getItem('m-tea-chats-v2') || '{}');
-                    let chatsChanged = false;
+                    let chats, chatsChanged = false;
+                    const fromDB = window.DB && DB.isReady && DB.isReady();
+                    if (fromDB) chats = DB.getChats();
+                    else chats = JSON.parse(localStorage.getItem('m-tea-chats-v2') || '{}');
                     for (const cid in chats) {
                         for (const msg of chats[cid]) {
                             if ((msg.type === 'image' || msg.type === 'photo' || msg.type === 'sticker') && isBase64Img(msg.content)) {
@@ -877,13 +881,18 @@
                             }
                         }
                     }
-                    if (chatsChanged) localStorage.setItem('m-tea-chats-v2', JSON.stringify(chats));
+                    if (chatsChanged) {
+                        if (fromDB) DB.saveChats(chats);
+                        else localStorage.setItem('m-tea-chats-v2', JSON.stringify(chats));
+                    }
                 } catch(e) {}
                 
-                // 9. m-tea-contacts-v2 里的头像
+                // 9. m-tea-contacts-v2 里的头像 + AI手机数据（兼容老localStorage和新DB）
                 try {
-                    const contacts = JSON.parse(localStorage.getItem('m-tea-contacts-v2') || '[]');
-                    let contactsChanged = false;
+                    let contacts, contactsChanged = false;
+                    const fromDB = window.DB && DB.isReady && DB.isReady();
+                    if (fromDB) contacts = DB.getContacts();
+                    else contacts = JSON.parse(localStorage.getItem('m-tea-contacts-v2') || '[]');
                     for (const c of contacts) {
                         if (isBase64Img(c.avatar)) {
                             c.avatar = await migrateOne(c.avatar);
@@ -893,11 +902,30 @@
                             c.chatBackground = await migrateOne(c.chatBackground);
                             contactsChanged = true;
                         }
+                        // AI手机数据：壁纸 + 图标
+                        if (c.phoneData) {
+                            if (isBase64Img(c.phoneData.wallpaper)) {
+                                c.phoneData.wallpaper = await migrateOne(c.phoneData.wallpaper);
+                                contactsChanged = true;
+                            }
+                            if (c.phoneData.icons) {
+                                for (const k in c.phoneData.icons) {
+                                    if (isBase64Img(c.phoneData.icons[k])) {
+                                        c.phoneData.icons[k] = await migrateOne(c.phoneData.icons[k]);
+                                        contactsChanged = true;
+                                    }
+                                }
+                            }
+                        }
                     }
-                    if (contactsChanged) localStorage.setItem('m-tea-contacts-v2', JSON.stringify(contacts));
+                    if (contactsChanged) {
+                        if (fromDB) DB.saveContacts(contacts);
+                        else localStorage.setItem('m-tea-contacts-v2', JSON.stringify(contacts));
+                    }
                 } catch(e) {}
                 
                 localStorage.setItem('_imgdb_migration_v1_done', '1');
+                localStorage.setItem('_imgdb_migration_v2_done', '1');
                 const endSize = Object.keys(localStorage).reduce((s, k) => s + (localStorage.getItem(k) || '').length, 0);
                 console.log(`[迁移] ✅ 完成！迁移 ${migrated} 张图片，localStorage 从 ${(startSize/1024).toFixed(1)}KB 减少到 ${(endSize/1024).toFixed(1)}KB`);
                 return { migrated, startKB: startSize/1024, endKB: endSize/1024 };
@@ -907,10 +935,16 @@
             }
         };
         
-        // 页面加载后自动执行一次迁移
+        // 页面加载后自动执行一次迁移（等 DB 就绪后再跑）
         if (typeof Dexie !== 'undefined') {
             window.addEventListener('load', () => {
-                setTimeout(() => window._migrateImagesV1(), 500);
+                const runMigration = async () => {
+                    if (window.DB && DB.readyPromise) {
+                        try { await DB.readyPromise; } catch(e) {}
+                    }
+                    setTimeout(() => window._migrateImagesV1(), 300);
+                };
+                runMigration();
             });
         }
 
@@ -1565,6 +1599,7 @@
                 if (savedIcon) {
                     // 有自定义图标：显示图片，去掉背景方块
                     const imgElement = document.createElement('img');
+                    // imgdb:// 引用由全局 MutationObserver/resolveOne 异步替换为真实 base64
                     imgElement.src = savedIcon;
                     imgElement.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;border-radius:15px;';
                     iconImg.appendChild(imgElement);
@@ -1601,8 +1636,15 @@
                 document.body.classList.add('brown-font');
             }
 
-            renderHomeScreenIcons();
-            refreshAllUserAvatars();
+            // 等 DB 就绪后再渲染（数据从 IndexedDB 异步加载）
+            const initAfterDB = async () => {
+                if (window.DB && DB.readyPromise) {
+                    try { await DB.readyPromise; } catch(e) {}
+                }
+                renderHomeScreenIcons();
+                refreshAllUserAvatars();
+            };
+            initAfterDB();
 
             // 启动时恢复沉浸模式
             if (localStorage.getItem('immersive_mode') === '1') {
@@ -1720,11 +1762,32 @@
                                         <div style="font-size:10px;color:#9A7872;margin-top:1px;">同频瞬间</div>
                                     </div>
                                 </div>
-                                <div class="hs-tab" data-tab="focus" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;grid-column:1/-1;">
+                                <div class="hs-tab" data-tab="focus" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
                                     <div style="font-size:22px;flex-shrink:0;">🍅</div>
-                                    <div style="min-width:0;flex:1;">
+                                    <div style="min-width:0;">
                                         <div style="font-size:13px;color:#775C56;font-weight:600;">一起专注</div>
-                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">和 TA 一起认真做一件事</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">认真做一件事</div>
+                                    </div>
+                                </div>
+                                <div class="hs-tab" data-tab="quiz" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">📝</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">情感问卷</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">和我同时作答</div>
+                                    </div>
+                                </div>
+                                <div class="hs-tab" data-tab="habit" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">🌱</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">一起打卡</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">日常小目标</div>
+                                    </div>
+                                </div>
+                                <div class="hs-tab" data-tab="period" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">🌸</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">月经记录</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">让我也心疼你</div>
                                     </div>
                                 </div>
                             </div>
@@ -1800,6 +1863,7 @@
                                 <div id="brownfont-toggle-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></div>
                             </div>
                         </div>
+                        <div class="settings-item"><button id="restore-default-btn" class="w-full py-2 rounded-lg" style="background-color:#FFD3D4;color:#775C56;font-weight:500;">恢复默认</button></div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
                     </div>
                 `,
@@ -2514,6 +2578,7 @@
                         if (ib) ib.classList.remove('panel-open');
                     }, true);
                     
+                    let lastRenderedCount = 0;
                     const render = () => {
                         // Anchor to first visible message
                         let anchorIdx = null;
@@ -2523,6 +2588,9 @@
                             if(r.top >= boxRect.top - 5) { anchorIdx = b.dataset.idx; break; }
                         }
                         const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+                        // 如果消息数比上次多（有新消息进来），强制滚到底（像微信一样）
+                        const hasNewMessage = history.length > lastRenderedCount;
+                        lastRenderedCount = history.length;
                         let messageGroups = [];
                         let currentGroup = null;
 
@@ -2769,7 +2837,13 @@
                             ImageDB.hydrateImages(box).catch(e => console.warn('图片加载失败:', e));
                         }
 
-                        if(wasAtBottom) { box.scrollTop = box.scrollHeight; }
+                        if(hasNewMessage || wasAtBottom) {
+                            box.scrollTop = box.scrollHeight;
+                            // 多次确保：图片/动画可能改变高度，延迟再次贴底
+                            requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; });
+                            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 100);
+                            setTimeout(() => { box.scrollTop = box.scrollHeight; }, 350);
+                        }
                         else if(anchorIdx !== null) {
                             requestAnimationFrame(() => {
                                 const t = box.querySelector('[data-idx="'+anchorIdx+'"]');
@@ -3779,9 +3853,12 @@
                             const file = e.target.files[0];
                             if (file) {
                                 const reader = new FileReader();
-                                reader.onload = (evt) => {
+                                reader.onload = async (evt) => {
                                     const newBg = evt.target.result;
-                                    c.chatBackground = newBg;
+                                    try {
+                                        const ref = window.ImageDB && window.ImageDB.saveAndRef ? await window.ImageDB.saveAndRef(newBg) : newBg;
+                                        c.chatBackground = ref;
+                                    } catch(err) { c.chatBackground = newBg; }
                                     DB.saveContact(c);
                                     box.style.background = `url(${newBg}) center/cover no-repeat`;
                                     alert('聊天背景已更新');
@@ -3949,19 +4026,25 @@
                                 }
                             };
                             dlg.querySelector('#moment-cancel').onclick = () => dlg.remove();
-                            dlg.querySelector('#moment-publish').onclick = () => {
+                            dlg.querySelector('#moment-publish').onclick = async () => {
                                 const txt = dlg.querySelector('#moment-txt').value.trim();
                                 if (!txt && !imgData) {
                                     errEl.textContent = '请输入文字或选择图片';
                                     errEl.style.display = 'block';
                                     return;
                                 }
+                                let imgRef = '';
+                                if (imgData) {
+                                    try {
+                                        imgRef = window.ImageDB && window.ImageDB.saveAndRef ? await window.ImageDB.saveAndRef(imgData) : imgData;
+                                    } catch(err) { imgRef = imgData; }
+                                }
                                 const myPost = {
                                     id: `my_moment_${Date.now()}`,
                                     name: localStorage.getItem('user_nick') || '我',
                                     avatar: localStorage.getItem('user_avatar') || '',
                                     text: txt,
-                                    img: imgData || '',
+                                    img: imgRef,
                                     time: new Date().toISOString(),
                                     likes: [], comments: []
                                 };
@@ -4042,7 +4125,13 @@
                         el.querySelector('.moments-header').appendChild(camBtn);
                         el.querySelector('#cover-up').onchange = (e) => {
                             const f = e.target.files[0];
-                            if(f) { const r=new FileReader(); r.onload=ev=>{localStorage.setItem('moments_cover', ev.target.result); go('202');}; r.readAsDataURL(f); }
+                            if(f) { const r=new FileReader(); r.onload=async ev=>{
+                                try {
+                                    const ref = window.ImageDB && window.ImageDB.saveAndRef ? await window.ImageDB.saveAndRef(ev.target.result) : ev.target.result;
+                                    localStorage.setItem('moments_cover', ref);
+                                } catch(err) { localStorage.setItem('moments_cover', ev.target.result); }
+                                go('202');
+                            }; r.readAsDataURL(f); }
                         };
                         el.querySelector('.moments-nick').onclick = () => {
                             const n = prompt('修改昵称', userNick);
@@ -4124,7 +4213,7 @@
                             const reader = new FileReader();
                             reader.onload = (event) => {
                                 const img = new Image();
-                                img.onload = () => {
+                                img.onload = async () => {
                                     const canvas = document.createElement('canvas');
                                     const ctx = canvas.getContext('2d');
                                     canvas.width = 200;
@@ -4132,7 +4221,11 @@
                                     ctx.drawImage(img, 0, 0, 200, 200);
                                     const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
                                     
-                                    localStorage.setItem('user_avatar', compressedBase64);
+                                    let ref = compressedBase64;
+                                    try {
+                                        if (window.ImageDB && window.ImageDB.saveAndRef) ref = await window.ImageDB.saveAndRef(compressedBase64);
+                                    } catch(err) {}
+                                    localStorage.setItem('user_avatar', ref);
                                     go('me');
                                     refreshAllUserAvatars();
                                 };
@@ -4302,9 +4395,13 @@
                             const f = e.target.files[0];
                             if(f){ 
                                 const r = new FileReader(); 
-                                r.onload = ev => {
+                                r.onload = async ev => {
                                     const memo = prompt("给这个表情包写个描述（AI 会根据描述决定什么时候发这个表情，例如：开心大笑/委屈/无语/比心）", "");
-                                    const newSticker = { src: ev.target.result, memo: memo || "" };
+                                    let src = ev.target.result;
+                                    try {
+                                        if (window.ImageDB && window.ImageDB.saveAndRef) src = await window.ImageDB.saveAndRef(src);
+                                    } catch(err) {}
+                                    const newSticker = { src: src, memo: memo || "" };
                                     window._userStickers.push(newSticker);
                                     window._saveStickers();
                                     go('me');
@@ -4458,7 +4555,9 @@
                                 const iconInner = customIcon 
                                     ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:15px;">`
                                     : `<span style="font-size:16px;">${app.emoji}</span>`;
-                                return `<div class="ai-dock-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;text-align:center;font-size:12px;color:#775C56;text-shadow:0 1px 2px rgba(255,255,255,0.3);cursor:pointer;flex-shrink:0;width:60px;gap:4px;">
+                                const labelColor = phoneData.textBrown ? '#775C56' : '#fff';
+                                const labelShadow = phoneData.textBrown ? 'text-shadow:0 1px 2px rgba(255,255,255,0.3);' : 'text-shadow:0 1px 3px rgba(0,0,0,0.4);';
+                                return `<div class="ai-dock-app" data-app="${app.id}" style="display:flex;flex-direction:column;align-items:center;text-align:center;font-size:12px;color:${labelColor};${labelShadow}cursor:pointer;flex-shrink:0;width:60px;gap:4px;">
                                     <div style="width:60px;height:60px;border-radius:15px;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;aspect-ratio:1/1;flex-shrink:0;">${iconInner}</div>
                                     <span>${app.name}</span>
                                 </div>`;
@@ -5935,8 +6034,8 @@
                                 <div>
                                     <h3 class="font-bold" style="margin-top: 10px;">更换壁纸</h3>
                                     <div class="wallpaper-options" style="margin-top: 8px;">
-                                        <label for="ais-wp-input" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center bg-white">
-                                            <div id="ais-wp-preview" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg" style="${phoneData.wallpaper ? `background-image:url(${phoneData.wallpaper});` : ''}display:flex;align-items:center;justify-content:center;color:#ccc;font-weight:bold;font-size:20px;">${phoneData.wallpaper ? '' : '+'}</div>
+                                        <label id="ais-wp-label" for="ais-wp-input" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center bg-white">
+                                            <div id="ais-wp-preview" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div>
                                         </label>
                                         <input type="file" id="ais-wp-input" accept="image/*" class="hidden" style="display:none;">
                                     </div>
@@ -5946,12 +6045,12 @@
                             <div class="settings-item">
                                 <div>
                                     <h3 class="font-bold">更换应用图标</h3>
-                                    <div class="grid grid-cols-4 p-4" id="ais-icon-list" style="gap:18px 12px;">
+                                    <div class="grid grid-cols-4 p-4" id="ais-icon-list" style="gap:26px 16px;">
                                         ${allApps.map(app => {
                                             const customIcon = phoneData.icons && phoneData.icons[app.id];
                                             return `<div class="ais-icon-item flex flex-col items-center cursor-pointer" data-app="${app.id}" style="gap:6px;">
-                                                <div class="border-2 border-dashed border-gray-300 rounded-lg w-16 h-16 flex items-center justify-center bg-white" style="overflow:hidden;${customIcon ? 'border-style:solid;border-color:transparent;' : ''}">
-                                                    ${customIcon ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : `<span style="font-size:20px;">${app.emoji}</span>`}
+                                                <div class="border-2 border-dashed border-gray-300 rounded-lg w-14 h-14 flex items-center justify-center bg-white" style="overflow:hidden;${customIcon ? 'border-style:solid;border-color:transparent;' : ''}">
+                                                    ${customIcon ? `<img src="${customIcon}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : `<span style="font-size:18px;">${app.emoji}</span>`}
                                                 </div>
                                                 <span style="font-size:11px;color:#775C56;">${app.name}</span>
                                             </div>`;
@@ -5976,6 +6075,39 @@
                 `;
                 
                 appPage.querySelector('#aisettings-back').onclick = () => openAIPhone(appPage, contactId);
+                
+                // 加载壁纸（跟用户设置一样：preview.backgroundImage + label切换实线/虚线）
+                const wpPreview = appPage.querySelector('#ais-wp-preview');
+                const wpLabel = appPage.querySelector('#ais-wp-label');
+                const setWpSelected = (hasImage) => {
+                    if (hasImage) {
+                        wpLabel.classList.remove('border-dashed');
+                        wpLabel.classList.add('border-solid');
+                    } else {
+                        wpLabel.classList.add('border-dashed');
+                        wpLabel.classList.remove('border-solid');
+                    }
+                };
+                if (phoneData.wallpaper) {
+                    if (phoneData.wallpaper.startsWith('imgdb://')) {
+                        const id = phoneData.wallpaper.slice(8);
+                        (async () => {
+                            try {
+                                await window.ImageDB.readyPromise;
+                                const data = await window.ImageDB.get(id);
+                                if (data) {
+                                    wpPreview.style.backgroundImage = `url(${data})`;
+                                    wpPreview.textContent = '';
+                                    setWpSelected(true);
+                                }
+                            } catch(e) { console.warn('壁纸读取失败', e); }
+                        })();
+                    } else {
+                        wpPreview.style.backgroundImage = `url(${phoneData.wallpaper})`;
+                        wpPreview.textContent = '';
+                        setWpSelected(true);
+                    }
+                }
                 
                 // 棕色字体切换
                 const brownWrap = appPage.querySelector('#ais-brown-wrap');
@@ -6302,6 +6434,9 @@
                         else if (t === 'radio') hsOpenRadio(appPage, c, userNick);
                         else if (t === 'memory') hsOpenMemory(appPage, c);
                         else if (t === 'focus') hsOpenFocus(appPage, c, userNick, renderStats);
+                        else if (t === 'quiz') hsOpenQuiz(appPage, c, userNick);
+                        else if (t === 'habit') hsOpenHabits(appPage, c, userNick);
+                        else if (t === 'period') hsOpenPeriod(appPage, c, userNick);
                     };
                 });
             }
@@ -6446,11 +6581,11 @@
                                 <div style="font-size:12px;color:#B89B95;margin-bottom:4px;">题目</div>
                                 <div style="font-size:13px;color:#775C56;line-height:1.6;margin-bottom:12px;">${lastSync.q}</div>
                                 <div style="display:flex;gap:8px;margin-bottom:8px;">
-                                    <div style="flex:1;padding:8px 10px;background:#FFE5E5;border-radius:8px;">
+                                    <div style="flex:1;padding:8px 10px;background:#D5EBE4;border-radius:8px;">
                                         <div style="font-size:10px;color:#B89B95;">你的</div>
                                         <div style="font-size:13px;color:#775C56;margin-top:2px;">${lastSync.userAns}</div>
                                     </div>
-                                    <div style="flex:1;padding:8px 10px;background:#E5EFFF;border-radius:8px;">
+                                    <div style="flex:1;padding:8px 10px;background:#FFD3D4;border-radius:8px;">
                                         <div style="font-size:10px;color:#B89B95;">TA 的</div>
                                         <div style="font-size:13px;color:#775C56;margin-top:2px;">${lastSync.aiAns}</div>
                                     </div>
@@ -6512,11 +6647,11 @@
                                 <div style="font-size:12px;color:#9A7872;margin-bottom:24px;">${match ? '今天你们心有灵犀～' : '没关系，明天再来'}</div>
                                 <div style="background:#fff;border-radius:14px;padding:14px;text-align:left;">
                                     <div style="display:flex;gap:8px;margin-bottom:10px;">
-                                        <div style="flex:1;padding:8px 10px;background:#FFE5E5;border-radius:8px;">
+                                        <div style="flex:1;padding:8px 10px;background:#D5EBE4;border-radius:8px;">
                                             <div style="font-size:10px;color:#B89B95;">你的</div>
                                             <div style="font-size:13px;color:#775C56;margin-top:2px;">${userAns}</div>
                                         </div>
-                                        <div style="flex:1;padding:8px 10px;background:#E5EFFF;border-radius:8px;">
+                                        <div style="flex:1;padding:8px 10px;background:#FFD3D4;border-radius:8px;">
                                             <div style="font-size:10px;color:#B89B95;">TA 的</div>
                                             <div style="font-size:13px;color:#775C56;margin-top:2px;">${fields['答案']}</div>
                                         </div>
@@ -6616,6 +6751,29 @@
                             </div>
                             <div style="font-size:12px;color:#775C56;line-height:1.5;">${item.task || ''}</div>
                             ${item.cheer ? `<div style="font-size:11px;color:#9A7872;line-height:1.5;margin-top:4px;font-style:italic;">"${item.cheer}"</div>` : ''}`;
+                        } else if (item.type === 'quiz') {
+                            const kindLabel = item.kind === 'romance' ? '💕 恋情问卷' : '🍀 友情问卷';
+                            inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-size:11px;color:#fff;background:#E89B9B;padding:2px 8px;border-radius:8px;">📝 问卷</span>
+                                <span style="font-size:10px;color:#B89B95;">同步率 ${item.syncRate}%</span>
+                            </div>
+                            <div style="font-size:12px;color:#775C56;line-height:1.5;">${kindLabel} · 完成 ${item.totalQ} 题</div>`;
+                        } else if (item.type === 'habit') {
+                            inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-size:11px;color:#fff;background:#7CB17C;padding:2px 8px;border-radius:8px;">🌱 打卡</span>
+                            </div>
+                            <div style="font-size:12px;color:#775C56;line-height:1.5;">${item.name}</div>
+                            ${item.aiReply ? `<div style="font-size:11px;color:#9A7872;line-height:1.5;margin-top:4px;font-style:italic;">"${item.aiReply}"</div>` : ''}`;
+                        } else if (item.type === 'period') {
+                            inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-size:11px;color:#fff;background:#E89B9B;padding:2px 8px;border-radius:8px;">🌸 月经</span>
+                            </div>
+                            <div style="font-size:12px;color:#775C56;line-height:1.5;">${item.event === 'start' ? '今天来了' : '今天结束'}</div>`;
+                        } else if (item.type === 'symptom') {
+                            inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-size:11px;color:#fff;background:#D08FA5;padding:2px 8px;border-radius:8px;">💗 症状</span>
+                            </div>
+                            <div style="font-size:12px;color:#775C56;line-height:1.5;">${(item.symptoms || []).join('、')}</div>`;
                         }
                         const d = new Date(item.time);
                         const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
@@ -6819,6 +6977,806 @@
                 
                 body.querySelector('.hs-focus-back').onclick = () => layer.remove();
             }
+            
+            // ===== 情感问卷 =====
+            function hsOpenQuiz(appPage, c, userNick) {
+                const isPartner = hsIsPartner(c, userNick);
+                // 入口页：选恋情/友情
+                const intro = hsOpenLayer(appPage, '情感问卷', `
+                    <div style="text-align:center;padding:20px 10px 30px;">
+                        <div style="font-size:48px;margin-bottom:14px;">📝</div>
+                        <div style="font-size:15px;color:#775C56;font-weight:600;margin-bottom:8px;">10道题 · 和 TA 同时作答</div>
+                        <div style="font-size:12px;color:#9A7872;margin-bottom:24px;line-height:1.7;padding:0 20px;">你在这边写答案，我也在那边写。<br>提交后揭晓我的答案，看你我多同频～</div>
+                        <div style="display:flex;flex-direction:column;gap:12px;padding:0 20px;">
+                            <div class="hs-quiz-pick" data-kind="romance" style="padding:16px;background:linear-gradient(135deg,#FFE5E5,#FFF5F5);border-radius:14px;cursor:pointer;text-align:left;border:1px solid #f5d0d0;">
+                                <div style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:4px;">💕 恋情版</div>
+                                <div style="font-size:11px;color:#9A7872;line-height:1.5;">关于我们的小问题</div>
+                            </div>
+                            <div class="hs-quiz-pick" data-kind="friendship" style="padding:16px;background:linear-gradient(135deg,#E5F0E5,#F5FBF5);border-radius:14px;cursor:pointer;text-align:left;border:1px solid #d0e5d0;">
+                                <div style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:4px;">🍀 友情版</div>
+                                <div style="font-size:11px;color:#9A7872;line-height:1.5;">关于我们的小问题</div>
+                            </div>
+                        </div>
+                        <div id="hs-quiz-history" style="margin-top:30px;padding:0 20px;"></div>
+                    </div>
+                `);
+                
+                // 显示历史问卷
+                const history = hsGet(c.id, 'quizHistory', []);
+                if (history.length > 0) {
+                    const histEl = intro.querySelector('#hs-quiz-history');
+                    histEl.innerHTML = `<div style="font-size:11px;color:#9A7872;margin-bottom:10px;text-align:left;">历史问卷 · ${history.length}份</div>` +
+                        history.slice(0, 5).map((h, idx) => {
+                            const d = new Date(h.time);
+                            const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日';
+                            const kindLabel = h.kind === 'romance' ? '💕 恋情' : '🍀 友情';
+                            return `<div class="hs-quiz-hist-item" data-idx="${idx}" style="padding:12px 14px;background:#fff;border-radius:10px;cursor:pointer;border:1px solid #f0e0dc;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                                <div>
+                                    <div style="font-size:13px;color:#775C56;">${kindLabel}</div>
+                                    <div style="font-size:10px;color:#B89B95;margin-top:2px;">${dateStr} · 同步率 ${h.syncRate}%</div>
+                                </div>
+                                <span style="font-size:11px;color:#9A7872;">查看 ›</span>
+                            </div>`;
+                        }).join('');
+                    histEl.querySelectorAll('.hs-quiz-hist-item').forEach(el => {
+                        el.onclick = () => {
+                            const idx = parseInt(el.dataset.idx);
+                            hsShowQuizResult(appPage, c, userNick, history[idx], true);
+                        };
+                    });
+                }
+                
+                intro.querySelectorAll('.hs-quiz-pick').forEach(el => {
+                    el.onclick = () => {
+                        const kind = el.dataset.kind;
+                        intro.remove();
+                        hsStartQuiz(appPage, c, userNick, kind);
+                    };
+                });
+            }
+            
+            async function hsStartQuiz(appPage, c, userNick, kind) {
+                const isPartner = hsIsPartner(c, userNick);
+                const layer = hsOpenLayer(appPage, kind === 'romance' ? '💕 恋情问卷' : '🍀 友情问卷', `
+                    <div style="text-align:center;padding:60px 20px;color:#B89B95;">
+                        <div style="font-size:32px;margin-bottom:14px;">📝</div>
+                        <div style="font-size:13px;margin-bottom:6px;">出题中...</div>
+                        <div style="font-size:11px;opacity:0.7;">TA 正在为我们设计 10 道题</div>
+                    </div>
+                `);
+                const body = layer.querySelector('.hs-layer-body');
+                
+                try {
+                    // 让 AI 生成 10 题选择题 + 4 选项 + TA 的选择 + 理由
+                    let topicHint = '';
+                    if (kind === 'romance') {
+                        topicHint = `要求：题目要围绕你们的"恋情/亲密关系"，从以下方向里挑选搭配（不要按方向分组，混合排列）：
+- 日常相处（你们的习惯/小细节/我让你心动的瞬间）
+- 情感深度（最害怕失去什么/我哪点让你最安心）
+- 共同未来（理想的生活/想一起做的事）
+- 浪漫回忆（最难忘的一次/想被我怎样对待）
+- 关系反思（最近觉得彼此哪里在变好/想对我说但还没说的话）
+- 想象类（如果只剩三天/如果我突然消失）
+10 道题要覆盖至少 5 个不同方向。题目要温柔有共鸣感，不要俗套，不要涉及性内容。`;
+                    } else {
+                        topicHint = `要求：题目要围绕你们的"友情/陪伴关系"，从以下方向里挑选搭配（不要按方向分组，混合排列）：
+- 真挚相处（如何看待孤独/友情和爱情谁更重要）
+- 互相印象（你觉得我最像什么动物/我哪个瞬间最让你心疼）
+- 陪伴细节（凌晨三点会打给我吗/最常聊什么）
+- 真心话（最想对我说但没说的一句话）
+- 共同回忆（最难忘的一起做过的事）
+- 想象类（如果有一天我们走散了）
+10 道题要覆盖至少 5 个不同方向。题目要真诚有重量，不要装可爱，不要涉及性内容。`;
+                    }
+                    
+                    const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：你（${c.name}）要给 ${userNick} 出一份 10 题的情感问卷（每题 4 个选项），${userNick} 会作答，然后看 ${userNick} 和你（${c.name}）的答案是否同频。\n\n【关键 — 视角规则】：\n- 题目是**你（${c.name}）出给 ${userNick} 的**，所以题目的主语永远是"你"（指 ${userNick}）。绝对不要在题目里出现 ${userNick} 的名字。\n- 题目里提到你自己（${c.name}）时**永远用"我"**（第一人称），绝对不能用 ${c.name} 这个名字、也不要用"TA"或"对方"或第三人称。例：题目"如果有一天我突然消失，你会怎么办？"是对的；"如果${c.name}突然消失，你会怎么办？"或"如果TA突然消失，你会怎么办？"都是错的。\n- 选项内容是 ${userNick} 视角的回答（${userNick} 会勾选），选项里提到你自己（${c.name}）也用"你"，提到 ${userNick} 自己用"我"。例：选项"我会紧紧抱住你"是对的；"我会紧紧抱住TA"是错的。\n- 答案那一栏，是你（${c.name}）从${userNick}的视角猜${userNick}会选哪个 + 你自己希望${userNick}选哪个的综合（更偏向"你真心觉得${userNick}会怎么选"，因为这是同频测试，要的是真实判断而非希望）。\n- 理由那一栏，是你为什么觉得${userNick}会选这个，以第一人称口语写（"因为我觉得 ${userNick} 一直都..."、"${userNick}上次跟我说过..."）。\n\n${topicHint}\n\n严格按以下格式输出每一题（每个字段一行，题与题之间空一行）：\n\n1. 题目：（题目内容，10-25字，主语是"你"，指${userNick}）\nA. （选项A内容，6-15字，${userNick}视角，主语"我"）\nB. （选项B内容，6-15字，${userNick}视角）\nC. （选项C内容，6-15字，${userNick}视角）\nD. （选项D内容，6-15字，${userNick}视角）\n答案：（你觉得${userNick}会选哪个，只写一个字母 A/B/C/D）\n理由：（你为什么觉得${userNick}会这么选，20-50字，第一人称口语）\n\n2. 题目：...\n（同样格式）\n\n额外要求：\n- 4个选项要有真实选择困难度，不能有明显的"正确答案"\n- 选项之间要有信息量差异（不要A B只是同义换词），让选择本身就暴露想法\n- 你对${userNick}的判断要符合你们的相处历史和${userNick}的性格\n- 10 题全部按此格式输出，从第1题到第10题，不要漏题不要加额外说明`;
+                    
+                    const text = await hsCallAI(sysPrompt, '请直接输出10题选择题。');
+                    
+                    // 解析 10 题
+                    const questions = [];
+                    const lines = text.split('\n');
+                    let current = null;
+                    for (const raw of lines) {
+                        const line = raw.trim();
+                        if (!line) continue;
+                        const numMatch = line.match(/^(\d+)[\.、]\s*题目[:：]\s*(.+)$/);
+                        const qMatch = line.match(/^题目[:：]\s*(.+)$/);
+                        const optMatch = line.match(/^([A-D])[\.、:：]\s*(.+)$/);
+                        const aMatch = line.match(/^答案[:：]\s*([A-D])\s*$/);
+                        const rMatch = line.match(/^理由[:：]\s*(.+)$/);
+                        if (numMatch) {
+                            if (current && current.q) questions.push(current);
+                            current = { q: numMatch[2], options: {}, aiPick: '', aiR: '' };
+                        } else if (qMatch && !current) {
+                            current = { q: qMatch[1], options: {}, aiPick: '', aiR: '' };
+                        } else if (qMatch && current) {
+                            if (current.q) questions.push(current);
+                            current = { q: qMatch[1], options: {}, aiPick: '', aiR: '' };
+                        } else if (optMatch && current) {
+                            current.options[optMatch[1]] = optMatch[2];
+                        } else if (aMatch && current) {
+                            current.aiPick = aMatch[1];
+                        } else if (rMatch && current) {
+                            current.aiR = rMatch[1];
+                        }
+                    }
+                    if (current && current.q) questions.push(current);
+                    
+                    // 过滤掉不完整的题（必须有题目+4选项+答案）
+                    const validQs = questions.filter(q => q.q && q.options.A && q.options.B && q.options.C && q.options.D && q.aiPick).slice(0, 10);
+                    
+                    if (validQs.length < 5) {
+                        throw new Error('题目解析失败，请重试');
+                    }
+                    
+                    // 渲染问卷
+                    hsRenderQuiz(appPage, layer, body, c, userNick, kind, validQs);
+                } catch(err) {
+                    body.innerHTML = `<div style="text-align:center;padding:40px 20px;color:#E89B6C;">出题失败：${err.message}<br><span class="hs-quiz-retry" style="display:inline-block;margin-top:14px;background:#FFD3D4;color:#775C56;padding:6px 22px;border-radius:14px;font-size:12px;cursor:pointer;">再试一次</span></div>`;
+                    const retry = body.querySelector('.hs-quiz-retry');
+                    if (retry) retry.onclick = () => { layer.remove(); hsStartQuiz(appPage, c, userNick, kind); };
+                }
+            }
+            
+            function hsRenderQuiz(appPage, layer, body, c, userNick, kind, questions) {
+                // 选择题：4选项卡片，点选+自动跳下题
+                // 进度条header用 absolute 定位贴在 layer 标题栏下方，永远不滚动
+                // 测量标题栏高度
+                const headerEl = layer.querySelector('[style*="border-bottom"]');
+                const headerH = headerEl ? headerEl.getBoundingClientRect().height : 56;
+                
+                const progressBar = document.createElement('div');
+                progressBar.id = 'hs-quiz-header';
+                progressBar.style.cssText = `position:absolute;top:${headerH}px;left:0;right:0;background:#FBF9F4;padding:10px 14px 12px;border-bottom:1px solid #e8e0d0;z-index:300;`;
+                progressBar.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:11px;color:#9A7872;">已答 <span id="hs-quiz-answered">0</span> / ${questions.length}</span>
+                        <button type="button" id="hs-quiz-submit" style="background:#ddd;color:#fff;padding:7px 22px;border-radius:14px;font-size:12px;cursor:not-allowed;font-weight:500;user-select:none;border:none;outline:none;font-family:inherit;">揭晓我的答案 💗</button>
+                    </div>
+                    <div style="margin:8px 0 0;height:3px;background:#f0e0dc;border-radius:2px;overflow:hidden;">
+                        <div id="hs-quiz-progress" style="height:100%;width:0%;background:linear-gradient(90deg,#E89B9B,#FFD3D4);transition:width 0.3s;"></div>
+                    </div>
+                `;
+                layer.appendChild(progressBar);
+                
+                // 给 body 加 padding-top，让内容不被 progressBar 盖住
+                const pbH = progressBar.getBoundingClientRect().height || 60;
+                body.style.paddingTop = (pbH + 14) + 'px';
+                
+                body.innerHTML = `
+                    <div id="hs-quiz-list">
+                        ${questions.map((q, i) => `
+                            <div class="hs-quiz-q" data-idx="${i}" style="background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #f0e0dc;">
+                                <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">第 ${i+1} 题</div>
+                                <div style="font-size:14px;color:#775C56;line-height:1.6;margin-bottom:14px;font-weight:500;">${q.q}</div>
+                                <div class="hs-opt-list" style="display:flex;flex-direction:column;gap:8px;">
+                                    ${['A','B','C','D'].map(letter => `
+                                        <div class="hs-opt" data-qidx="${i}" data-letter="${letter}" style="padding:10px 12px;background:#FBF6F0;border-radius:10px;cursor:pointer;border:1.5px solid transparent;transition:all 0.18s;display:flex;align-items:center;gap:10px;">
+                                            <span class="hs-opt-letter" style="width:22px;height:22px;border-radius:50%;background:#f0e0dc;color:#9A7872;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;">${letter}</span>
+                                            <span style="font-size:13px;color:#775C56;line-height:1.5;flex:1;">${q.options[letter]}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                const userPicks = new Array(questions.length).fill('');
+                const answeredEl = layer.querySelector('#hs-quiz-answered');
+                const progressEl = layer.querySelector('#hs-quiz-progress');
+                const submitBtn = layer.querySelector('#hs-quiz-submit');
+                const allQs = body.querySelectorAll('.hs-quiz-q');
+                
+                const updateProgress = () => {
+                    const count = userPicks.filter(a => a).length;
+                    answeredEl.textContent = count;
+                    progressEl.style.width = (count / questions.length * 100) + '%';
+                    if (count === questions.length) {
+                        submitBtn.style.background = '#FFD3D4';
+                        submitBtn.style.color = '#775C56';
+                        submitBtn.style.cursor = 'pointer';
+                        submitBtn.dataset.ready = '1';
+                    } else {
+                        submitBtn.style.background = '#ddd';
+                        submitBtn.style.color = '#fff';
+                        submitBtn.style.cursor = 'not-allowed';
+                        submitBtn.dataset.ready = '0';
+                    }
+                };
+                
+                // 选项点击：高亮+轻微弹一下+自动跳下题
+                body.querySelectorAll('.hs-opt').forEach(opt => {
+                    opt.onclick = () => {
+                        const qidx = parseInt(opt.dataset.qidx);
+                        const letter = opt.dataset.letter;
+                        userPicks[qidx] = letter;
+                        // 同一题内所有选项重置样式
+                        const card = allQs[qidx];
+                        card.querySelectorAll('.hs-opt').forEach(o => {
+                            o.style.background = '#FBF6F0';
+                            o.style.borderColor = 'transparent';
+                            const letterEl = o.querySelector('.hs-opt-letter');
+                            letterEl.style.background = '#f0e0dc';
+                            letterEl.style.color = '#9A7872';
+                        });
+                        // 当前选中高亮
+                        opt.style.background = '#FFE5E5';
+                        opt.style.borderColor = '#FFD3D4';
+                        const letterEl = opt.querySelector('.hs-opt-letter');
+                        letterEl.style.background = '#E89B9B';
+                        letterEl.style.color = '#fff';
+                        // 轻微弹一下
+                        opt.style.transform = 'scale(1.02)';
+                        setTimeout(() => { opt.style.transform = 'scale(1)'; }, 150);
+                        updateProgress();
+                        // 自动跳下一题（500ms后）
+                        const nextCard = allQs[qidx + 1];
+                        if (nextCard) {
+                            setTimeout(() => {
+                                nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 500);
+                        } else {
+                            // 是最后一题：滚到顶部让用户看到"揭晓"按钮
+                            setTimeout(() => {
+                                body.scrollTop = 0;
+                            }, 500);
+                        }
+                    };
+                });
+                
+                submitBtn.onclick = () => {
+                    if (submitBtn.dataset.ready !== '1') {
+                        alert('请把 10 道题全部选完哦～');
+                        return;
+                    }
+                    // 算同步率：选项相同就是同频
+                    let matched = 0;
+                    const matches = questions.map((q, i) => {
+                        const isMatch = userPicks[i] === q.aiPick;
+                        if (isMatch) matched++;
+                        return isMatch;
+                    });
+                    const syncRate = Math.round(matched / questions.length * 100);
+                    
+                    const result = {
+                        kind, time: new Date().toISOString(),
+                        questions, userPicks, matches, syncRate, matched, answered: questions.length
+                    };
+                    
+                    const history = hsGet(c.id, 'quizHistory', []);
+                    history.unshift(result);
+                    if (history.length > 20) history.length = 20;
+                    hsSet(c.id, 'quizHistory', history);
+                    hsAddMemory(c.id, { type: 'quiz', kind, syncRate, totalQ: questions.length });
+                    
+                    hsShowQuizResult(appPage, c, userNick, result, false, layer);
+                };
+            }
+            
+            function hsShowQuizResult(appPage, c, userNick, result, isHistory, oldLayer) {
+                if (oldLayer) oldLayer.remove();
+                const kindLabel = result.kind === 'romance' ? '💕 恋情问卷' : '🍀 友情问卷';
+                const layer = hsOpenLayer(appPage, kindLabel + ' · 结果', '');
+                const body = layer.querySelector('.hs-layer-body');
+                
+                const moodWord = result.syncRate >= 85 ? '完美同频 💗' : result.syncRate >= 65 ? '默契满分 💕' : result.syncRate >= 45 ? '心意相通 🌸' : result.syncRate >= 25 ? '互补可爱 🌿' : '截然不同也很好 ✨';
+                const moodHint = result.syncRate >= 85 ? '你们简直心有灵犀，像同一个人' : result.syncRate >= 65 ? '大部分时候都想到一块儿啦' : result.syncRate >= 45 ? '想法不全一样，但能看出彼此在乎' : result.syncRate >= 25 ? '你们是两个独立的灵魂，互相补全' : '差异是真实的，了解差异让你们更近';
+                
+                body.innerHTML = `
+                    <div style="text-align:center;padding:14px 10px 24px;background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;margin-bottom:18px;">
+                        <div style="font-size:11px;color:#B89B95;letter-spacing:2px;margin-bottom:8px;">SYNC RATE</div>
+                        <div style="font-size:54px;color:#E89B6C;font-weight:700;line-height:1;margin-bottom:4px;">${result.syncRate}<span style="font-size:24px;">%</span></div>
+                        <div style="font-size:14px;color:#775C56;font-weight:600;margin-top:8px;">${moodWord}</div>
+                        <div style="font-size:11px;color:#9A7872;margin-top:6px;padding:0 20px;line-height:1.5;">${moodHint}</div>
+                        <div style="font-size:10px;color:#B89B95;margin-top:10px;">回答了 ${result.answered} 题 · 同频 ${result.matched} 题</div>
+                    </div>
+                    <div style="font-size:11px;color:#9A7872;margin-bottom:10px;padding-left:4px;">逐题对比</div>
+                    <div id="hs-quiz-result-list"></div>
+                `;
+                
+                const listEl = body.querySelector('#hs-quiz-result-list');
+                result.questions.forEach((q, i) => {
+                    const userPick = (result.userPicks && result.userPicks[i]) || '';
+                    if (!userPick) return; // 跳过没选的
+                    const aiPick = q.aiPick;
+                    const match = result.matches[i];
+                    const matchTag = match ? `<span style="font-size:10px;color:#fff;background:#E89B9B;padding:2px 8px;border-radius:8px;">💕 同频</span>` : `<span style="font-size:10px;color:#9A7872;background:#f0e0dc;padding:2px 8px;border-radius:8px;">🌸 不同</span>`;
+                    const userOptText = q.options[userPick] || userPick;
+                    const aiOptText = q.options[aiPick] || aiPick;
+                    const card = document.createElement('div');
+                    card.style.cssText = 'background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #f0e0dc;';
+                    card.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="font-size:11px;color:#B89B95;">第 ${i+1} 题</span>
+                            ${matchTag}
+                        </div>
+                        <div style="font-size:13px;color:#775C56;line-height:1.6;margin-bottom:12px;font-weight:500;">${q.q}</div>
+                        <div style="display:flex;gap:8px;margin-bottom:10px;">
+                            <div style="flex:1;padding:10px 12px;background:#D5EBE4;border-radius:8px;">
+                                <div style="font-size:10px;color:#9A7872;margin-bottom:4px;display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:#7CB17C;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${userPick}</span>你的</div>
+                                <div style="font-size:12px;color:#775C56;line-height:1.5;">${userOptText}</div>
+                            </div>
+                            <div style="flex:1;padding:10px 12px;background:#FFD3D4;border-radius:8px;">
+                                <div style="font-size:10px;color:#9A7872;margin-bottom:4px;display:flex;align-items:center;gap:6px;"><span style="width:18px;height:18px;border-radius:50%;background:#E89B9B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;">${aiPick}</span>我的</div>
+                                <div style="font-size:12px;color:#775C56;line-height:1.5;">${aiOptText}</div>
+                            </div>
+                        </div>
+                        ${q.aiR ? `<div style="font-size:11px;color:#9A7872;line-height:1.6;padding:8px 10px;background:#FBF6F0;border-radius:8px;">我：${q.aiR}</div>` : ''}
+                    `;
+                    listEl.appendChild(card);
+                });
+                
+                if (!isHistory) {
+                    const backBtn = document.createElement('div');
+                    backBtn.style.cssText = 'text-align:center;margin-top:18px;padding-bottom:10px;';
+                    backBtn.innerHTML = `<span class="hs-quiz-done" style="background:#D5EBE4;color:#775C56;padding:8px 28px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;font-weight:500;">收下啦 💗</span>`;
+                    body.appendChild(backBtn);
+                    backBtn.querySelector('.hs-quiz-done').onclick = () => layer.remove();
+                }
+            }
+            
+            // ===== 健康陪伴：入口（打卡 + 月经） =====
+            function hsOpenHealth(appPage, c, userNick) {
+                // 取当前数据用于显示徽标
+                const habits = hsGet(c.id, 'healthHabits', []);
+                const todayStr = new Date().toISOString().slice(0,10);
+                const todayChecked = habits.filter(h => (h.history || []).includes(todayStr)).length;
+                const period = hsGet(c.id, 'periodData', null);
+                const periodInfo = hsGetPeriodInfo(period);
+                
+                const intro = hsOpenLayer(appPage, '健康陪伴', `
+                    <div style="padding:10px;">
+                        <div class="hs-h-pick" data-type="habit" style="background:linear-gradient(135deg,#E5F5EC,#F5FBF5);border-radius:14px;padding:18px;cursor:pointer;margin-bottom:12px;border:1px solid #d0e5d8;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:22px;">🌱</span>
+                                    <span style="font-size:14px;color:#775C56;font-weight:600;">一起打卡</span>
+                                </div>
+                                <span style="font-size:11px;color:#7CB17C;">${habits.length > 0 ? `今天 ${todayChecked}/${habits.length}` : '点击添加'}</span>
+                            </div>
+                            <div style="font-size:11px;color:#9A7872;line-height:1.5;">喝水、早睡、吃药、运动……和 TA 一起养成的小习惯</div>
+                        </div>
+                        <div class="hs-h-pick" data-type="period" style="background:linear-gradient(135deg,#FFE5E5,#FFF5F5);border-radius:14px;padding:18px;cursor:pointer;margin-bottom:12px;border:1px solid #f5d0d0;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <span style="font-size:22px;">🌸</span>
+                                    <span style="font-size:14px;color:#775C56;font-weight:600;">月经记录</span>
+                                </div>
+                                <span style="font-size:11px;color:#E89B9B;">${periodInfo.statusShort}</span>
+                            </div>
+                            <div style="font-size:11px;color:#9A7872;line-height:1.5;">${periodInfo.hint}</div>
+                        </div>
+                    </div>
+                `);
+                
+                intro.querySelectorAll('.hs-h-pick').forEach(el => {
+                    el.onclick = () => {
+                        const t = el.dataset.type;
+                        intro.remove();
+                        if (t === 'habit') hsOpenHabits(appPage, c, userNick);
+                        else if (t === 'period') hsOpenPeriod(appPage, c, userNick);
+                    };
+                });
+            }
+            
+            // 工具：计算月经状态简要
+            function hsGetPeriodInfo(period) {
+                if (!period || !period.lastStart) {
+                    return { statusShort: '未记录', hint: '记录第一次开始日期，让 TA 也能记挂你' };
+                }
+                const last = new Date(period.lastStart);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                last.setHours(0,0,0,0);
+                const cycleLen = period.cycleLen || 28;
+                const periodLen = period.periodLen || 5;
+                const daysSince = Math.floor((today - last) / 86400000);
+                
+                // 是否在经期中？
+                if (period.inPeriod || (daysSince >= 0 && daysSince < periodLen)) {
+                    return { statusShort: `经期第 ${daysSince + 1} 天`, hint: 'TA 知道你今天不太舒服 💕' };
+                }
+                
+                // 距离下次开始还有几天
+                const daysToNext = cycleLen - daysSince;
+                if (daysToNext <= 0) {
+                    return { statusShort: `已超过预计日`, hint: '是不是来啦？记一下吧' };
+                } else if (daysToNext <= 3) {
+                    return { statusShort: `还有 ${daysToNext} 天`, hint: 'TA 已经在留意你的情绪了 💗' };
+                } else {
+                    return { statusShort: `还有 ${daysToNext} 天`, hint: `周期 ${cycleLen} 天 · 平稳期` };
+                }
+            }
+            
+            // ===== 共同打卡 =====
+            function hsOpenHabits(appPage, c, userNick) {
+                const layer = hsOpenLayer(appPage, '一起打卡', '');
+                const body = layer.querySelector('.hs-layer-body');
+                
+                const renderList = () => {
+                    const habits = hsGet(c.id, 'healthHabits', []);
+                    const todayStr = new Date().toISOString().slice(0,10);
+                    
+                    if (habits.length === 0) {
+                        body.innerHTML = `
+                            <div style="text-align:center;padding:60px 20px;color:#B89B95;">
+                                <div style="font-size:48px;margin-bottom:14px;opacity:0.6;">🌱</div>
+                                <div style="font-size:13px;margin-bottom:6px;">还没有小目标</div>
+                                <div style="font-size:11px;opacity:0.7;margin-bottom:24px;">添加一个想和 TA 一起坚持的小习惯</div>
+                                <span class="hs-habit-add" style="background:#FFD3D4;color:#775C56;padding:8px 28px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;font-weight:500;">+ 添加目标</span>
+                            </div>
+                        `;
+                        body.querySelector('.hs-habit-add').onclick = () => hsAddHabit(appPage, c, userNick, renderList);
+                        return;
+                    }
+                    
+                    // 计算连续打卡天数
+                    const calcStreak = (h) => {
+                        const hist = (h.history || []).slice().sort();
+                        if (hist.length === 0) return 0;
+                        let streak = 0;
+                        let cur = new Date();
+                        cur.setHours(0,0,0,0);
+                        // 如果今天没打也算从昨天起
+                        const todayInHist = hist.includes(todayStr);
+                        if (!todayInHist) cur.setDate(cur.getDate() - 1);
+                        for (let i = 0; i < 365; i++) {
+                            const s = cur.toISOString().slice(0,10);
+                            if (hist.includes(s)) { streak++; cur.setDate(cur.getDate() - 1); }
+                            else break;
+                        }
+                        return streak;
+                    };
+                    
+                    body.innerHTML = `
+                        <div style="margin-bottom:14px;text-align:center;">
+                            <div style="font-size:11px;color:#9A7872;letter-spacing:1px;">${todayStr} · 今天</div>
+                        </div>
+                        <div id="hs-habit-list"></div>
+                        <div style="text-align:center;margin-top:20px;padding-bottom:14px;">
+                            <span class="hs-habit-add" style="background:#D5EBE4;color:#775C56;padding:8px 22px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;">+ 添加目标</span>
+                        </div>
+                    `;
+                    
+                    const listEl = body.querySelector('#hs-habit-list');
+                    habits.forEach((h, idx) => {
+                        const done = (h.history || []).includes(todayStr);
+                        const streak = calcStreak(h);
+                        const card = document.createElement('div');
+                        card.style.cssText = `background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid #f0e0dc;display:flex;align-items:center;gap:12px;${done ? 'opacity:0.85;' : ''}`;
+                        card.innerHTML = `
+                            <div class="hs-habit-check" data-idx="${idx}" style="width:36px;height:36px;border-radius:50%;background:${done ? '#7CB17C' : '#FBF6F0'};border:2px solid ${done ? '#7CB17C' : '#e0d7c8'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:18px;color:#fff;transition:all 0.2s;">${done ? '✓' : ''}</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+                                    <span style="font-size:16px;">${h.emoji || '🌱'}</span>
+                                    <span style="font-size:14px;color:#775C56;font-weight:500;${done ? 'text-decoration:line-through;text-decoration-color:#B89B95;' : ''}">${h.name}</span>
+                                </div>
+                                <div style="font-size:10px;color:#9A7872;">${streak > 0 ? `🔥 连续 ${streak} 天` : '今天开始呀'}${h.aiReply && done ? ' · TA 也打卡了' : ''}</div>
+                            </div>
+                            <span class="hs-habit-del" data-idx="${idx}" style="font-size:11px;color:#B89B95;cursor:pointer;padding:4px 8px;">删除</span>
+                        `;
+                        listEl.appendChild(card);
+                    });
+                    
+                    // 绑定打卡
+                    body.querySelectorAll('.hs-habit-check').forEach(el => {
+                        el.onclick = async () => {
+                            const idx = parseInt(el.dataset.idx);
+                            const habits = hsGet(c.id, 'healthHabits', []);
+                            const h = habits[idx];
+                            if (!h) return;
+                            h.history = h.history || [];
+                            const todayStr = new Date().toISOString().slice(0,10);
+                            if (h.history.includes(todayStr)) {
+                                // 取消打卡
+                                h.history = h.history.filter(d => d !== todayStr);
+                                hsSet(c.id, 'healthHabits', habits);
+                                renderList();
+                                return;
+                            }
+                            h.history.push(todayStr);
+                            hsSet(c.id, 'healthHabits', habits);
+                            renderList();
+                            // 让 AI 也"打卡"+一句话
+                            try {
+                                const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 刚刚在"一起打卡"上完成了今日目标"${h.name}"。请你以 ${c.name} 的口吻，回应一句话表示你看到了+你也跟着做了/想跟着做+给${userNick}一句温柔鼓励/调侃。\n要求：20-50字，自然口语，体现性格。不要加引号、不要加额外说明。`;
+                                const reply = await hsCallAI(sysPrompt, '请直接输出。');
+                                // 弹小卡片
+                                const overlay = document.createElement('div');
+                                overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
+                                overlay.innerHTML = `<div style="background:linear-gradient(135deg,#E5F5EC,#FFF);border-radius:16px;padding:22px 18px;max-width:260px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+                                    <div style="text-align:center;font-size:42px;margin-bottom:10px;">🌱</div>
+                                    <div style="text-align:center;font-size:11px;color:#B89B95;letter-spacing:1px;margin-bottom:14px;">TA 也来啦</div>
+                                    <div style="font-size:14px;color:#775C56;line-height:1.7;text-align:center;margin-bottom:18px;">${reply}</div>
+                                    <div style="text-align:center;"><span class="hs-h-close" style="background:#D5EBE4;color:#775C56;padding:6px 22px;border-radius:14px;font-size:12px;cursor:pointer;">收下啦 💗</span></div>
+                                </div>`;
+                                appPage.appendChild(overlay);
+                                overlay.querySelector('.hs-h-close').onclick = () => overlay.remove();
+                                overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                                // 存到记忆
+                                h.aiReply = reply;
+                                hsSet(c.id, 'healthHabits', habits);
+                                hsAddMemory(c.id, { type: 'habit', name: h.name, aiReply: reply });
+                            } catch(err) { console.warn('AI回应失败', err); }
+                        };
+                    });
+                    
+                    body.querySelectorAll('.hs-habit-del').forEach(el => {
+                        el.onclick = () => {
+                            const idx = parseInt(el.dataset.idx);
+                            if (!confirm('确定删除这个目标？')) return;
+                            const habits = hsGet(c.id, 'healthHabits', []);
+                            habits.splice(idx, 1);
+                            hsSet(c.id, 'healthHabits', habits);
+                            renderList();
+                        };
+                    });
+                    
+                    body.querySelector('.hs-habit-add').onclick = () => hsAddHabit(appPage, c, userNick, renderList);
+                };
+                
+                renderList();
+            }
+            
+            function hsAddHabit(appPage, c, userNick, onDone) {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
+                const presets = [
+                    { emoji: '💧', name: '喝够 8 杯水' },
+                    { emoji: '🌙', name: '23 点前睡觉' },
+                    { emoji: '💊', name: '按时吃药' },
+                    { emoji: '🏃', name: '运动 30 分钟' },
+                    { emoji: '📖', name: '看会儿书' },
+                    { emoji: '🥗', name: '认真吃饭' },
+                    { emoji: '☀️', name: '出门晒太阳' },
+                    { emoji: '🧘', name: '冥想 10 分钟' }
+                ];
+                dlg.innerHTML = `<div style="background:#FBF9F4;border-radius:14px;padding:16px;max-width:280px;width:100%;max-height:80%;display:flex;flex-direction:column;">
+                    <div style="font-size:14px;color:#775C56;font-weight:600;text-align:center;margin-bottom:14px;">想和 TA 一起做什么？</div>
+                    <div style="flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                        ${presets.map(p => `<div class="hs-preset" data-emoji="${p.emoji}" data-name="${p.name}" style="padding:10px;background:#fff;border-radius:10px;cursor:pointer;border:1px solid #f0e0dc;display:flex;align-items:center;gap:6px;font-size:12px;color:#775C56;">
+                            <span style="font-size:16px;">${p.emoji}</span><span>${p.name}</span>
+                        </div>`).join('')}
+                    </div>
+                    <div style="font-size:11px;color:#9A7872;margin-bottom:6px;">或者自己输入：</div>
+                    <div style="display:flex;gap:6px;margin-bottom:10px;">
+                        <input id="hs-habit-emoji" placeholder="🌱" maxlength="2" style="width:50px;padding:8px;border:1px solid #f0e0dc;border-radius:8px;text-align:center;font-size:16px;background:#fff;outline:none;">
+                        <input id="hs-habit-name" placeholder="目标名" maxlength="20" style="flex:1;padding:8px 10px;border:1px solid #f0e0dc;border-radius:8px;font-size:13px;color:#775C56;background:#fff;outline:none;">
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;">
+                        <span class="hs-add-cancel" style="background:#fff;color:#9A7872;padding:6px 20px;border-radius:12px;font-size:12px;cursor:pointer;border:1px solid #f0e0dc;">取消</span>
+                        <span class="hs-add-ok" style="background:#FFD3D4;color:#775C56;padding:6px 20px;border-radius:12px;font-size:12px;cursor:pointer;">添加</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                
+                const doAdd = (emoji, name) => {
+                    if (!name) return;
+                    const habits = hsGet(c.id, 'healthHabits', []);
+                    habits.push({ id: 'h_' + Date.now(), emoji: emoji || '🌱', name: name, history: [], created: new Date().toISOString() });
+                    hsSet(c.id, 'healthHabits', habits);
+                    dlg.remove();
+                    if (onDone) onDone();
+                };
+                dlg.querySelectorAll('.hs-preset').forEach(el => el.onclick = () => doAdd(el.dataset.emoji, el.dataset.name));
+                dlg.querySelector('.hs-add-cancel').onclick = () => dlg.remove();
+                dlg.querySelector('.hs-add-ok').onclick = () => {
+                    const emoji = dlg.querySelector('#hs-habit-emoji').value.trim() || '🌱';
+                    const name = dlg.querySelector('#hs-habit-name').value.trim();
+                    if (!name) { alert('给目标起个名字吧'); return; }
+                    doAdd(emoji, name);
+                };
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+            }
+            
+            // ===== 月经记录 =====
+            function hsOpenPeriod(appPage, c, userNick) {
+                const layer = hsOpenLayer(appPage, '月经记录', '');
+                const body = layer.querySelector('.hs-layer-body');
+                
+                const render = () => {
+                    const period = hsGet(c.id, 'periodData', null);
+                    const info = hsGetPeriodInfo(period);
+                    const todayStr = new Date().toISOString().slice(0,10);
+                    const inPeriod = period && period.inPeriod;
+                    const history = (period && period.history) || [];
+                    
+                    body.innerHTML = `
+                        <div style="background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center;">
+                            <div style="font-size:11px;color:#B89B95;letter-spacing:2px;margin-bottom:8px;">CURRENT</div>
+                            <div style="font-size:24px;color:#E89B9B;font-weight:600;margin-bottom:6px;">${info.statusShort}</div>
+                            <div style="font-size:12px;color:#9A7872;line-height:1.6;padding:0 10px;">${info.hint}</div>
+                        </div>
+                        
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+                            ${!inPeriod ? `<span id="hs-period-start" style="padding:12px;background:#FFD3D4;color:#775C56;border-radius:12px;font-size:13px;cursor:pointer;text-align:center;font-weight:500;">🌸 今天来了</span>` : `<span id="hs-period-end" style="padding:12px;background:#D5EBE4;color:#775C56;border-radius:12px;font-size:13px;cursor:pointer;text-align:center;font-weight:500;">🌿 今天结束</span>`}
+                            <span id="hs-period-symptom" style="padding:12px;background:#fff;color:#775C56;border-radius:12px;font-size:13px;cursor:pointer;text-align:center;font-weight:500;border:1px solid #f0e0dc;">💗 记录症状</span>
+                        </div>
+                        
+                        <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #f0e0dc;">
+                            <div style="font-size:12px;color:#9A7872;margin-bottom:10px;font-weight:500;">周期设置</div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+                                <span style="font-size:13px;color:#775C56;">周期长度</span>
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <span class="hs-period-cycle-minus" style="width:24px;height:24px;border-radius:50%;background:#FBF6F0;color:#9A7872;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">-</span>
+                                    <span style="font-size:13px;color:#775C56;font-weight:600;min-width:48px;text-align:center;">${(period && period.cycleLen) || 28} 天</span>
+                                    <span class="hs-period-cycle-plus" style="width:24px;height:24px;border-radius:50%;background:#FBF6F0;color:#9A7872;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">+</span>
+                                </span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+                                <span style="font-size:13px;color:#775C56;">经期长度</span>
+                                <span style="display:flex;align-items:center;gap:8px;">
+                                    <span class="hs-period-len-minus" style="width:24px;height:24px;border-radius:50%;background:#FBF6F0;color:#9A7872;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">-</span>
+                                    <span style="font-size:13px;color:#775C56;font-weight:600;min-width:48px;text-align:center;">${(period && period.periodLen) || 5} 天</span>
+                                    <span class="hs-period-len-plus" style="width:24px;height:24px;border-radius:50%;background:#FBF6F0;color:#9A7872;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;">+</span>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        ${history.length > 0 ? `
+                            <div style="font-size:11px;color:#9A7872;margin-bottom:8px;padding-left:4px;">历史记录</div>
+                            <div id="hs-period-history" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        ` : ''}
+                    `;
+                    
+                    if (history.length > 0) {
+                        const histEl = body.querySelector('#hs-period-history');
+                        history.slice(0, 10).forEach(h => {
+                            const d = new Date(h.start);
+                            const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日';
+                            const dur = h.end ? Math.round((new Date(h.end) - d) / 86400000) + 1 : null;
+                            const card = document.createElement('div');
+                            card.style.cssText = 'background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #f0e0dc;display:flex;justify-content:space-between;align-items:center;';
+                            card.innerHTML = `<div style="font-size:12px;color:#775C56;">${dateStr} 开始${dur ? ` · ${dur} 天` : ' · 未记结束'}</div>${h.symptoms && h.symptoms.length ? `<div style="font-size:11px;color:#9A7872;">${h.symptoms.join('、')}</div>` : ''}`;
+                            histEl.appendChild(card);
+                        });
+                    }
+                    
+                    // 绑定事件
+                    const startBtn = body.querySelector('#hs-period-start');
+                    if (startBtn) startBtn.onclick = async () => {
+                        if (!confirm('记录今天来月经？TA 会知道的')) return;
+                        const period = hsGet(c.id, 'periodData', { history: [] });
+                        period.history = period.history || [];
+                        period.history.unshift({ start: todayStr, end: null, symptoms: [] });
+                        if (period.history.length > 24) period.history.length = 24;
+                        // 计算周期（如果有上次记录）
+                        if (period.history.length >= 2) {
+                            const last = new Date(period.history[1].start);
+                            const cur = new Date(todayStr);
+                            const days = Math.round((cur - last) / 86400000);
+                            if (days >= 21 && days <= 45) period.cycleLen = days; // 自动学习周期
+                        }
+                        period.lastStart = todayStr;
+                        period.inPeriod = true;
+                        hsSet(c.id, 'periodData', period);
+                        hsAddMemory(c.id, { type: 'period', event: 'start', date: todayStr });
+                        render();
+                        // AI 关心一句
+                        try {
+                            const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 刚刚在"月经记录"里登记今天来了。请你以 ${c.name} 的口吻，关心 TA 一句话（25-50字），体现你的性格——可以提醒喝热水/早点休息/夸夸 TA/调侃但温柔。不要加引号不要加额外说明。`;
+                            const reply = await hsCallAI(sysPrompt, '请直接输出。');
+                            const o = document.createElement('div');
+                            o.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
+                            o.innerHTML = `<div style="background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;padding:22px 18px;max-width:260px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+                                <div style="text-align:center;font-size:42px;margin-bottom:10px;">🌸</div>
+                                <div style="text-align:center;font-size:11px;color:#B89B95;letter-spacing:1px;margin-bottom:14px;">TA 知道了</div>
+                                <div style="font-size:14px;color:#775C56;line-height:1.7;text-align:center;margin-bottom:18px;">${reply}</div>
+                                <div style="text-align:center;"><span class="o-close" style="background:#FFD3D4;color:#775C56;padding:6px 22px;border-radius:14px;font-size:12px;cursor:pointer;">谢谢 💗</span></div>
+                            </div>`;
+                            appPage.appendChild(o);
+                            o.querySelector('.o-close').onclick = () => o.remove();
+                            o.onclick = e => { if (e.target === o) o.remove(); };
+                        } catch(err) {}
+                    };
+                    
+                    const endBtn = body.querySelector('#hs-period-end');
+                    if (endBtn) endBtn.onclick = () => {
+                        if (!confirm('记录今天结束？')) return;
+                        const period = hsGet(c.id, 'periodData', { history: [] });
+                        period.inPeriod = false;
+                        if (period.history && period.history[0]) {
+                            period.history[0].end = todayStr;
+                            const realLen = Math.round((new Date(todayStr) - new Date(period.history[0].start)) / 86400000) + 1;
+                            if (realLen >= 2 && realLen <= 12) period.periodLen = realLen;
+                        }
+                        hsSet(c.id, 'periodData', period);
+                        render();
+                    };
+                    
+                    body.querySelector('#hs-period-symptom').onclick = () => hsOpenSymptom(appPage, c, userNick, render);
+                    
+                    body.querySelector('.hs-period-cycle-minus').onclick = () => {
+                        const period = hsGet(c.id, 'periodData', {});
+                        period.cycleLen = Math.max(21, ((period.cycleLen || 28) - 1));
+                        hsSet(c.id, 'periodData', period); render();
+                    };
+                    body.querySelector('.hs-period-cycle-plus').onclick = () => {
+                        const period = hsGet(c.id, 'periodData', {});
+                        period.cycleLen = Math.min(45, ((period.cycleLen || 28) + 1));
+                        hsSet(c.id, 'periodData', period); render();
+                    };
+                    body.querySelector('.hs-period-len-minus').onclick = () => {
+                        const period = hsGet(c.id, 'periodData', {});
+                        period.periodLen = Math.max(2, ((period.periodLen || 5) - 1));
+                        hsSet(c.id, 'periodData', period); render();
+                    };
+                    body.querySelector('.hs-period-len-plus').onclick = () => {
+                        const period = hsGet(c.id, 'periodData', {});
+                        period.periodLen = Math.min(10, ((period.periodLen || 5) + 1));
+                        hsSet(c.id, 'periodData', period); render();
+                    };
+                };
+                render();
+            }
+            
+            function hsOpenSymptom(appPage, c, userNick, onDone) {
+                const period = hsGet(c.id, 'periodData', null);
+                const cur = (period && period.history && period.history[0]) || null;
+                const existingSymptoms = (cur && cur.symptoms) || [];
+                const allSymptoms = ['痛经', '腰酸', '头疼', '乏力', '情绪低', '胸胀', '想吃甜', '失眠', '想被抱抱'];
+                
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
+                dlg.innerHTML = `<div style="background:#FBF9F4;border-radius:14px;padding:16px;max-width:280px;width:100%;">
+                    <div style="font-size:14px;color:#775C56;font-weight:600;text-align:center;margin-bottom:14px;">今天身体怎么样？</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+                        ${allSymptoms.map(s => `<span class="hs-sym" data-name="${s}" style="padding:6px 12px;background:${existingSymptoms.includes(s) ? '#FFD3D4' : '#fff'};color:#775C56;border-radius:14px;font-size:12px;cursor:pointer;border:1px solid ${existingSymptoms.includes(s) ? '#FFD3D4' : '#f0e0dc'};">${s}</span>`).join('')}
+                    </div>
+                    <div style="display:flex;gap:8px;justify-content:center;">
+                        <span class="hs-sym-cancel" style="background:#fff;color:#9A7872;padding:6px 20px;border-radius:12px;font-size:12px;cursor:pointer;border:1px solid #f0e0dc;">取消</span>
+                        <span class="hs-sym-ok" style="background:#FFD3D4;color:#775C56;padding:6px 20px;border-radius:12px;font-size:12px;cursor:pointer;">告诉 TA</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                
+                const picked = new Set(existingSymptoms);
+                dlg.querySelectorAll('.hs-sym').forEach(el => {
+                    el.onclick = () => {
+                        const name = el.dataset.name;
+                        if (picked.has(name)) { picked.delete(name); el.style.background = '#fff'; el.style.borderColor = '#f0e0dc'; }
+                        else { picked.add(name); el.style.background = '#FFD3D4'; el.style.borderColor = '#FFD3D4'; }
+                    };
+                });
+                dlg.querySelector('.hs-sym-cancel').onclick = () => dlg.remove();
+                dlg.querySelector('.hs-sym-ok').onclick = async () => {
+                    const syms = Array.from(picked);
+                    const period = hsGet(c.id, 'periodData', { history: [] });
+                    period.history = period.history || [];
+                    if (!period.history[0]) {
+                        // 没有进行中的记录，创建一个
+                        period.history.unshift({ start: new Date().toISOString().slice(0,10), end: null, symptoms: syms });
+                    } else {
+                        period.history[0].symptoms = syms;
+                    }
+                    hsSet(c.id, 'periodData', period);
+                    dlg.remove();
+                    hsAddMemory(c.id, { type: 'symptom', symptoms: syms });
+                    if (onDone) onDone();
+                    
+                    if (syms.length > 0) {
+                        // AI 关心
+                        try {
+                            const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 今天月经/生理期，告诉了你 TA 现在的身体状况：${syms.join('、')}。请你以 ${c.name} 的口吻，温柔回应 TA 一句话（30-60字），针对 TA 提到的症状关心，体现你的性格。不要加引号不要加额外说明。`;
+                            const reply = await hsCallAI(sysPrompt, '请直接输出。');
+                            const o = document.createElement('div');
+                            o.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
+                            o.innerHTML = `<div style="background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;padding:22px 18px;max-width:260px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
+                                <div style="text-align:center;font-size:42px;margin-bottom:10px;">💗</div>
+                                <div style="text-align:center;font-size:11px;color:#B89B95;letter-spacing:1px;margin-bottom:14px;">TA 心疼你</div>
+                                <div style="font-size:14px;color:#775C56;line-height:1.7;text-align:center;margin-bottom:18px;">${reply}</div>
+                                <div style="text-align:center;"><span class="o-close" style="background:#FFD3D4;color:#775C56;padding:6px 22px;border-radius:14px;font-size:12px;cursor:pointer;">嗯嗯 💕</span></div>
+                            </div>`;
+                            appPage.appendChild(o);
+                            o.querySelector('.o-close').onclick = () => o.remove();
+                            o.onclick = e => { if (e.target === o) o.remove(); };
+                        } catch(err) {}
+                    }
+                };
+                dlg.onclick = e => { if (e.target === dlg) dlg.remove(); };
+            }
 
             function setupWorldBookApp(appPage) {
                 const addBtn = appPage.querySelector('#add-world-book-btn');
@@ -6878,15 +7836,18 @@
                         const reader = new FileReader();
                         reader.onload = (evt) => {
                             const img = new Image();
-                            img.onload = () => {
+                            img.onload = async () => {
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
                                 canvas.width = 300;
                                 canvas.height = 300;
                                 ctx.drawImage(img, 0, 0, 300, 300);
                                 currentAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                                
-                                currentAvatar = `<img src="${currentAvatarBase64}" style="width:100%;height:100%;object-fit:cover;">`;
+                                let savedRef = currentAvatarBase64;
+                                try {
+                                    if (window.ImageDB && window.ImageDB.saveAndRef) savedRef = await window.ImageDB.saveAndRef(currentAvatarBase64);
+                                } catch(err) {}
+                                currentAvatar = savedRef; // 存imgdb引用而不是HTML，渲染处会识别
                                 avatarPreview.src = currentAvatarBase64;
                                 avatarPreview.classList.remove('hidden');
                                 avatarEmoji.classList.add('hidden');
@@ -7007,20 +7968,35 @@
                 }
 
                 function updateWidgetDisplay() {
-                    const bg = localStorage.getItem('widget_bg');
                     const widgetContainer = document.getElementById('tea-widget');
-                    if (bg) {
-                        widgetBg.style.backgroundImage = `url(${bg})`;
-                        widgetContainer.style.background = 'transparent';
-                        widgetContainer.style.backdropFilter = 'none';
-                    } else {
-                        widgetBg.style.backgroundImage = '';
-                        widgetContainer.style.background = 'rgba(255, 255, 255, 0.3)';
-                        widgetContainer.style.backdropFilter = 'blur(10px)';
-                    }
-
-                    avatarMe.src = localStorage.getItem('widget_avatar_me') || '';
-                    avatarLover.src = localStorage.getItem('widget_avatar_lover') || '';
+                    
+                    // 异步解析 imgdb:// 引用为真 base64
+                    const resolveImg = async (val) => {
+                        if (!val) return '';
+                        if (val.startsWith('imgdb://') && window.ImageDB) {
+                            try {
+                                await window.ImageDB.readyPromise;
+                                return await window.ImageDB.get(val.slice(8)) || '';
+                            } catch(e) { return ''; }
+                        }
+                        return val;
+                    };
+                    
+                    (async () => {
+                        const bg = await resolveImg(localStorage.getItem('widget_bg'));
+                        if (bg) {
+                            widgetBg.style.backgroundImage = `url(${bg})`;
+                            widgetContainer.style.background = 'transparent';
+                            widgetContainer.style.backdropFilter = 'none';
+                        } else {
+                            widgetBg.style.backgroundImage = '';
+                            widgetContainer.style.background = 'rgba(255, 255, 255, 0.3)';
+                            widgetContainer.style.backdropFilter = 'blur(10px)';
+                        }
+                        
+                        avatarMe.src = await resolveImg(localStorage.getItem('widget_avatar_me'));
+                        avatarLover.src = await resolveImg(localStorage.getItem('widget_avatar_lover'));
+                    })();
                 }
 
                 widget.addEventListener('click', () => {
@@ -7268,8 +8244,18 @@
                                     input.onchange = (e) => handleImageUpload(e.target.files[0], input.dataset.app, tempIcons, input.parentElement);
                                 });
 
-                                saveIconsBtn.onclick = () => {
-                                    for (let id in tempIcons) { localStorage.setItem(`icon_${id}`, tempIcons[id]); }
+                                saveIconsBtn.onclick = async () => {
+                                    for (let id in tempIcons) {
+                                        try {
+                                            const val = tempIcons[id];
+                                            const ref = (val && val.startsWith('data:') && window.ImageDB && window.ImageDB.saveAndRef)
+                                                ? await window.ImageDB.saveAndRef(val)
+                                                : val;
+                                            localStorage.setItem(`icon_${id}`, ref);
+                                        } catch(err) {
+                                            console.warn('图标保存失败 ' + id, err);
+                                        }
+                                    }
                                     alert('图标修改成功！');
                                     renderHomeScreenIcons();
                                     tempIcons = {};
@@ -7286,29 +8272,54 @@
                                 // Render UI
                                 widgetConfigList.innerHTML = `
                                     <div class="col-span-3 flex flex-col items-center gap-1">
-                                        <label class="relative w-full h-20 aspect-video flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_bg')) ? `background-image: url(${localStorage.getItem('widget_bg')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                        <label id="widget-bg-label" class="relative w-full h-20 aspect-video flex items-center justify-center border-2 border-dashed border-gray-300 rounded-xl cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100">
                                             <input type="file" class="hidden widget-input" data-key="widget_bg" accept="image/*">
-                                            <span class="text-gray-400 text-xl ${localStorage.getItem('widget_bg') ? 'hidden' : ''}">+</span>
+                                            <span id="widget-bg-plus" class="text-gray-400 text-xl ${localStorage.getItem('widget_bg') ? 'hidden' : ''}">+</span>
                                         </label>
                                         <span class="text-[10px] text-gray-500">小组件背景</span>
                                     </div>
                                     <div class="col-span-3 grid grid-cols-2 gap-4">
                                         <div class="flex flex-col items-center gap-1">
-                                            <label class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_avatar_me')) ? `background-image: url(${localStorage.getItem('widget_avatar_me')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                            <label id="widget-me-label" class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100">
                                                 <input type="file" class="hidden widget-input" data-key="widget_avatar_me" accept="image/*">
-                                                <span class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_me') ? 'hidden' : ''}">+</span>
+                                                <span id="widget-me-plus" class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_me') ? 'hidden' : ''}">+</span>
                                             </label>
                                             <span class="text-[10px] text-gray-500">我的头像</span>
                                         </div>
                                         <div class="flex flex-col items-center gap-1">
-                                            <label class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100" style="${(localStorage.getItem('widget_avatar_lover')) ? `background-image: url(${localStorage.getItem('widget_avatar_lover')}); background-size: cover; background-position: center; border-style: solid;` : ''}">
+                                            <label id="widget-lover-label" class="relative w-16 h-16 aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-full cursor-pointer overflow-hidden bg-gray-50 hover:bg-gray-100">
                                                 <input type="file" class="hidden widget-input" data-key="widget_avatar_lover" accept="image/*">
-                                                <span class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_lover') ? 'hidden' : ''}">+</span>
+                                                <span id="widget-lover-plus" class="text-gray-400 text-xl ${localStorage.getItem('widget_avatar_lover') ? 'hidden' : ''}">+</span>
                                             </label>
                                             <span class="text-[10px] text-gray-500">恋人头像</span>
                                         </div>
                                     </div>
                                 `;
+                                
+                                // 异步解析并应用 imgdb 背景到预览方框
+                                const resolveAndApply = async (key, labelId) => {
+                                    const val = localStorage.getItem(key);
+                                    if (!val) return;
+                                    let imgUrl = val;
+                                    if (val.startsWith('imgdb://') && window.ImageDB) {
+                                        try {
+                                            await window.ImageDB.readyPromise;
+                                            imgUrl = await window.ImageDB.get(val.slice(8)) || '';
+                                        } catch(e) { imgUrl = ''; }
+                                    }
+                                    if (imgUrl) {
+                                        const label = widgetConfigList.querySelector('#' + labelId);
+                                        if (label) {
+                                            label.style.backgroundImage = `url(${imgUrl})`;
+                                            label.style.backgroundSize = 'cover';
+                                            label.style.backgroundPosition = 'center';
+                                            label.style.borderStyle = 'solid';
+                                        }
+                                    }
+                                };
+                                resolveAndApply('widget_bg', 'widget-bg-label');
+                                resolveAndApply('widget_avatar_me', 'widget-me-label');
+                                resolveAndApply('widget_avatar_lover', 'widget-lover-label');
 
                                 // Bind input events
                                 widgetConfigList.querySelectorAll('.widget-input').forEach(input => {
@@ -7316,13 +8327,21 @@
                                 });
 
                                 // Bind save button event
-                                saveWidgetConfigBtn.onclick = () => {
+                                saveWidgetConfigBtn.onclick = async () => {
                                     if (Object.keys(tempWidgetData).length === 0) {
                                         alert('没有检测到修改');
                                         return;
                                     }
                                     for (let key in tempWidgetData) {
-                                        localStorage.setItem(key, tempWidgetData[key]);
+                                        try {
+                                            const val = tempWidgetData[key];
+                                            const ref = (val && val.startsWith && val.startsWith('data:') && window.ImageDB && window.ImageDB.saveAndRef)
+                                                ? await window.ImageDB.saveAndRef(val)
+                                                : val;
+                                            localStorage.setItem(key, ref);
+                                        } catch(err) {
+                                            localStorage.setItem(key, tempWidgetData[key]);
+                                        }
                                     }
                                     alert('小组件配置已保存');
                                     if (window.updateWidgetDisplay) {
@@ -7354,9 +8373,24 @@
                         };
                         const savedWp = localStorage.getItem('customWallpaper');
                         if (savedWp) {
-                            preview.style.backgroundImage = `url(${savedWp})`;
-                            preview.textContent = '';
-                            setWpSelected(true);
+                            if (savedWp.startsWith('imgdb://')) {
+                                const id = savedWp.slice(8);
+                                (async () => {
+                                    try {
+                                        await window.ImageDB.readyPromise;
+                                        const data = await window.ImageDB.get(id);
+                                        if (data) {
+                                            preview.style.backgroundImage = `url(${data})`;
+                                            preview.textContent = '';
+                                            setWpSelected(true);
+                                        }
+                                    } catch(e) { console.warn('壁纸读取失败', e); }
+                                })();
+                            } else {
+                                preview.style.backgroundImage = `url(${savedWp})`;
+                                preview.textContent = '';
+                                setWpSelected(true);
+                            }
                         }
                         wallpaperUpload.onchange = (e) => {
                             const f = e.target.files[0];
@@ -7371,13 +8405,39 @@
                                 r.readAsDataURL(f);
                             }
                         };
-                        appPage.querySelector('#save-wallpaper-btn').onclick = () => {
+                        appPage.querySelector('#save-wallpaper-btn').onclick = async () => {
                             if (tempUrl) {
-                                screen.style.backgroundImage = `url(${tempUrl})`;
-                                localStorage.setItem('customWallpaper', tempUrl);
-                                alert('壁纸已保存');
+                                // 存到 imgdb 拿引用，省 localStorage 空间
+                                try {
+                                    const ref = await (window.ImageDB && window.ImageDB.saveAndRef ? window.ImageDB.saveAndRef(tempUrl) : Promise.resolve(tempUrl));
+                                    screen.style.backgroundImage = `url(${tempUrl})`;
+                                    localStorage.setItem('customWallpaper', ref);
+                                    alert('壁纸已保存');
+                                } catch(err) {
+                                    console.error('保存壁纸失败', err);
+                                    alert('保存失败：' + err.message);
+                                }
                             }
                         };
+                        // 恢复默认壁纸、图标、小组件（不删聊天/联系人数据）
+                        const restoreBtn = appPage.querySelector('#restore-default-btn');
+                        if (restoreBtn) restoreBtn.onclick = () => {
+                            if (!confirm('确定恢复默认壁纸、所有 app 图标、小组件配置？（聊天和联系人不会丢失）')) return;
+                            // 清壁纸
+                            localStorage.removeItem('customWallpaper');
+                            localStorage.removeItem('wallpaper');
+                            // 清所有 app 图标
+                            const iconKeys = Object.keys(localStorage).filter(k => k.startsWith('icon_'));
+                            iconKeys.forEach(k => localStorage.removeItem(k));
+                            localStorage.removeItem('icon_settings');
+                            // 清小组件
+                            localStorage.removeItem('widget_bg');
+                            localStorage.removeItem('widget_avatar_me');
+                            localStorage.removeItem('widget_avatar_lover');
+                            alert('已恢复默认，页面将刷新');
+                            location.reload();
+                        };
+                        
                         appPage.querySelector('#reset-settings-btn').onclick = () => {
                             if (confirm('重置所有数据？')) {
                                 localStorage.clear();
@@ -7491,7 +8551,18 @@
             
             const screen = document.querySelector('.screen');
             const savedWallpaper = localStorage.getItem('customWallpaper') || localStorage.getItem('wallpaper') || 'https://images.unsplash.com/photo-1500964757637-c85e8a162699?q=80&w=2703&auto=format&fit=crop';
-            screen.style.backgroundImage = `url('${savedWallpaper}')`;
+            if (savedWallpaper.startsWith('imgdb://')) {
+                const id = savedWallpaper.slice(8);
+                (async () => {
+                    try {
+                        await window.ImageDB.readyPromise;
+                        const data = await window.ImageDB.get(id);
+                        if (data) screen.style.backgroundImage = `url('${data}')`;
+                    } catch(e) { console.warn('主屏壁纸加载失败', e); }
+                })();
+            } else {
+                screen.style.backgroundImage = `url('${savedWallpaper}')`;
+            }
         });
     </script>
     <script src="api_handler.js"></script>
