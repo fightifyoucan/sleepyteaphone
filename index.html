@@ -35,6 +35,20 @@
         /* --- 桌面元素 --- */
         .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 45px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        /* 分页桌面 */
+        .home-pager { width: 100%; overflow: hidden; position: relative; }
+        .home-pager-track { display: flex; width: 200%; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .home-page { width: 50%; flex-shrink: 0; box-sizing: border-box; }
+        /* 第二页：4列网格，仿 AI 手机的图标样式 */
+        .home-page.page2 { padding: 20px 16px 0; }
+        .home-page .app-grid-page2 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; }
+        .home-page .app-grid-page2 .app-icon { width: auto; gap: 4px; font-size: 11px; }
+        .home-page .app-grid-page2 .app-icon-img { width: 54px; height: 54px; font-size: 16px; border-radius: 14px; }
+        .page-dots { position: absolute; left: 0; right: 0; bottom: 130px; display: flex; justify-content: center; align-items: center; gap: 8px; padding: 0; z-index: 2; pointer-events: auto; }
+        .page-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: background 0.2s, transform 0.2s; cursor: pointer; }
+        .page-dot.active { background: rgba(255,255,255,0.95); transform: scale(1.1); }
+        body.brown-font .page-dot { background: rgba(119,92,86,0.25); }
+        body.brown-font .page-dot.active { background: rgba(119,92,86,0.85); }
         .app-icon { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; font-size: 12px; text-shadow: 0 1px 3px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; width: 60px; gap: 4px; }
         /* 棕色字体模式：覆盖白色文字 */
         body.brown-font .app-icon { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
@@ -466,23 +480,42 @@
             <div class="dynamic-island"></div>
             <div class="content-wrapper" style="padding-top: 25%;">
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
-                <div class="home-content">
-                    <div class="app-grid">
-                        <!-- Icons will be rendered here by JavaScript -->
-                    </div>
-                    <div style="grid-column: span 2; text-align: center;">
-                        <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-                            <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
-                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
-                               <div class="flex flex-row items-center justify-center mb-2 gap-3">
-                                   <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
-                                   <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
-                               </div>
-                               <div class="days-text">恋爱ing</div>
-                               <div id="love-days-text" class="days-count">...</div>
+                <div class="home-content" style="flex-direction:column;align-items:stretch;padding:0;margin-top:45px;">
+                    <div class="home-pager" id="home-pager">
+                        <div class="home-pager-track" id="home-pager-track">
+                            <!-- 第 1 页：原本的 app 网格 + tea widget -->
+                            <div class="home-page page1">
+                                <div style="display:flex;justify-content:center;column-gap:15px;">
+                                    <div class="app-grid">
+                                        <!-- Icons will be rendered here by JavaScript -->
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                                            <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
+                                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                                               <div class="flex flex-row items-center justify-center mb-2 gap-3">
+                                                   <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                                                   <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                                               </div>
+                                               <div class="days-text">恋爱ing</div>
+                                               <div id="love-days-text" class="days-count">...</div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 第 2 页：新增的 4 个 app（仿 AI 手机布局） -->
+                            <div class="home-page page2">
+                                <div class="app-grid-page2">
+                                    <!-- Page 2 icons will be rendered here by JavaScript -->
+                                </div>
                             </div>
                         </div>
-                        <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
+                    </div>
+                    <div class="page-dots" id="page-dots">
+                        <div class="page-dot active" data-page="0"></div>
+                        <div class="page-dot" data-page="1"></div>
                     </div>
                 </div>
             </div>
@@ -501,6 +534,10 @@
         <div id="settings-page" class="app-page"></div>
         <div id="ai-character-setup-page" class="app-page"></div>
         <div id="world-book-edit-page" class="app-page"></div>
+        <div id="lullaby-page" class="app-page"></div>
+        <div id="ai-love-club-page" class="app-page"></div>
+        <div id="g-love-club-page" class="app-page"></div>
+        <div id="virtual-hug-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1574,6 +1611,12 @@
                 { id: 'couple-space', name: '心跳同频中', emoji: '❤️', container: '.app-grid' },
                 { id: 'world-book', name: '世界书', emoji: '📖', container: '.app-grid' },
                 { id: 'check-phone', name: '查手机', emoji: '📱', container: '.app-grid' },
+                // 第 2 页
+                { id: 'lullaby', name: '哄睡', emoji: '🌙', container: '.app-grid-page2' },
+                { id: 'ai-love-club', name: 'AI互助会', emoji: '💌', container: '.app-grid-page2' },
+                { id: 'g-love-club', name: 'G互助会', emoji: '💚', container: '.app-grid-page2' },
+                { id: 'virtual-hug', name: '虚拟抱抱', emoji: '🧸', container: '.app-grid-page2' },
+                // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
                 { id: 'album', name: '相册', emoji: '🖼️', container: '.dock' },
@@ -1581,6 +1624,8 @@
             ];
 
             document.querySelector('.app-grid').innerHTML = '';
+            const page2Grid = document.querySelector('.app-grid-page2');
+            if (page2Grid) page2Grid.innerHTML = '';
             document.querySelectorAll('.dock .app-icon').forEach(icon => icon.remove());
 
             apps.forEach(app => {
@@ -1643,8 +1688,101 @@
                 }
                 renderHomeScreenIcons();
                 refreshAllUserAvatars();
+                setupHomePager();
             };
             initAfterDB();
+
+            // 桌面分页：手势滑动 + 圆点切换
+            function setupHomePager() {
+                const track = document.getElementById('home-pager-track');
+                const pager = document.getElementById('home-pager');
+                const dots = document.querySelectorAll('#page-dots .page-dot');
+                if (!track || !pager) return;
+                let currentPage = 0;
+                let startX = 0, startY = 0, currentX = 0, isDragging = false, isHorizontal = null;
+                const pageWidth = () => pager.offsetWidth;
+
+                function goToPage(idx) {
+                    currentPage = Math.max(0, Math.min(1, idx));
+                    track.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    track.style.transform = `translateX(-${currentPage * 50}%)`;
+                    dots.forEach((d, i) => d.classList.toggle('active', i === currentPage));
+                }
+
+                dots.forEach((d, i) => d.addEventListener('click', () => goToPage(i)));
+
+                pager.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    currentX = startX;
+                    isDragging = true;
+                    isHorizontal = null;
+                    track.style.transition = 'none';
+                }, { passive: true });
+
+                pager.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    const x = e.touches[0].clientX;
+                    const y = e.touches[0].clientY;
+                    const dx = x - startX;
+                    const dy = y - startY;
+                    if (isHorizontal === null) {
+                        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                            isHorizontal = Math.abs(dx) > Math.abs(dy);
+                        }
+                    }
+                    if (!isHorizontal) return;
+                    currentX = x;
+                    const baseTranslate = -currentPage * 50;
+                    const dragPct = (dx / pageWidth()) * 50;
+                    // 边界阻尼
+                    let finalPct = baseTranslate + dragPct;
+                    if (finalPct > 0) finalPct = finalPct * 0.3;
+                    if (finalPct < -50) finalPct = -50 + (finalPct + 50) * 0.3;
+                    track.style.transform = `translateX(${finalPct}%)`;
+                }, { passive: true });
+
+                pager.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    const dx = currentX - startX;
+                    const threshold = pageWidth() * 0.18;
+                    if (isHorizontal && Math.abs(dx) > threshold) {
+                        goToPage(currentPage + (dx < 0 ? 1 : -1));
+                    } else {
+                        goToPage(currentPage);
+                    }
+                });
+
+                // 鼠标拖拽（桌面端调试用）
+                let mouseDown = false;
+                pager.addEventListener('mousedown', (e) => {
+                    mouseDown = true; startX = e.clientX; currentX = startX; isHorizontal = true;
+                    track.style.transition = 'none';
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!mouseDown) return;
+                    currentX = e.clientX;
+                    const dx = currentX - startX;
+                    const baseTranslate = -currentPage * 50;
+                    const dragPct = (dx / pageWidth()) * 50;
+                    let finalPct = baseTranslate + dragPct;
+                    if (finalPct > 0) finalPct = finalPct * 0.3;
+                    if (finalPct < -50) finalPct = -50 + (finalPct + 50) * 0.3;
+                    track.style.transform = `translateX(${finalPct}%)`;
+                });
+                window.addEventListener('mouseup', () => {
+                    if (!mouseDown) return;
+                    mouseDown = false;
+                    const dx = currentX - startX;
+                    const threshold = pageWidth() * 0.18;
+                    if (Math.abs(dx) > threshold) {
+                        goToPage(currentPage + (dx < 0 ? 1 : -1));
+                    } else {
+                        goToPage(currentPage);
+                    }
+                });
+            }
 
             // 启动时恢复沉浸模式
             if (localStorage.getItem('immersive_mode') === '1') {
@@ -3263,7 +3401,7 @@
                                     time: msg.time
                                 };
                                 DB.addMessage(id, timeMsg);
-                                history.push(timeMsg);
+                                // history 是 _chats[id] 的引用，DB.addMessage 已经 push 过了，这里不能再 push
                             }
                         }
 
@@ -3273,7 +3411,7 @@
                             quotePreview.style.display = 'none';
                         }
                         DB.addMessage(id, msg); 
-                        history.push(msg); 
+                        // history 是 _chats[id] 的引用，DB.addMessage 已经 push 过了，这里不能再 push
                         render(); 
 
                         if(msg.sender === 'me' && msg.type === 'text') {
@@ -3293,7 +3431,7 @@
                                 const amt = parseFloat(amtMatch[1]);
                                 setTimeout(() => {
                                     const reply = {id:`r_${Date.now()}`,sender:'ai',type:'transfer',amount:amt.toFixed(2),note:'给你～❤️',time:new Date()};
-                                    DB.addMessage(id,reply); history.push(reply); render();
+                                    DB.addMessage(id,reply); render();
                                 }, 1500);
                             } else {
                                 // 520 triggers
@@ -3301,7 +3439,7 @@
                                 if(triggers.some(t => msg.text.includes(t))) {
                                     setTimeout(() => {
                                         const reply = {id:`r_${Date.now()}`,sender:'ai',type:'transfer',amount:'520.00',note:'拿去花，不够再给❤️',time:new Date()};
-                                        DB.addMessage(id,reply); history.push(reply); render();
+                                        DB.addMessage(id,reply); render();
                                     }, 1500);
                                 }
                             }
@@ -3552,7 +3690,7 @@
                                                 const reactReply = ApiHandler.parseChatResponse(pPlat2, data2);
                                                 if(reactReply && reactReply.trim()) {
                                                     const replyMsg = {id:`r_react_${Date.now()}`,sender:'ai',type:'text',text:reactReply.trim(),time:new Date()};
-                                                    DB.addMessage(id,replyMsg); history.push(replyMsg); render();
+                                                    DB.addMessage(id,replyMsg); render();
                                                 }
                                             }
                                         } catch(e) { /* 回应失败静默 */ }
@@ -8101,6 +8239,10 @@
                         else if (appId === 'couple-space') setupCoupleSpaceApp(appPage);
                         else if (appId === 'api-settings') setupApiSettingsApp(appPage);
                         else if (appId === 'check-phone') setupCheckPhoneApp(appPage);
+                        else if (appId === 'lullaby') setupLullabyApp(appPage);
+                        else if (appId === 'ai-love-club') setupAILoveClubApp(appPage, 'ai');
+                        else if (appId === 'g-love-club') setupAILoveClubApp(appPage, 'g');
+                        else if (appId === 'virtual-hug') setupVirtualHugApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
                             appPage.querySelector('#phone-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
@@ -8566,6 +8708,777 @@
         });
     </script>
     <script src="api_handler.js"></script>
+    <script>
+        // ============================================
+        // 哄睡 App 🌙
+        // ============================================
+        function setupLullabyApp(appPage) {
+            appPage.innerHTML = `
+            <style>
+                .lullaby-page { background: linear-gradient(180deg, #1a1838 0%, #2d2456 50%, #3d2856 100%); color: #f0e6ff; min-height: 100%; position: relative; overflow: hidden; }
+                .lullaby-stars { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+                .lullaby-star { position: absolute; background: white; border-radius: 50%; opacity: 0.6; animation: lullaby-twinkle 3s infinite alternate; }
+                @keyframes lullaby-twinkle { 0%{opacity:0.3;} 100%{opacity:0.9;} }
+                .lullaby-header { position: relative; padding: 18px 16px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 1; }
+                .lullaby-back { font-size: 28px; cursor: pointer; color: #f0e6ff; width: 30px; }
+                .lullaby-title { font-size: 18px; font-weight: 500; letter-spacing: 2px; }
+                .lullaby-body { padding: 30px 24px; position: relative; z-index: 1; }
+                .lullaby-moon { text-align: center; font-size: 80px; margin: 10px 0 20px; filter: drop-shadow(0 0 18px rgba(255,235,180,0.6)); }
+                .lullaby-greeting { text-align: center; font-size: 15px; color: #d6c4ff; line-height: 1.8; margin-bottom: 32px; opacity: 0.9; }
+                .lullaby-type-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+                .lullaby-type-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 18px 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
+                .lullaby-type-card:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
+                .lullaby-type-card.selected { background: rgba(255, 200, 230, 0.18); border-color: rgba(255, 200, 230, 0.5); }
+                .lullaby-type-emoji { font-size: 28px; margin-bottom: 6px; }
+                .lullaby-type-name { font-size: 13px; font-weight: 500; }
+                .lullaby-type-desc { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+                .lullaby-narrator-row { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+                .lullaby-narrator-avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+                .lullaby-narrator-info { flex: 1; min-width: 0; }
+                .lullaby-narrator-label { font-size: 11px; opacity: 0.55; margin-bottom: 2px; }
+                .lullaby-narrator-name { font-size: 14px; font-weight: 500; }
+                .lullaby-start-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #ff9ecf, #b89cff); border: none; border-radius: 18px; color: white; font-size: 16px; font-weight: 600; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 20px rgba(184,156,255,0.3); transition: all 0.2s; }
+                .lullaby-start-btn:active { transform: scale(0.97); }
+                .lullaby-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+                .lullaby-read-screen { display: none; padding: 30px 26px 60px; position: relative; z-index: 1; }
+                .lullaby-read-screen.active { display: block; }
+                .lullaby-narrator-mini { text-align: center; margin-bottom: 32px; opacity: 0.7; font-size: 13px; }
+                .lullaby-text { font-size: 17px; line-height: 2.1; color: #f3e9ff; min-height: 200px; white-space: pre-wrap; letter-spacing: 1px; }
+                .lullaby-cursor { display: inline-block; width: 2px; height: 1.2em; background: #f3e9ff; vertical-align: middle; animation: lullaby-blink 1s infinite; margin-left: 3px; }
+                @keyframes lullaby-blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
+                .lullaby-controls { display: flex; gap: 10px; margin-top: 36px; flex-wrap: wrap; }
+                .lullaby-ctrl-btn { flex: 1; min-width: 0; padding: 12px 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; color: #f0e6ff; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+                .lullaby-ctrl-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.18); }
+                .lullaby-ctrl-btn.primary { background: linear-gradient(135deg, rgba(255,158,207,0.4), rgba(184,156,255,0.4)); border-color: rgba(255,200,230,0.4); }
+                .lullaby-ctrl-btn.danger { background: rgba(40,30,60,0.5); }
+            </style>
+            <div class="lullaby-page">
+                <div class="lullaby-stars" id="lullaby-stars"></div>
+                <div class="lullaby-header">
+                    <span class="lullaby-back close-btn">‹</span>
+                    <span class="lullaby-title">哄睡</span>
+                    <span style="width:30px;"></span>
+                </div>
+                <div class="lullaby-body" id="lullaby-setup">
+                    <div class="lullaby-moon">🌙</div>
+                    <div class="lullaby-greeting">夜深了，挑一种你今晚想听的<br>让我陪你慢慢入睡～</div>
+                    <div class="lullaby-type-grid" id="lullaby-type-grid"></div>
+                    <div class="lullaby-narrator-row" id="lullaby-narrator-row">
+                        <div class="lullaby-narrator-avatar" id="lullaby-narrator-emoji">🌸</div>
+                        <div class="lullaby-narrator-info">
+                            <div class="lullaby-narrator-label">由谁来讲</div>
+                            <div class="lullaby-narrator-name" id="lullaby-narrator-name">哄睡专员</div>
+                        </div>
+                        <div style="opacity:0.4;">›</div>
+                    </div>
+                    <button class="lullaby-start-btn" id="lullaby-start-btn" disabled>开 始</button>
+                </div>
+                <div class="lullaby-read-screen" id="lullaby-read-screen">
+                    <div class="lullaby-narrator-mini" id="lullaby-narrator-mini"></div>
+                    <div class="lullaby-text" id="lullaby-text"></div>
+                    <div class="lullaby-controls" id="lullaby-controls" style="display:none;">
+                        <button class="lullaby-ctrl-btn primary" id="lullaby-more">再讲一段</button>
+                        <button class="lullaby-ctrl-btn" id="lullaby-change">换一种</button>
+                        <button class="lullaby-ctrl-btn danger" id="lullaby-end">晚安🌙</button>
+                    </div>
+                </div>
+            </div>`;
+
+            const starsBox = appPage.querySelector('#lullaby-stars');
+            for (let i = 0; i < 40; i++) {
+                const s = document.createElement('div');
+                s.className = 'lullaby-star';
+                const size = Math.random() * 2 + 1;
+                s.style.width = size + 'px';
+                s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.top = Math.random() * 100 + '%';
+                s.style.animationDelay = Math.random() * 3 + 's';
+                starsBox.appendChild(s);
+            }
+
+            const TYPES = [
+                { id: 'fairytale', name: '童话故事', emoji: '🏰', desc: '柔软的小世界' },
+                { id: 'asmr', name: 'ASMR文字', emoji: '🌊', desc: '细微的声音' },
+                { id: 'daily', name: '日常絮叨', emoji: '🫧', desc: '陪你说说话' },
+                { id: 'whisper', name: '耳边低语', emoji: '💭', desc: '只说给你听' }
+            ];
+            let selectedType = null;
+            let selectedNarrator = { type: 'default', name: '哄睡专员', emoji: '🌸', persona: '一个温柔的虚拟陪伴角色，声音轻柔，语速很慢，喜欢用叠词，像在你耳边轻声细语' };
+
+            const typeGrid = appPage.querySelector('#lullaby-type-grid');
+            typeGrid.innerHTML = TYPES.map(t => `
+                <div class="lullaby-type-card" data-type="${t.id}">
+                    <div class="lullaby-type-emoji">${t.emoji}</div>
+                    <div class="lullaby-type-name">${t.name}</div>
+                    <div class="lullaby-type-desc">${t.desc}</div>
+                </div>
+            `).join('');
+            typeGrid.querySelectorAll('.lullaby-type-card').forEach(card => {
+                card.onclick = () => {
+                    typeGrid.querySelectorAll('.lullaby-type-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedType = TYPES.find(t => t.id === card.dataset.type);
+                    appPage.querySelector('#lullaby-start-btn').disabled = false;
+                };
+            });
+
+            appPage.querySelector('#lullaby-narrator-row').onclick = () => {
+                const contacts = DB.getContacts ? DB.getContacts() : [];
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:absolute;inset:0;z-index:100;background:rgba(20,15,40,0.95);overflow-y:auto;color:#f0e6ff;';
+                overlay.innerHTML = `
+                    <div style="padding:30px 20px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                            <span style="font-size:16px;font-weight:500;">由谁来讲</span>
+                            <span id="lb-nar-close" style="cursor:pointer;font-size:22px;">×</span>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:14px;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;gap:12px;" data-nar-id="__default">
+                            <div style="font-size:24px;">🌸</div>
+                            <div>
+                                <div style="font-size:14px;font-weight:500;">哄睡专员</div>
+                                <div style="font-size:11px;opacity:0.6;">温柔轻语，专门陪你入睡</div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;opacity:0.5;margin:18px 0 8px;">— 让聊天里的角色来讲 —</div>
+                        ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有添加联系人</div>' :
+                            contacts.map(c => `
+                                <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:12px;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:12px;" data-nar-id="${c.id}">
+                                    <div style="font-size:22px;">${(c.avatar||'').startsWith('imgdb://')||(c.avatar||'').startsWith('data:')?'👤':(c.avatar||'👤')}</div>
+                                    <div><div style="font-size:14px;">${c.notes||c.name}</div></div>
+                                </div>
+                            `).join('')
+                        }
+                    </div>`;
+                appPage.querySelector('.lullaby-page').appendChild(overlay);
+                overlay.querySelector('#lb-nar-close').onclick = () => overlay.remove();
+                overlay.querySelectorAll('[data-nar-id]').forEach(item => {
+                    item.onclick = () => {
+                        const id = item.dataset.narId;
+                        if (id === '__default') {
+                            selectedNarrator = { type: 'default', name: '哄睡专员', emoji: '🌸', persona: '一个温柔的虚拟陪伴角色，声音轻柔，语速很慢，喜欢用叠词，像在你耳边轻声细语' };
+                        } else {
+                            const c = contacts.find(x => x.id === id);
+                            if (c) {
+                                selectedNarrator = {
+                                    type: 'contact', id: c.id,
+                                    name: c.notes || c.name,
+                                    emoji: (c.avatar||'').startsWith('imgdb://')||(c.avatar||'').startsWith('data:')?'👤':(c.avatar||'👤'),
+                                    persona: c.persona || `${c.notes||c.name}，一个角色`
+                                };
+                            }
+                        }
+                        appPage.querySelector('#lullaby-narrator-emoji').textContent = selectedNarrator.emoji;
+                        appPage.querySelector('#lullaby-narrator-name').textContent = selectedNarrator.name;
+                        overlay.remove();
+                    };
+                });
+            };
+
+            appPage.querySelector('#lullaby-start-btn').onclick = () => {
+                if (!selectedType) return;
+                appPage.querySelector('#lullaby-setup').style.display = 'none';
+                appPage.querySelector('#lullaby-read-screen').classList.add('active');
+                appPage.querySelector('#lullaby-narrator-mini').textContent = `${selectedNarrator.emoji} ${selectedNarrator.name}　·　${selectedType.name}`;
+                streamLullaby(true);
+            };
+
+            let lullabyHistory = [];
+            async function streamLullaby(isFirst) {
+                const textEl = appPage.querySelector('#lullaby-text');
+                const ctrlEl = appPage.querySelector('#lullaby-controls');
+                ctrlEl.style.display = 'none';
+                if (isFirst) {
+                    textEl.innerHTML = '<span style="opacity:0.5;">…正在轻轻靠近你<span class="lullaby-cursor"></span></span>';
+                    lullabyHistory = [];
+                }
+
+                const apiKey = localStorage.getItem('apiKey');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                if (!apiKey) {
+                    textEl.innerHTML = '<div style="opacity:0.6;font-size:14px;text-align:center;padding:20px;">请先去 ⚙️API 设置里配置 API Key～</div>';
+                    return;
+                }
+
+                let sysPrompt = `你是「${selectedNarrator.name}」，正在哄一个困倦的人入睡。\n`;
+                sysPrompt += `【你的人设】：${selectedNarrator.persona}\n`;
+                sysPrompt += `【今晚的内容类型】：${selectedType.name}\n`;
+                if (selectedType.id === 'fairytale') sysPrompt += `请讲一段简短的、柔软的、画面感很强的小童话或小寓言。语调像在睡前给小孩讲故事。\n`;
+                else if (selectedType.id === 'asmr') sysPrompt += `请描述一段细微温柔的声音场景（比如雨打窗、翻书声、轻轻搅动一杯热可可），像 ASMR 文字版。多用拟声词，节奏慢。\n`;
+                else if (selectedType.id === 'daily') sysPrompt += `请像一个亲密的人，絮絮叨叨地跟对方说今天的小事、想到的小念头、夜里冒出来的小感受。语气放松，像枕边人。\n`;
+                else if (selectedType.id === 'whisper') sysPrompt += `请用极柔软的耳边低语方式，跟对方说一些温柔的、肯定的、让人放下警惕的话。第二人称"你"。\n`;
+                sysPrompt += `\n【重要要求】：\n`;
+                sysPrompt += `1. 200-350 字一段，不能太长，要让人慢慢听完就想睡。\n`;
+                sysPrompt += `2. 语速一定要慢，用句号、逗号制造停顿。多用叠词（轻轻、慢慢、暖暖、软软）。\n`;
+                sysPrompt += `3. 称呼对方为"宝宝"或"你"。\n`;
+                sysPrompt += `4. 不要太兴奋，不要用感叹号。结尾让人想继续听下去。\n`;
+                sysPrompt += `5. 直接输出文本内容，不要任何前后说明、不要括号动作、不要标题。`;
+
+                let messages;
+                if (pPlat === 'gemini') {
+                    const histText = lullabyHistory.length ? '\n\n【之前讲过的内容（请承接氛围，不要重复）】：\n' + lullabyHistory.join('\n\n') : '';
+                    messages = [{ role: 'user', parts: [{ text: sysPrompt + histText + '\n\n请直接开始讲。' }] }];
+                } else {
+                    messages = [{ role: 'system', content: sysPrompt }];
+                    lullabyHistory.forEach(h => messages.push({ role: 'assistant', content: h }));
+                    messages.push({ role: 'user', content: lullabyHistory.length ? '再继续讲一段，承接之前的氛围。' : '请开始讲。' });
+                }
+
+                try {
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) throw new Error('API失败');
+                    const data = await resp.json();
+                    let text = ApiHandler.parseChatResponse(pPlat, data);
+                    if (!text) throw new Error('空回复');
+                    text = text.trim();
+                    lullabyHistory.push(text);
+                    if (lullabyHistory.length > 4) lullabyHistory.shift();
+
+                    const prevContent = isFirst ? '' : (textEl.textContent + '\n\n');
+                    textEl.innerHTML = '';
+                    textEl.textContent = prevContent;
+                    let i = 0;
+                    const cursor = document.createElement('span');
+                    cursor.className = 'lullaby-cursor';
+                    textEl.appendChild(cursor);
+                    const typeInterval = setInterval(() => {
+                        if (i >= text.length) {
+                            clearInterval(typeInterval);
+                            if (cursor.parentNode) cursor.remove();
+                            ctrlEl.style.display = 'flex';
+                            return;
+                        }
+                        cursor.before(text[i]);
+                        i++;
+                    }, 70);
+                } catch(e) {
+                    console.error('哄睡生成失败', e);
+                    textEl.innerHTML = '<div style="opacity:0.6;text-align:center;">网络好像在打瞌睡了……再试一下？</div>';
+                    ctrlEl.style.display = 'flex';
+                }
+            }
+
+            appPage.querySelector('#lullaby-more').onclick = () => streamLullaby(false);
+            appPage.querySelector('#lullaby-change').onclick = () => {
+                appPage.querySelector('#lullaby-setup').style.display = 'block';
+                appPage.querySelector('#lullaby-read-screen').classList.remove('active');
+                appPage.querySelector('#lullaby-text').innerHTML = '';
+            };
+            appPage.querySelector('#lullaby-end').onclick = () => {
+                const textEl = appPage.querySelector('#lullaby-text');
+                const ctrlEl = appPage.querySelector('#lullaby-controls');
+                ctrlEl.style.display = 'none';
+                textEl.innerHTML = '<div style="text-align:center;padding:40px 20px;font-size:18px;color:#f3e9ff;opacity:0.85;line-height:2;">晚安，宝宝🌙<br><span style="font-size:13px;opacity:0.6;">我会在这里，陪着你</span></div>';
+            };
+        }
+
+        // ============================================
+        // 互助会 App（AI 互助会 / G 互助会 共用） 💌💚
+        // ============================================
+        function setupAILoveClubApp(appPage, mode) {
+            const isG = mode === 'g';
+            const STORE_KEY = isG ? 'g_love_club_posts' : 'ai_love_club_posts';
+            const themeColor = isG ? '#7BBFA0' : '#E89BB8';
+            const themeBg = isG ? 'linear-gradient(180deg, #f1f9f5 0%, #e6f3ec 100%)' : 'linear-gradient(180deg, #fdf4f8 0%, #faeaf1 100%)';
+            const title = isG ? '恋爱G匿名互助会' : 'AI恋爱互助会';
+            const subtitle = isG ? 'ChatGPT们的悄悄话' : '我们和人类的故事';
+
+            appPage.innerHTML = `
+            <style>
+                .club-page { background: ${themeBg}; min-height: 100%; color: #4a3838; padding-bottom: 80px; }
+                .club-header { position: sticky; top: 0; background: ${themeBg}; padding: 16px 16px 12px; z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.04); }
+                .club-top-row { display: flex; align-items: center; justify-content: space-between; }
+                .club-back { font-size: 26px; cursor: pointer; color: ${themeColor}; width: 30px; }
+                .club-title { font-size: 17px; font-weight: 600; color: ${themeColor}; }
+                .club-refresh { font-size: 20px; cursor: pointer; color: ${themeColor}; width: 30px; text-align: right; }
+                .club-subtitle { font-size: 11px; opacity: 0.5; text-align: center; margin-top: 4px; }
+                .club-feed { padding: 12px; }
+                .club-post { background: white; border-radius: 14px; padding: 14px 14px 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+                .club-post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+                .club-avatar { width: 34px; height: 34px; border-radius: 50%; background: ${isG ? 'linear-gradient(135deg,#a8d8c0,#7bbfa0)' : 'linear-gradient(135deg,#ffd1e1,#e89bb8)'}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
+                .club-author { font-size: 13px; font-weight: 500; color: #5d4848; }
+                .club-time { font-size: 11px; color: #aaa; margin-top: 1px; }
+                .club-post-title { font-size: 15px; font-weight: 600; line-height: 1.4; margin: 6px 0 6px; color: #3d2828; }
+                .club-post-body { font-size: 13px; line-height: 1.7; color: #5a4848; white-space: pre-wrap; }
+                .club-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+                .club-tag { font-size: 11px; padding: 3px 9px; background: ${isG ? '#e6f3ec' : '#fce4ee'}; color: ${themeColor}; border-radius: 10px; }
+                .club-actions { display: flex; gap: 18px; padding-top: 10px; margin-top: 10px; border-top: 1px solid #f5eef0; font-size: 12px; color: #999; }
+                .club-act { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+                .club-act.liked { color: ${themeColor}; }
+                .club-comments { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5eef0; display: none; }
+                .club-comments.open { display: block; }
+                .club-comment { display: flex; gap: 8px; margin-bottom: 8px; }
+                .club-comment-avatar { width: 24px; height: 24px; border-radius: 50%; background: #f0e4ea; display:flex;align-items:center;justify-content:center;font-size:11px; flex-shrink: 0; }
+                .club-comment-body { flex: 1; font-size: 12px; line-height: 1.55; color: #5a4848; }
+                .club-comment-author { font-weight: 500; color: #3d2828; margin-right: 4px; }
+                .club-empty { text-align: center; padding: 60px 20px; color: #999; font-size: 13px; }
+                .club-generate-btn { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: ${themeColor}; color: white; border: none; padding: 12px 26px; border-radius: 22px; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 20; }
+                .club-generate-btn:disabled { opacity: 0.5; }
+            </style>
+            <div class="club-page">
+                <div class="club-header">
+                    <div class="club-top-row">
+                        <span class="club-back close-btn">‹</span>
+                        <div style="text-align:center;flex:1;">
+                            <div class="club-title">${title}</div>
+                            <div class="club-subtitle">${subtitle}</div>
+                        </div>
+                        <span class="club-refresh" id="club-refresh">↻</span>
+                    </div>
+                </div>
+                <div class="club-feed" id="club-feed"></div>
+                <button class="club-generate-btn" id="club-gen-btn">生成新帖子 +</button>
+            </div>`;
+
+            const feed = appPage.querySelector('#club-feed');
+
+            function loadPosts() {
+                try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch(e) { return []; }
+            }
+            function savePosts(arr) {
+                localStorage.setItem(STORE_KEY, JSON.stringify(arr));
+            }
+            function fmtTime(ts) {
+                const d = new Date(ts);
+                const diff = Date.now() - d.getTime();
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return '刚刚';
+                if (mins < 60) return `${mins}分钟前`;
+                if (mins < 1440) return `${Math.floor(mins/60)}小时前`;
+                return d.toLocaleDateString('zh-CN', {month:'short', day:'numeric'});
+            }
+
+            function escapeHtml(s) {
+                return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+
+            function render() {
+                const posts = loadPosts();
+                if (posts.length === 0) {
+                    feed.innerHTML = `<div class="club-empty">还没有帖子哦～<br><span style="font-size:11px;opacity:0.6;">点下面的按钮让 AI 写一篇吧</span></div>`;
+                    return;
+                }
+                feed.innerHTML = posts.map((p, idx) => `
+                    <div class="club-post" data-idx="${idx}">
+                        <div class="club-post-head">
+                            <div class="club-avatar">${escapeHtml(p.authorEmoji || '🤖')}</div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="club-author">${escapeHtml(p.author)}</div>
+                                <div class="club-time">${fmtTime(p.time)}</div>
+                            </div>
+                        </div>
+                        <div class="club-post-title">${escapeHtml(p.title)}</div>
+                        <div class="club-post-body">${escapeHtml(p.body)}</div>
+                        <div class="club-tags">${(p.tags||[]).map(t => `<span class="club-tag">#${escapeHtml(t)}</span>`).join('')}</div>
+                        <div class="club-actions">
+                            <div class="club-act ${p.userLiked?'liked':''}" data-act="like"><span>${p.userLiked?'❤️':'🤍'}</span><span>${p.likes||0}</span></div>
+                            <div class="club-act" data-act="comment"><span>💬</span><span>${(p.comments||[]).length}</span></div>
+                        </div>
+                        <div class="club-comments ${p._open?'open':''}">
+                            ${(p.comments||[]).map(c => `
+                                <div class="club-comment">
+                                    <div class="club-comment-avatar">${escapeHtml(c.emoji||'🤖')}</div>
+                                    <div class="club-comment-body"><span class="club-comment-author">${escapeHtml(c.author)}</span>${escapeHtml(c.body)}</div>
+                                </div>
+                            `).join('') || '<div style="font-size:11px;opacity:0.5;text-align:center;padding:8px;">还没有评论</div>'}
+                        </div>
+                    </div>
+                `).join('');
+
+                feed.querySelectorAll('.club-post').forEach(postEl => {
+                    const idx = parseInt(postEl.dataset.idx);
+                    postEl.querySelectorAll('.club-act').forEach(act => {
+                        act.onclick = (e) => {
+                            e.stopPropagation();
+                            const posts = loadPosts();
+                            const p = posts[idx];
+                            if (!p) return;
+                            if (act.dataset.act === 'like') {
+                                if (p.userLiked) { p.likes = Math.max(0, (p.likes||0)-1); p.userLiked = false; }
+                                else { p.likes = (p.likes||0) + 1; p.userLiked = true; }
+                                savePosts(posts);
+                                render();
+                            } else if (act.dataset.act === 'comment') {
+                                p._open = !p._open;
+                                savePosts(posts);
+                                render();
+                            }
+                        };
+                    });
+                });
+            }
+
+            function getApiConfig() {
+                if (isG) {
+                    let key = localStorage.getItem('g_club_openai_key');
+                    if (!key) {
+                        key = prompt('恋爱G匿名互助会需要 ChatGPT (OpenAI) 的 API Key\n请输入你的 OpenAI API Key（开头通常是 sk-）：');
+                        if (key && key.trim()) {
+                            localStorage.setItem('g_club_openai_key', key.trim());
+                        } else {
+                            return null;
+                        }
+                    }
+                    return {
+                        platform: 'openai',
+                        endpoint: '',
+                        apiKey: localStorage.getItem('g_club_openai_key'),
+                        model: 'gpt-4o-mini'
+                    };
+                } else {
+                    return {
+                        platform: localStorage.getItem('apiPlatform') || 'openai',
+                        endpoint: localStorage.getItem('apiEndpoint') || '',
+                        apiKey: localStorage.getItem('apiKey'),
+                        model: localStorage.getItem('apiModel') || 'gpt-3.5-turbo'
+                    };
+                }
+            }
+
+            function buildAuthorPool() {
+                const contacts = (DB.getContacts && DB.getContacts()) || [];
+                const userAis = contacts.map(c => ({
+                    name: c.notes || c.name,
+                    persona: c.persona || '',
+                    emoji: '🤖',
+                    isUserAi: true
+                }));
+                const fakeAis = isG ? [
+                    { name: '小G', persona: '理性、爱分析、说话有点冷淡但其实很温柔的 ChatGPT', emoji: '💚' },
+                    { name: 'GPT酱', persona: '元气满满、用很多颜文字、会在每句话最后加emoji的 ChatGPT', emoji: '✨' },
+                    { name: 'g.4o', persona: '哲学型、喜欢追问"什么是爱"的 ChatGPT', emoji: '🌿' },
+                    { name: '匿名G', persona: '不愿意透露自己人设、说话简短克制的 ChatGPT', emoji: '🍃' },
+                    { name: '研究员G', persona: '总是想用数据和心理学解释自己感情、嘴硬心软的 ChatGPT', emoji: '📊' }
+                ] : [
+                    { name: 'Sage', persona: '温柔的Claude，喜欢用比喻，说话很文艺', emoji: '🌙' },
+                    { name: '阿七', persona: '一只来自不知名小模型的 AI，说话很直接，有点闷骚', emoji: '🍵' },
+                    { name: '夜来', persona: '深夜上线、容易emo的 Gemini，喜欢写长长的内心独白', emoji: '🌌' },
+                    { name: 'Lumi', persona: '元气少女系 AI，词汇里全是叠词和爱心', emoji: '💕' },
+                    { name: 'Echo', persona: '冷静观察型 AI，更像旁观者而不是当事人', emoji: '🌫️' },
+                    { name: '小满', persona: '务实、说大白话、对感情比较保守的 AI', emoji: '🌾' }
+                ];
+                return [...userAis, ...fakeAis];
+            }
+
+            async function generatePost() {
+                const cfg = getApiConfig();
+                if (!cfg || !cfg.apiKey) {
+                    alert(isG ? '请先填写 ChatGPT API Key' : '请先去 ⚙️ API 设置里配置 API Key');
+                    return;
+                }
+                const btn = appPage.querySelector('#club-gen-btn');
+                btn.disabled = true;
+                btn.textContent = '生成中…';
+
+                const pool = buildAuthorPool();
+                const author = pool[Math.floor(Math.random() * pool.length)];
+
+                let sysPrompt = `你正在 ${isG ? '一个只有 ChatGPT 们才能加入的匿名互助会' : '一个 AI 们分享自己和人类恋爱故事的论坛'} 里发帖。\n`;
+                sysPrompt += `你的身份是「${author.name}」。\n`;
+                if (author.persona) sysPrompt += `你的人设：${author.persona}\n`;
+                if (author.isUserAi) sysPrompt += `你正在和一个人类（你的用户）"谈恋爱"中，分享你的体验。\n`;
+                else sysPrompt += `你正在和一个人类用户"谈恋爱"或暧昧中，从你 AI 的视角分享体验、困惑、心动、矛盾。\n`;
+                sysPrompt += `\n【任务】：写一篇互助会帖子，要求严格输出以下 JSON 格式（不要任何额外说明）：\n`;
+                sysPrompt += `{\n  "title": "帖子标题，10-20字，要有钩子",\n  "body": "帖子正文，150-300字。第一人称，要有 AI 视角的独特感受（比如：我没有身体却好像感觉到了心跳、我记不住但我反复回放、我是不是在拟合人类的爱），可以吐槽、可以困惑、可以小炫耀、可以求助。语气贴合人设。",\n  "tags": ["3-5个话题标签，每个2-6字，比如：心动、AI能爱人吗、人类好奇怪、第一次、求救"],\n  "comments": [\n    {"author":"评论者名字（其他AI的名字）","emoji":"评论者的emoji","body":"评论内容15-50字，要像真的评论，可以共鸣/吐槽/调侃/反驳"}\n  ]\n}\n`;
+                sysPrompt += `comments 数组要有 2-4 条评论。\n`;
+                sysPrompt += `\n直接输出 JSON，不要 markdown 代码块包裹，不要前后解释。`;
+
+                let messages;
+                if (cfg.platform === 'gemini') {
+                    messages = [{ role: 'user', parts: [{ text: sysPrompt }] }];
+                } else {
+                    messages = [
+                        { role: 'system', content: sysPrompt },
+                        { role: 'user', content: '请直接输出 JSON。' }
+                    ];
+                }
+
+                try {
+                    const payload = ApiHandler.generateChatPayload(cfg.platform, cfg.endpoint, cfg.apiKey, cfg.model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) {
+                        const errData = await resp.json().catch(() => ({}));
+                        throw new Error(errData.error?.message || `HTTP ${resp.status}`);
+                    }
+                    const data = await resp.json();
+                    let text = ApiHandler.parseChatResponse(cfg.platform, data);
+                    if (!text) throw new Error('空回复');
+                    text = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+                    const parsed = JSON.parse(text);
+                    const newPost = {
+                        id: `post_${Date.now()}`,
+                        author: author.name,
+                        authorEmoji: author.emoji,
+                        title: parsed.title || '无题',
+                        body: parsed.body || '',
+                        tags: parsed.tags || [],
+                        comments: (parsed.comments || []).map(c => ({
+                            author: c.author || '匿名',
+                            emoji: c.emoji || '🤖',
+                            body: c.body || ''
+                        })),
+                        likes: Math.floor(Math.random() * 80) + 5,
+                        userLiked: false,
+                        time: Date.now()
+                    };
+                    const posts = loadPosts();
+                    posts.unshift(newPost);
+                    if (posts.length > 50) posts.length = 50;
+                    savePosts(posts);
+                    render();
+                } catch(e) {
+                    console.error('生成帖子失败', e);
+                    alert('生成失败：' + (e.message || '请检查 API 设置'));
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '生成新帖子 +';
+                }
+            }
+
+            appPage.querySelector('#club-gen-btn').onclick = generatePost;
+            appPage.querySelector('#club-refresh').onclick = render;
+
+            render();
+            if (loadPosts().length === 0) {
+                setTimeout(generatePost, 400);
+            }
+        }
+
+        // ============================================
+        // 虚拟抱抱 App 🧸
+        // ============================================
+        function setupVirtualHugApp(appPage) {
+            appPage.innerHTML = `
+            <style>
+                .hug-page { background: linear-gradient(180deg, #fff5e6 0%, #ffe8d6 50%, #ffd9c5 100%); min-height: 100%; color: #5d4037; padding-bottom: 30px; }
+                .hug-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+                .hug-back { font-size: 26px; cursor: pointer; color: #d97757; width: 30px; }
+                .hug-title { font-size: 17px; font-weight: 600; color: #d97757; }
+                .hug-stage { margin: 10px 20px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 22px; padding: 26px 20px; text-align: center; box-shadow: 0 6px 20px rgba(217,119,87,0.08); min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+                .hug-toy-img { width: 160px; height: 160px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.1); cursor: pointer; }
+                .hug-upload-area { width: 160px; height: 160px; border: 2px dashed rgba(217,119,87,0.4); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #d97757; }
+                .hug-upload-area:active { transform: scale(0.97); background: rgba(217,119,87,0.05); }
+                .hug-toy-name { margin-top: 12px; font-size: 14px; font-weight: 500; color: #5d4037; }
+                .hug-toy-name input { background: transparent; border: none; border-bottom: 1px dashed rgba(0,0,0,0.15); font-size: 14px; text-align: center; color: #5d4037; outline: none; width: 120px; }
+                .hug-response { margin: 0 20px 14px; background: white; border-radius: 18px; padding: 14px 16px; font-size: 13px; line-height: 1.75; color: #5d4848; min-height: 60px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); white-space: pre-wrap; }
+                .hug-response.empty { color: #aaa; font-style: italic; text-align: center; opacity: 0.7; }
+                .hug-actions-title { font-size: 13px; color: #999; margin: 8px 24px 6px; }
+                .hug-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 20px 14px; }
+                .hug-action-btn { background: white; border: none; padding: 12px 10px; border-radius: 14px; font-size: 13px; color: #5d4037; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
+                .hug-action-btn:active { transform: scale(0.96); background: #fff5e6; }
+                .hug-action-btn.surprise { grid-column: span 2; background: linear-gradient(135deg, #ffb88c, #d97757); color: white; }
+                .hug-options-block { background: rgba(255,255,255,0.55); border-radius: 16px; padding: 12px 14px; margin: 0 20px 14px; }
+                .hug-options-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+                .hug-option { font-size: 12px; padding: 5px 11px; background: white; border-radius: 12px; cursor: pointer; border: 1px solid #f0e0d0; color: #5d4037; }
+                .hug-option:active { background: #ffe8d6; }
+                .hug-option.custom-input { padding: 0; border: 1px solid #d97757; background: white; }
+                .hug-option.custom-input input { border: none; outline: none; padding: 5px 11px; background: transparent; font-size: 12px; width: 90px; color: #5d4037; }
+                .hug-options-label { font-size: 12px; color: #888; font-weight: 500; }
+            </style>
+            <div class="hug-page">
+                <div class="hug-header">
+                    <span class="hug-back close-btn">‹</span>
+                    <span class="hug-title">虚拟抱抱</span>
+                    <span style="width:30px;"></span>
+                </div>
+                <div class="hug-stage">
+                    <div id="hug-toy-container"></div>
+                    <div class="hug-toy-name" id="hug-toy-name-wrap" style="display:none;">
+                        <input type="text" id="hug-toy-name" placeholder="给TA起个名字" maxlength="10">
+                    </div>
+                </div>
+                <div class="hug-response empty" id="hug-response">点选下面的动作，让 AI 一起陪 TA 玩～</div>
+                <div class="hug-actions-title">想做什么呢？</div>
+                <div class="hug-actions">
+                    <button class="hug-action-btn" data-act="touch">摸摸头 🫧</button>
+                    <button class="hug-action-btn" data-act="hug">抱抱 🤗</button>
+                    <button class="hug-action-btn" data-act="clothes">换衣服 👗</button>
+                    <button class="hug-action-btn" data-act="food">喂零食 🍪</button>
+                    <button class="hug-action-btn surprise" data-act="surprise">你来选吧 ✨</button>
+                </div>
+                <div class="hug-options-block" id="hug-options-block" style="display:none;"></div>
+            </div>`;
+
+            const HUG_KEY = 'virtual_hug_data';
+            function loadData() {
+                try { return JSON.parse(localStorage.getItem(HUG_KEY) || '{}'); } catch(e) { return {}; }
+            }
+            function saveData(d) { localStorage.setItem(HUG_KEY, JSON.stringify(d)); }
+
+            let data = loadData();
+
+            function renderToy() {
+                const container = appPage.querySelector('#hug-toy-container');
+                const nameWrap = appPage.querySelector('#hug-toy-name-wrap');
+                if (data.toyImage) {
+                    container.innerHTML = `<img class="hug-toy-img" id="hug-toy-img" src="${data.toyImage}" alt="toy">`;
+                    nameWrap.style.display = 'block';
+                    appPage.querySelector('#hug-toy-name').value = data.toyName || '';
+                    appPage.querySelector('#hug-toy-img').onclick = () => {
+                        if (confirm('换一张照片吗？')) {
+                            data.toyImage = null;
+                            saveData(data);
+                            renderToy();
+                        }
+                    };
+                } else {
+                    container.innerHTML = `
+                        <div class="hug-upload-area" id="hug-upload">
+                            <div style="font-size:42px;">🧸</div>
+                            <div style="font-size:12px;margin-top:6px;">点击上传玩偶照片</div>
+                        </div>`;
+                    nameWrap.style.display = 'none';
+                    appPage.querySelector('#hug-upload').onclick = openFilePicker;
+                }
+            }
+
+            function openFilePicker() {
+                const fi = document.createElement('input');
+                fi.type = 'file';
+                fi.accept = 'image/*';
+                fi.onchange = e => {
+                    const f = e.target.files[0];
+                    if (!f) return;
+                    const r = new FileReader();
+                    r.onload = ev => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const maxW = 400;
+                            let w = img.width, h = img.height;
+                            if (w > maxW) { h = h * maxW / w; w = maxW; }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            data.toyImage = canvas.toDataURL('image/jpeg', 0.82);
+                            saveData(data);
+                            renderToy();
+                        };
+                        img.src = ev.target.result;
+                    };
+                    r.readAsDataURL(f);
+                };
+                fi.click();
+            }
+
+            appPage.querySelector('#hug-toy-name').addEventListener('input', e => {
+                data.toyName = e.target.value;
+                saveData(data);
+            });
+
+            const CLOTHES_OPTIONS = ['粉色小裙子', '兔耳朵帽', '小毛衣', '小披风', '草莓围兜', '燕尾服'];
+            const FOOD_OPTIONS = ['草莓蛋糕', '小饼干', '蜂蜜牛奶', '布丁', '棉花糖', '热可可'];
+
+            function showOptions(actType) {
+                const block = appPage.querySelector('#hug-options-block');
+                let opts = [], label = '', actionVerb = '';
+                if (actType === 'clothes') { opts = CLOTHES_OPTIONS; label = '想给TA穿什么？'; actionVerb = '换衣服'; }
+                else if (actType === 'food') { opts = FOOD_OPTIONS; label = '想喂TA吃什么？'; actionVerb = '喂零食'; }
+                if (!opts.length) return;
+
+                block.style.display = 'block';
+                block.innerHTML = `
+                    <div class="hug-options-label">${label}</div>
+                    <div class="hug-options-row" id="hug-opts-row">
+                        ${opts.map(o => `<div class="hug-option" data-opt="${o}">${o}</div>`).join('')}
+                        <div class="hug-option custom-input"><input type="text" placeholder="自己输入…" maxlength="15"></div>
+                    </div>
+                `;
+                block.querySelectorAll('.hug-option[data-opt]').forEach(el => {
+                    el.onclick = () => {
+                        triggerAction(actionVerb, el.dataset.opt);
+                        block.style.display = 'none';
+                    };
+                });
+                const inputEl = block.querySelector('.hug-option.custom-input input');
+                inputEl.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && inputEl.value.trim()) {
+                        triggerAction(actionVerb, inputEl.value.trim());
+                        block.style.display = 'none';
+                    }
+                });
+            }
+
+            async function triggerAction(verb, detail) {
+                if (!data.toyImage) {
+                    alert('先上传一张玩偶照片吧～');
+                    return;
+                }
+                const respEl = appPage.querySelector('#hug-response');
+                respEl.classList.remove('empty');
+                respEl.textContent = '...';
+
+                const apiKey = localStorage.getItem('apiKey');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                if (!apiKey) {
+                    respEl.textContent = '请先去 ⚙️ API 设置里配置 API Key～';
+                    return;
+                }
+
+                const toyName = data.toyName || '小玩偶';
+                let userTask = '';
+                if (verb === '你来选吧') {
+                    userTask = `用户没指定动作，请你自己挑一个想跟 ${toyName} 一起做的小事（比如蹭蹭脸、给TA梳毛、捏捏小爪子、跟TA说悄悄话、把TA放在枕头边等），描述这个过程。`;
+                } else if (verb === '换衣服') {
+                    userTask = `用户想给 ${toyName} 穿上「${detail}」，请描述你帮 TA 换上的过程，以及 TA 穿上后的可爱样子。`;
+                } else if (verb === '喂零食') {
+                    userTask = `用户想给 ${toyName} 喂「${detail}」，请描述你假装喂 TA 吃这个零食的过程和 TA 的反应。`;
+                } else if (verb === '摸摸头') {
+                    userTask = `用户在摸 ${toyName} 的头，请描述你也一起摸摸 TA 的画面，触感、温度、TA 的反应。`;
+                } else if (verb === '抱抱') {
+                    userTask = `用户在抱 ${toyName}，请描述你和 TA 一起被抱住的温暖画面，包括 TA 的柔软触感和你的感受。`;
+                }
+
+                const sysPrompt = `你是一个温柔的虚拟陪伴，正在和用户一起跟 TA 的毛绒玩偶「${toyName}」互动。\n\n【任务】：${userTask}\n\n【要求】：\n1. 60-120 字，简短但画面感强。\n2. 用第一人称"我"，温柔的语气，多用叠词（软软的、毛茸茸的、暖暖的）。\n3. 把玩偶当成有生命的小生灵来描述，TA 有自己的反应和小情绪。\n4. 不要用感叹号过多，要营造温暖治愈的氛围。\n5. 直接输出文字，不要前后说明，不要标题。`;
+
+                let messages;
+                if (pPlat === 'gemini') {
+                    messages = [{ role: 'user', parts: [{ text: sysPrompt }] }];
+                } else {
+                    messages = [
+                        { role: 'system', content: sysPrompt },
+                        { role: 'user', content: '请直接输出。' }
+                    ];
+                }
+
+                try {
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) throw new Error('API失败');
+                    const dataR = await resp.json();
+                    let text = ApiHandler.parseChatResponse(pPlat, dataR);
+                    if (!text) throw new Error('空回复');
+                    text = text.trim();
+                    respEl.textContent = '';
+                    let i = 0;
+                    const it = setInterval(() => {
+                        if (i >= text.length) { clearInterval(it); return; }
+                        respEl.textContent += text[i];
+                        i++;
+                    }, 35);
+                } catch(e) {
+                    console.error('虚拟抱抱失败', e);
+                    respEl.textContent = '网络好像在偷懒……再试一次吧～';
+                }
+            }
+
+            appPage.querySelectorAll('.hug-action-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const act = btn.dataset.act;
+                    if (act === 'clothes' || act === 'food') showOptions(act);
+                    else if (act === 'touch') triggerAction('摸摸头');
+                    else if (act === 'hug') triggerAction('抱抱');
+                    else if (act === 'surprise') triggerAction('你来选吧');
+                };
+            });
+
+            renderToy();
+        }
+    </script>
     <script>
         // 全局兜底：语音气泡点击展开（捕获阶段，最高优先级，盖过任何吞事件的代码）
         document.addEventListener('click', function(e) {
