@@ -33,7 +33,7 @@
         #chat-page.active ~ #app-home-indicator { display: none !important; }
 
         /* --- 桌面元素 --- */
-        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 45px; }
+        .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 20px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         /* 分页桌面 */
         .home-page-1 { 
@@ -511,25 +511,23 @@
             <!-- 第一页：还原宝宝旧版的结构 -->
             <div class="content-wrapper home-page-1" id="home-page-1" style="padding-top: 25%;">
                 <div class="time-and-date"><div id="time" class="time"></div><div id="date" class="date"></div></div>
-                <div class="home-content" style="flex-direction:column;align-items:stretch;padding:0;margin-top:45px;">
-                    <div style="display:flex;justify-content:center;column-gap:15px;">
-                        <div class="app-grid">
-                            <!-- Icons will be rendered here by JavaScript -->
-                        </div>
-                        <div style="text-align: center;">
-                            <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
-                                <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
-                                <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
-                                   <div class="flex flex-row items-center justify-center mb-2 gap-3">
-                                       <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
-                                       <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
-                                   </div>
-                                   <div class="days-text">恋爱ing</div>
-                                   <div id="love-days-text" class="days-count">...</div>
-                                </div>
+                <div class="home-content">
+                    <div class="app-grid">
+                        <!-- Icons will be rendered here by JavaScript -->
+                    </div>
+                    <div style="grid-column: span 2; text-align: center;">
+                        <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                            <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
+                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                               <div class="flex flex-row items-center justify-center mb-2 gap-3">
+                                   <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                                   <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
+                               </div>
+                               <div class="days-text">恋爱ing</div>
+                               <div id="love-days-text" class="days-count">...</div>
                             </div>
-                            <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
                         </div>
+                        <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
                     </div>
                 </div>
             </div>
@@ -8777,7 +8775,7 @@
                 .lullaby-stars { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
                 .lullaby-star { position: absolute; background: white; border-radius: 50%; opacity: 0.6; animation: lullaby-twinkle 3s infinite alternate; }
                 @keyframes lullaby-twinkle { 0%{opacity:0.3;} 100%{opacity:0.9;} }
-                .lullaby-header { position: relative; padding: 18px 16px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 1; }
+                .lullaby-header { position: relative; padding: 32px 16px 16px; display: flex; align-items: center; justify-content: space-between; z-index: 1; }
                 .lullaby-back { font-size: 28px; cursor: pointer; color: #f0e6ff; width: 30px; }
                 .lullaby-title { font-size: 18px; font-weight: 500; letter-spacing: 2px; }
                 .lullaby-body { padding: 8px 22px 16px; position: relative; z-index: 1; }
@@ -8791,14 +8789,14 @@
                 .lullaby-type-name { font-size: 13px; font-weight: 500; }
                 .lullaby-type-desc { font-size: 10px; opacity: 0.6; margin-top: 2px; }
                 .lullaby-narrator-row { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-                .lullaby-narrator-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+                .lullaby-narrator-avatar { width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
                 .lullaby-narrator-info { flex: 1; min-width: 0; overflow: hidden; }
                 .lullaby-narrator-label { font-size: 10px; opacity: 0.55; margin-bottom: 1px; }
                 .lullaby-narrator-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                 .lullaby-start-btn { width: 100%; padding: 13px; background: linear-gradient(135deg, #ff9ecf, #b89cff); border: none; border-radius: 16px; color: white; font-size: 15px; font-weight: 600; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 20px rgba(184,156,255,0.3); transition: all 0.2s; }
                 .lullaby-start-btn:active { transform: scale(0.97); }
                 .lullaby-start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-                .lullaby-read-screen { display: none; padding: 30px 26px 60px; position: relative; z-index: 1; }
+                .lullaby-read-screen { display: none; padding: 4px 26px 60px; position: relative; z-index: 1; }
                 .lullaby-read-screen.active { display: block; }
                 .lullaby-narrator-mini { text-align: center; margin-bottom: 32px; opacity: 0.7; font-size: 13px; }
                 .lullaby-text { font-size: 17px; line-height: 2.1; color: #f3e9ff; min-height: 200px; white-space: pre-wrap; letter-spacing: 1px; }
@@ -8862,7 +8860,7 @@
                 { id: 'whisper', name: '耳边低语', emoji: '💭', desc: '只说给你听' }
             ];
             let selectedType = null;
-            let selectedNarrator = { type: 'default', name: '哄睡专员', emoji: '🌸', persona: '一个温柔的虚拟陪伴角色，声音轻柔，语速很慢，喜欢用叠词，像在你耳边轻声细语' };
+            let selectedNarrator = null;
 
             const typeGrid = appPage.querySelector('#lullaby-type-grid');
             typeGrid.innerHTML = TYPES.map(t => `
@@ -8877,7 +8875,8 @@
                     typeGrid.querySelectorAll('.lullaby-type-card').forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
                     selectedType = TYPES.find(t => t.id === card.dataset.type);
-                    appPage.querySelector('#lullaby-start-btn').disabled = false;
+                    // 只有类型和讲述者都选了才启用
+                    appPage.querySelector('#lullaby-start-btn').disabled = !selectedNarrator;
                 };
             });
 
@@ -8902,16 +8901,17 @@
                         ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有添加联系人</div>' :
                             contacts.map((c, idx) => {
                                 const av = c.avatar || '';
-                                const isEmoji = av.length > 0 && av.length <= 4 && !av.startsWith('imgdb') && !av.startsWith('data:') && !av.startsWith('http');
                                 const displayName = (c.notes || c.name || '联系人').replace(/</g, '&lt;').slice(0, 12);
+                                // 和查手机保持一致：有头像就用 img，没有就用 👤
+                                // 用 data-avatar-idx 避免 base64 破坏 HTML 结构
                                 let avatarHtml;
-                                if (isEmoji) {
-                                    avatarHtml = `<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${av}</div>`;
+                                if (av && av.includes('<')) {
+                                    // HTML 字符串类型（如 <img src="data:...">）
+                                    avatarHtml = `<div style="width:40px;height:40px;border-radius:10px;overflow:hidden;flex-shrink:0;"><style scoped>.nar-av-html img{width:40px!important;height:40px!important;object-fit:cover!important;border-radius:10px!important;}</style><div class="nar-av-html">${av}</div></div>`;
                                 } else if (av) {
-                                    // 用 data-avatar-idx 标记，稍后用 JS 设置真实头像，避免 base64 字符串破坏 HTML
-                                    avatarHtml = `<img data-avatar-idx="${idx}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;background:rgba(255,255,255,0.15);" alt="">`;
+                                    avatarHtml = `<img data-avatar-idx="${idx}" style="width:40px;height:40px;border-radius:10px;object-fit:cover;flex-shrink:0;" alt="">`;
                                 } else {
-                                    avatarHtml = `<div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
+                                    avatarHtml = `<div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
                                 }
                                 return `
                                 <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:10px 12px;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:12px;" data-nar-id="${c.id}">
@@ -8925,9 +8925,7 @@
                 appPage.querySelector('.lullaby-page').appendChild(overlay);
                 // 安全地设置头像图片：用 JS 设置 src 而不是 HTML 字符串拼接，避免 base64 中的特殊字符破坏结构
                 (async () => {
-                    if (window.ImageDB && ImageDB.readyPromise) {
-                        try { await ImageDB.readyPromise; } catch(e) {}
-                    }
+                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e) {} }
                     overlay.querySelectorAll('img[data-avatar-idx]').forEach(async img => {
                         const idx = parseInt(img.dataset.avatarIdx);
                         const c = contacts[idx];
@@ -8937,6 +8935,7 @@
                             if (av.startsWith('imgdb://') && window.ImageDB) {
                                 const url = await ImageDB.resolve(av);
                                 if (url) img.src = url;
+                                else img.parentElement.innerHTML = '<div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;">👤</div>';
                             } else if (av.startsWith('data:') || av.startsWith('http')) {
                                 img.src = av;
                             }
@@ -8966,18 +8965,34 @@
                         // 更新顶部头像显示
                         const emojiBox = appPage.querySelector('#lullaby-narrator-emoji');
                         if (selectedNarrator.avatar) {
-                            emojiBox.innerHTML = '<img style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="">';
-                            const topImg = emojiBox.querySelector('img');
                             const av = selectedNarrator.avatar;
-                            if (av.startsWith('imgdb://') && window.ImageDB) {
-                                ImageDB.resolve(av).then(url => { if (url) topImg.src = url; }).catch(()=>{});
+                            if (av.includes('<')) {
+                                // HTML 字符串类型（如 <img src="data:...">）
+                                emojiBox.innerHTML = `<div style="width:32px;height:32px;border-radius:10px;overflow:hidden;">${av}</div>`;
+                                // 修正内部 img 尺寸
+                                const inner = emojiBox.querySelector('img');
+                                if (inner) { inner.style.width='32px'; inner.style.height='32px'; inner.style.objectFit='cover'; inner.style.borderRadius='10px'; }
                             } else {
-                                topImg.src = av;
+                                emojiBox.innerHTML = '<img style="width:32px;height:32px;border-radius:10px;object-fit:cover;display:block;" alt="">';
+                                const topImg = emojiBox.querySelector('img');
+                                (async () => {
+                                    try {
+                                        if (window.ImageDB) await ImageDB.readyPromise;
+                                        if (av.startsWith('imgdb://') && window.ImageDB) {
+                                            const url = await ImageDB.resolve(av);
+                                            if (url) topImg.src = url;
+                                        } else if (av.startsWith('data:') || av.startsWith('http')) {
+                                            topImg.src = av;
+                                        }
+                                    } catch(e) { emojiBox.textContent = '👤'; }
+                                })();
                             }
                         } else {
                             emojiBox.textContent = selectedNarrator.emoji;
                         }
                         appPage.querySelector('#lullaby-narrator-name').textContent = selectedNarrator.name;
+                        // 类型和讲述者都选了才启用开始按钮
+                        appPage.querySelector('#lullaby-start-btn').disabled = !selectedType;
                         overlay.remove();
                     };
                 });
@@ -9097,7 +9112,7 @@
             appPage.innerHTML = `
             <style>
                 .club-page { background: ${themeBg}; min-height: 100%; color: #4a3838; padding-bottom: 80px; }
-                .club-header { position: sticky; top: 0; background: ${themeBg}; padding: 16px 16px 12px; z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.04); }
+                .club-header { position: sticky; top: 0; background: ${themeBg}; padding: 32px 16px 12px; z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.04); }
                 .club-top-row { display: flex; align-items: center; justify-content: space-between; }
                 .club-back { font-size: 26px; cursor: pointer; color: ${themeColor}; width: 30px; }
                 .club-title { font-size: 17px; font-weight: 600; color: ${themeColor}; }
@@ -9362,7 +9377,7 @@
             appPage.innerHTML = `
             <style>
                 .hug-page { background: linear-gradient(180deg, #fff5e6 0%, #ffe8d6 50%, #ffd9c5 100%); min-height: 100%; color: #5d4037; padding-bottom: 30px; }
-                .hug-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+                .hug-header { padding: 32px 16px 16px; display: flex; align-items: center; justify-content: space-between; }
                 .hug-back { font-size: 26px; cursor: pointer; color: #d97757; width: 30px; }
                 .hug-title { font-size: 17px; font-weight: 600; color: #d97757; }
                 .hug-stage { margin: 10px 20px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 22px; padding: 26px 20px; text-align: center; box-shadow: 0 6px 20px rgba(217,119,87,0.08); min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
