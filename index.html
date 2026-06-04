@@ -35,20 +35,22 @@
         /* --- 桌面元素 --- */
         .home-content { display: flex; justify-content: center; align-items: center; padding: 20px 40px; column-gap: 15px; margin-top: 45px; }
         .app-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        /* 分页桌面 - 全新设计：两页都用绝对定位，互不影响 */
+        /* 分页桌面 */
         .home-page-1 { 
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
         }
         .home-page-2 { 
             position: absolute;
             top: 0;
-            left: 100%;
+            left: 0;
             width: 100%;
             height: 100%;
             box-sizing: border-box;
-            padding: 50px 14px 0;
+            padding: 55px 14px 0;
+            transform: translateX(100%);
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             z-index: 1;
+            visibility: hidden;
         }
         .home-page-2 .app-grid-page2 { 
             display: grid; 
@@ -57,9 +59,13 @@
         }
         .home-page-2 .app-icon { width: auto; gap: 4px; font-size: 11px; }
         .home-page-2 .app-icon-img { width: 60px; height: 60px; font-size: 16px; border-radius: 15px; }
-        /* 当 mobile-container 处于第二页时，两个页面一起向左位移 */
         .mobile-container.on-page-2 .home-page-1 { transform: translateX(-100%); }
-        .mobile-container.on-page-2 .home-page-2 { transform: translateX(-100%); }
+        .mobile-container.on-page-2 .home-page-2 { transform: translateX(0); visibility: visible; }
+        /* 切页中（手势拖动）时第二页也要可见 */
+        .mobile-container.paging .home-page-2 { visibility: visible; }
+        /* app 打开期间冻结分页滑动动画 */
+        .mobile-container.app-open .home-page-1,
+        .mobile-container.app-open .home-page-2 { transition: none !important; }
         .page-dots { position: absolute; left: 0; right: 0; bottom: 130px; display: flex; justify-content: center; align-items: center; gap: 8px; z-index: 3; pointer-events: auto; }
         .page-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: background 0.2s, transform 0.2s; cursor: pointer; }
         .page-dot.active { background: rgba(255,255,255,0.95); transform: scale(1.1); }
@@ -117,11 +123,11 @@
         .chat-list-info { flex-grow: 1; overflow: hidden; }
         
         .chat-conversation-page { display: flex; flex-direction: column; background-color: #FBF9F4; overflow: hidden; width: 100%; height: 100%; }
-        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 75px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; }
+        .chat-messages { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding: 15px; padding-bottom: 110px; display: flex; flex-direction: column; scrollbar-width: none; -ms-overflow-style: none; contain: layout style; }
         .message-timestamp {
             align-self: center;
             font-size: 11px;
-            margin: 4px 0 10px 0;
+            margin: 0 0 18px 0;
             text-align: center;
             width: 100%;
             display: flex;
@@ -401,29 +407,31 @@
 
         .msg-nudge {
             align-self: center;
-            width: fit-content;
-            max-width: 80%;
-            margin: 8px auto 14px auto;
-            color: #B89B95;
-            font-size: 11px;
-            text-align: center;
-            background: rgba(184, 155, 149, 0.15);
-            padding: 2px 10px;
-            border-radius: 4px;
-        }
-        .msg-nudge span {
-            color: #B89B95;
-            font-size: 11px;
-        }
-        .msg-nudge > div {
+            width: 100%;
+            margin: 0 0 18px 0;
+            display: flex;
+            justify-content: center;
             background: none;
+            padding: 0;
+            border-radius: 0;
+            font-size: 11px;
+            color: #B89B95;
+        }
+        /* 所有 msg-nudge 内容套一层和时间戳胶囊一模一样的样式 */
+        .msg-nudge span, .msg-nudge > div {
+            background: rgba(184,155,149,0.15);
+            color: #B89B95;
+            font-size: 11px;
+            padding: 1px 8px;
+            border-radius: 4px;
+            display: inline-block;
         }
         .msg-system-tip {
             align-self: center;
             display: flex;
             justify-content: center;
             width: 100%;
-            margin: 8px 0 14px 0;
+            margin: 0 0 18px 0;
         }
         .msg-system-tip span {
             background: rgba(184, 155, 149, 0.15);
@@ -1716,27 +1724,28 @@
 
                 function goToPage(idx) {
                     currentPage = Math.max(0, Math.min(1, idx));
-                    // 清除手势中的临时 transform，让 CSS class 的过渡接管
-                    page1.style.transition = '';
-                    page2.style.transition = '';
-                    page1.style.transform = '';
-                    page2.style.transform = '';
                     mobileContainer.classList.toggle('on-page-2', currentPage === 1);
                     dots.forEach((d, i) => d.classList.toggle('active', i === currentPage));
+                    requestAnimationFrame(() => {
+                        page1.style.transition = '';
+                        page2.style.transition = '';
+                        page1.style.transform = '';
+                        page2.style.transform = '';
+                        // 等过渡动画结束后移除 paging class，让第二页彻底隐藏
+                        setTimeout(() => {
+                            mobileContainer.classList.remove('paging');
+                        }, 350);
+                    });
                 }
 
                 dots.forEach((d, i) => d.addEventListener('click', () => goToPage(i)));
 
-                // 判断当前触摸点是否在"桌面"上（而不是已打开的 app 里）
                 function isOnHomeScreen(target) {
-                    // 如果点在 dock 或者任何 app-page 里，都不算桌面
                     if (target.closest('.dock')) return false;
                     if (target.closest('.app-page')) return false;
-                    // 必须点在第一页或第二页里才算
                     return !!(target.closest('#home-page-1') || target.closest('#home-page-2'));
                 }
 
-                // 在 screen 上监听手势（这样两页都能触发滑动）
                 screen.addEventListener('touchstart', (e) => {
                     if (!isOnHomeScreen(e.target)) return;
                     startX = e.touches[0].clientX;
@@ -1746,6 +1755,7 @@
                     isHorizontal = null;
                     page1.style.transition = 'none';
                     page2.style.transition = 'none';
+                    mobileContainer.classList.add('paging');
                 }, { passive: true });
 
                 screen.addEventListener('touchmove', (e) => {
@@ -1761,16 +1771,16 @@
                     }
                     if (!isHorizontal) return;
                     currentX = x;
-                    // 当前页的基础偏移（第二页时已经是 -100%）
-                    const baseOffset = currentPage === 1 ? -screenWidth() : 0;
+                    const sw = screenWidth();
+                    const base1 = currentPage === 1 ? -sw : 0;
+                    const base2 = currentPage === 1 ? 0 : sw;
                     let dragOffset = dx;
                     // 边界阻尼
-                    const totalOffset = baseOffset + dragOffset;
-                    if (totalOffset > 0) dragOffset = -baseOffset + (dx) * 0.3;
-                    if (totalOffset < -screenWidth()) dragOffset = -baseOffset - screenWidth() + (dx + screenWidth() - baseOffset) * 0.3;
-                    const finalOffset = baseOffset + dragOffset;
-                    page1.style.transform = `translateX(${finalOffset}px)`;
-                    page2.style.transform = `translateX(${finalOffset}px)`;
+                    const t1 = base1 + dragOffset;
+                    if (t1 > 0) dragOffset = -base1 + dx * 0.3;
+                    if (t1 < -sw) dragOffset = -sw - base1 + (dx + sw - (-base1)) * 0.3;
+                    page1.style.transform = `translateX(${base1 + dragOffset}px)`;
+                    page2.style.transform = `translateX(${base2 + dragOffset}px)`;
                 }, { passive: true });
 
                 screen.addEventListener('touchend', () => {
@@ -1785,28 +1795,28 @@
                     }
                 });
 
-                // 鼠标拖拽（桌面端调试用）
                 let mouseDown = false;
                 screen.addEventListener('mousedown', (e) => {
                     if (!isOnHomeScreen(e.target)) return;
                     mouseDown = true; startX = e.clientX; currentX = startX; isHorizontal = true;
                     page1.style.transition = 'none';
                     page2.style.transition = 'none';
+                    mobileContainer.classList.add('paging');
                 });
                 window.addEventListener('mousemove', (e) => {
                     if (!mouseDown) return;
                     currentX = e.clientX;
                     const dx = currentX - startX;
-                    // 移动不超过 5px 不当作拖动，避免误判按钮点击
                     if (Math.abs(dx) < 5) return;
-                    const baseOffset = currentPage === 1 ? -screenWidth() : 0;
+                    const sw = screenWidth();
+                    const base1 = currentPage === 1 ? -sw : 0;
+                    const base2 = currentPage === 1 ? 0 : sw;
                     let dragOffset = dx;
-                    const totalOffset = baseOffset + dragOffset;
-                    if (totalOffset > 0) dragOffset = -baseOffset + dx * 0.3;
-                    if (totalOffset < -screenWidth()) dragOffset = -baseOffset - screenWidth() + (dx + screenWidth() - baseOffset) * 0.3;
-                    const finalOffset = baseOffset + dragOffset;
-                    page1.style.transform = `translateX(${finalOffset}px)`;
-                    page2.style.transform = `translateX(${finalOffset}px)`;
+                    const t1 = base1 + dragOffset;
+                    if (t1 > 0) dragOffset = -base1 + dx * 0.3;
+                    if (t1 < -sw) dragOffset = -sw - base1 + (dx + sw - (-base1)) * 0.3;
+                    page1.style.transform = `translateX(${base1 + dragOffset}px)`;
+                    page2.style.transform = `translateX(${base2 + dragOffset}px)`;
                 });
                 window.addEventListener('mouseup', () => {
                     if (!mouseDown) return;
@@ -2793,7 +2803,7 @@
                                 if (msg.revoked) {
                                     const meRev = msg.sender === 'me';
                                     if (meRev) {
-                                        return `<div class="msg-nudge">你撤回了一条消息</div>`;
+                                        return `<div class="msg-nudge"><span>你撤回了一条消息</span></div>`;
                                     }
                                     const aiName = c.notes || c.name;
                                     if (msg.peeked && msg.originalContent) {
@@ -3002,7 +3012,7 @@
                             // Normal: each bubble in its own row with avatar
                             const bubbleEls = bubblesHtml.split('__SEP__');
                             return group.messages.map((m, mIdx) => {
-                                if(m.revoked) return `<div class="msg-nudge">${me?'你':`"${c.name}"`}撤回了一条消息</div>`;
+                                if(m.revoked) return `<div class="msg-nudge"><span>${me?'你':`"${c.name}"`}撤回了一条消息</span></div>`;
                                 return `<div class="message ${me?'sent':'received'}" style="margin-bottom:1px;">${avatarHtml}<div class="bubble-group">${bubbleEls[mIdx]||''}</div></div>`;
                             }).join('');
                         }).join('');
@@ -8708,21 +8718,32 @@
                     
                     const closeApp = () => {
                         if (appPage.classList.contains('closing')) return;
+                        if (!appPage.classList.contains('active')) return; // 关键：只有 active 的 app 才允许关闭
                         const iconRect = icon.getBoundingClientRect();
                         const screenRect = screen.getBoundingClientRect();
                         appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
                         appPage.classList.add('closing');
                         document.getElementById('app-home-indicator').style.display = 'none';
-                        appPage.addEventListener('animationend', () => appPage.classList.remove('active', 'closing'), { once: true });
+                        const cleanup = () => {
+                            appPage.classList.remove('active', 'closing');
+                            document.querySelector('.mobile-container').classList.remove('app-open');
+                            const ephemeralApps = ['lullaby-page', 'ai-love-club-page', 'g-love-club-page', 'virtual-hug-page'];
+                            if (ephemeralApps.includes(appPage.id)) {
+                                setTimeout(() => { appPage.innerHTML = ''; }, 0);
+                            }
+                        };
+                        appPage.addEventListener('animationend', cleanup, { once: true });
+                        setTimeout(cleanup, 450);
                     };
                     if (appPage.querySelector('.close-btn')) {
                         appPage.querySelector('.close-btn').addEventListener('click', closeApp);
                     }
                     document.getElementById('app-home-indicator').addEventListener('click', closeApp);
-                    
+
                     const iconRect = icon.getBoundingClientRect();
                     const screenRect = screen.getBoundingClientRect();
                     appPage.style.transformOrigin = `${((iconRect.left + iconRect.width / 2) - screenRect.left) / screenRect.width * 100}% ${((iconRect.top + iconRect.height / 2) - screenRect.top) / screenRect.height * 100}%`;
+                    document.querySelector('.mobile-container').classList.add('app-open');
                     appPage.classList.add('active');
                     const _ind = document.getElementById('app-home-indicator'); _ind.style.display = 'block'; if(document.getElementById('chat-page').classList.contains('active')) _ind.style.setProperty('display','none','important');
                 }
@@ -8903,20 +8924,25 @@
                     </div>`;
                 appPage.querySelector('.lullaby-page').appendChild(overlay);
                 // 安全地设置头像图片：用 JS 设置 src 而不是 HTML 字符串拼接，避免 base64 中的特殊字符破坏结构
-                overlay.querySelectorAll('img[data-avatar-idx]').forEach(img => {
-                    const idx = parseInt(img.dataset.avatarIdx);
-                    const c = contacts[idx];
-                    if (!c || !c.avatar) return;
-                    const av = c.avatar;
-                    if (av.startsWith('imgdb://') && window.ImageDB) {
-                        // 异步从 IndexedDB 加载
-                        ImageDB.resolve(av).then(url => {
-                            if (url) img.src = url;
-                        }).catch(()=>{});
-                    } else if (av.startsWith('data:') || av.startsWith('http')) {
-                        img.src = av;
+                (async () => {
+                    if (window.ImageDB && ImageDB.readyPromise) {
+                        try { await ImageDB.readyPromise; } catch(e) {}
                     }
-                });
+                    overlay.querySelectorAll('img[data-avatar-idx]').forEach(async img => {
+                        const idx = parseInt(img.dataset.avatarIdx);
+                        const c = contacts[idx];
+                        if (!c || !c.avatar) return;
+                        const av = c.avatar;
+                        try {
+                            if (av.startsWith('imgdb://') && window.ImageDB) {
+                                const url = await ImageDB.resolve(av);
+                                if (url) img.src = url;
+                            } else if (av.startsWith('data:') || av.startsWith('http')) {
+                                img.src = av;
+                            }
+                        } catch(e) { console.warn('头像加载失败', e); }
+                    });
+                })();
                 overlay.querySelector('#lb-nar-close').onclick = () => overlay.remove();
                 overlay.querySelectorAll('[data-nar-id]').forEach(item => {
                     item.onclick = () => {
