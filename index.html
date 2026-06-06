@@ -745,6 +745,9 @@
 
             // 解析 content：如果是 imgdb://xxx 就异步从 IndexedDB 加载；否则原样返回
             // 用法：把图片渲染为 <img data-imgsrc="imgdb://xxx">，然后调用 hydrateImages(rootEl) 来加载
+            // 内存缓存：imgdb id → dataUrl，避免重复读 IndexedDB 导致闪烁
+            const memCache = new Map();
+
             async function hydrateImages(rootEl) {
                 if (!rootEl) return;
                 const imgs = rootEl.querySelectorAll('img[data-imgsrc]');
@@ -753,18 +756,31 @@
                     if (!src) continue;
                     if (src.startsWith('imgdb://')) {
                         const id = src.slice(8);
-                        const data = await get(id);
-                        if (data) {
-                            img.src = data;
+                        // 先查内存缓存
+                        if (memCache.has(id)) {
+                            img.src = memCache.get(id);
                         } else {
-                            console.warn('[ImageDB] 找不到图片:', id);
-                            img.alt = '图片丢失';
+                            const data = await get(id);
+                            if (data) {
+                                memCache.set(id, data);
+                                img.src = data;
+                            } else {
+                                console.warn('[ImageDB] 找不到图片:', id);
+                                img.alt = '图片丢失';
+                            }
                         }
                     } else {
-                        img.src = src; // 兼容旧的 base64 直接塞
+                        img.src = src;
                     }
                     delete img.dataset.imgsrc;
                 }
+            }
+
+            // 同步从缓存取（用于渲染时立即填充 src，避免空白闪烁）
+            function getCached(value) {
+                if (typeof value !== 'string' || !value.startsWith('imgdb://')) return null;
+                const id = value.slice(8);
+                return memCache.get(id) || null;
             }
 
             // 直接根据可能是 imgdb:// 或 base64 的 value 解析出真正的 dataUrl
@@ -772,7 +788,10 @@
                 if (typeof value !== 'string') return value;
                 if (value.startsWith('imgdb://') && ready) {
                     const id = value.slice(8);
-                    return await get(id) || '';
+                    if (memCache.has(id)) return memCache.get(id);
+                    const data = await get(id) || '';
+                    if (data) memCache.set(id, data);
+                    return data;
                 }
                 return value;
             }
@@ -803,7 +822,7 @@
                 }
             }
 
-            return { save, get, remove, list, size, newId, hydrateImages, resolve, saveAndRef, setImgSrc, readyPromise };
+            return { save, get, remove, list, size, newId, hydrateImages, resolve, saveAndRef, setImgSrc, readyPromise, getCached };
         })();
 
         // ===============================
@@ -2864,7 +2883,14 @@
                                 // 工具函数：根据 content 生成 img 标签。imgdb://开头的用 data-imgsrc 延迟加载，否则直接 src
                                 const _imgTag = (content, style, extraClass) => {
                                     const isDb = typeof content === 'string' && content.startsWith('imgdb://');
-                                    const srcAttr = isDb ? `data-imgsrc="${content}"` : `src="${content}"`;
+                                    let srcAttr;
+                                    if (isDb) {
+                                        // 优先查内存缓存，命中就直接同步填 src，避免闪烁
+                                        const cached = window.ImageDB?.getCached?.(content);
+                                        srcAttr = cached ? `src="${cached}"` : `data-imgsrc="${content}"`;
+                                    } else {
+                                        srcAttr = `src="${content}"`;
+                                    }
                                     return `<img ${srcAttr} style="${style}"${extraClass?` class="${extraClass}"`:''}>`;
                                 };
                                 if(m.type==='image') body = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;');
