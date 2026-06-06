@@ -46,7 +46,7 @@
             width: 100%;
             height: 100%;
             box-sizing: border-box;
-            padding: 55px 14px 0;
+            padding: 40px 14px 0;
             transform: translateX(100%);
             transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
             z-index: 1;
@@ -2794,7 +2794,8 @@
                         });
                         if (currentGroup) messageGroups.push(currentGroup);
 
-                        box.innerHTML = messageGroups.map(group => {
+                        // 双缓冲渲染：先构建 HTML 字符串到变量，再一次性写入，避免中间状态闪烁
+                        const newHTML = messageGroups.map(group => {
                             if (group.isSystem) {
                                 const msg = group.messages[0];
                                 // 撤回消息：用户的不可看，AI的可点击展开
@@ -3014,6 +3015,12 @@
                                 return `<div class="message ${me?'sent':'received'}" style="margin-bottom:1px;">${avatarHtml}<div class="bubble-group">${bubbleEls[mIdx]||''}</div></div>`;
                             }).join('');
                         }).join('');
+
+                        // 只在内容真的变了时才重写 innerHTML，避免不必要的 DOM 重建导致闪烁
+                        if (box._lastHTML !== newHTML) {
+                            box.innerHTML = newHTML;
+                            box._lastHTML = newHTML;
+                        }
 
                         // 异步加载 IndexedDB 中的图片（imgdb:// 前缀）
                         if (window.ImageDB) {
@@ -9111,7 +9118,8 @@
 
             appPage.innerHTML = `
             <style>
-                .club-page { background: ${themeBg}; min-height: 100%; color: #4a3838; padding-bottom: 80px; }
+                .club-page { background: ${themeBg}; min-height: 100%; color: #4a3838; padding-bottom: 80px; overflow-y: auto; -webkit-overflow-scrolling: touch; height: 100%; scrollbar-width: none; }
+                .club-page::-webkit-scrollbar { display: none; }
                 .club-header { position: sticky; top: 0; background: ${themeBg}; padding: 32px 16px 12px; z-index: 5; border-bottom: 1px solid rgba(0,0,0,0.04); }
                 .club-top-row { display: flex; align-items: center; justify-content: space-between; }
                 .club-back { font-size: 26px; cursor: pointer; color: ${themeColor}; width: 30px; }
@@ -9236,9 +9244,28 @@
 
             function getApiConfig() {
                 if (isG) {
+                    const mainPlatform = localStorage.getItem('apiPlatform') || 'openai';
+                    const mainKey = localStorage.getItem('apiKey');
+                    const mainEndpoint = localStorage.getItem('apiEndpoint') || '';
+                    const mainModel = localStorage.getItem('apiModel') || '';
+
+                    // 判断是否 OpenAI 兼容
+                    const isOpenAICompat = mainPlatform === 'openai' ||
+                        (mainPlatform === 'MyAPI' && /github\.ai|openai|azure|deepseek|moonshot|together|groq|siliconflow/i.test(mainEndpoint));
+
+                    if (mainKey && isOpenAICompat) {
+                        return {
+                            platform: mainPlatform, // 保留原平台名，让 ApiHandler 正确处理 endpoint
+                            endpoint: mainEndpoint,
+                            apiKey: mainKey,
+                            model: mainModel || 'gpt-4o-mini'
+                        };
+                    }
+
+                    // 主 API 不兼容（如 Gemini），用单独存的 key
                     let key = localStorage.getItem('g_club_openai_key');
                     if (!key) {
-                        key = prompt('恋爱G匿名互助会需要 ChatGPT (OpenAI) 的 API Key\n请输入你的 OpenAI API Key（开头通常是 sk-）：');
+                        key = prompt('恋爱G匿名互助会需要 ChatGPT (OpenAI) 兼容的 API\n（如果你的主 API 就是 OpenAI 或兼容服务，可以改设置自动复用~）\n请输入你的 API Key：');
                         if (key && key.trim()) {
                             localStorage.setItem('g_club_openai_key', key.trim());
                         } else {
@@ -9376,23 +9403,44 @@
         function setupVirtualHugApp(appPage) {
             appPage.innerHTML = `
             <style>
-                .hug-page { background: linear-gradient(180deg, #fff5e6 0%, #ffe8d6 50%, #ffd9c5 100%); min-height: 100%; color: #5d4037; padding-bottom: 30px; }
-                .hug-header { padding: 32px 16px 16px; display: flex; align-items: center; justify-content: space-between; }
+                .hug-page { background: linear-gradient(180deg, #fff5e6 0%, #ffe8d6 50%, #ffd9c5 100%); min-height: 100%; color: #5d4037; padding-bottom: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+                .hug-page::-webkit-scrollbar { display: none; }
+                .hug-header { padding: 32px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
                 .hug-back { font-size: 26px; cursor: pointer; color: #d97757; width: 30px; }
                 .hug-title { font-size: 17px; font-weight: 600; color: #d97757; }
-                .hug-stage { margin: 10px 20px 14px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 22px; padding: 26px 20px; text-align: center; box-shadow: 0 6px 20px rgba(217,119,87,0.08); min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-                .hug-toy-img { width: 160px; height: 160px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.1); cursor: pointer; }
-                .hug-upload-area { width: 160px; height: 160px; border: 2px dashed rgba(217,119,87,0.4); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #d97757; }
+                /* 娃柜 */
+                .hug-cabinet-label { font-size: 12px; color: #aaa; margin: 0 20px 6px; }
+                .hug-cabinet { display: flex; gap: 10px; padding: 0 20px 4px; overflow-x: auto; scrollbar-width: none; }
+                .hug-cabinet::-webkit-scrollbar { display: none; }
+                .hug-cabinet-item { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+                .hug-cabinet-thumb { width: 54px; height: 54px; border-radius: 12px; object-fit: cover; border: 2.5px solid transparent; background: rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
+                .hug-cabinet-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+                .hug-cabinet-thumb.selected { border-color: #d97757; }
+                .hug-cabinet-thumb.add-btn { border: 2px dashed rgba(217,119,87,0.4); color: #d97757; font-size: 22px; }
+                .hug-cabinet-name { font-size: 10px; color: #9e7060; max-width: 54px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                /* 舞台 */
+                .hug-stage { margin: 8px 20px 10px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px 20px; text-align: center; box-shadow: 0 6px 20px rgba(217,119,87,0.08); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; }
+                .hug-toy-img { width: 130px; height: 130px; border-radius: 14px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.1); cursor: pointer; display: block; aspect-ratio: 1/1; }
+                .hug-upload-area { width: 130px; height: 130px; border: 2px dashed rgba(217,119,87,0.4); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #d97757; aspect-ratio: 1/1; }
                 .hug-upload-area:active { transform: scale(0.97); background: rgba(217,119,87,0.05); }
-                .hug-toy-name { margin-top: 12px; font-size: 14px; font-weight: 500; color: #5d4037; }
-                .hug-toy-name input { background: transparent; border: none; border-bottom: 1px dashed rgba(0,0,0,0.15); font-size: 14px; text-align: center; color: #5d4037; outline: none; width: 120px; }
-                .hug-response { margin: 0 20px 14px; background: white; border-radius: 18px; padding: 14px 16px; font-size: 13px; line-height: 1.75; color: #5d4848; min-height: 60px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); white-space: pre-wrap; }
+                .hug-toy-name-row { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+                .hug-toy-name-input { background: transparent; border: none; border-bottom: 1px dashed rgba(0,0,0,0.15); font-size: 14px; text-align: center; color: #5d4037; outline: none; width: 100px; }
+                .hug-toy-delete { font-size: 12px; color: #ccc; cursor: pointer; padding: 2px 4px; }
+                /* 联系人行 */
+                .hug-narrator-row { background: rgba(255,255,255,0.6); border: 1px solid rgba(217,119,87,0.15); border-radius: 16px; padding: 10px 14px; margin: 0 20px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+                .hug-narrator-avatar { width: 34px; height: 34px; border-radius: 8px; background: rgba(217,119,87,0.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+                .hug-narrator-info { flex: 1; min-width: 0; }
+                .hug-narrator-label { font-size: 10px; color: #aaa; margin-bottom: 1px; }
+                .hug-narrator-name { font-size: 13px; font-weight: 500; color: #5d4037; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .hug-response { margin: 0 20px 10px; background: white; border-radius: 16px; padding: 12px 16px; font-size: 13px; line-height: 1.75; color: #5d4848; min-height: 48px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); white-space: pre-wrap; }
                 .hug-response.empty { color: #aaa; font-style: italic; text-align: center; opacity: 0.7; }
-                .hug-actions-title { font-size: 13px; color: #999; margin: 8px 24px 6px; }
-                .hug-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 0 20px 14px; }
-                .hug-action-btn { background: white; border: none; padding: 12px 10px; border-radius: 14px; font-size: 13px; color: #5d4037; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
+                .hug-actions-title { font-size: 13px; color: #999; margin: 4px 24px 6px; }
+                .hug-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0 20px 10px; }
+                .hug-action-btn { background: white; border: none; padding: 11px 10px; border-radius: 14px; font-size: 13px; color: #5d4037; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
                 .hug-action-btn:active { transform: scale(0.96); background: #fff5e6; }
+                .hug-action-btn:disabled { opacity: 0.4; cursor: default; }
                 .hug-action-btn.surprise { grid-column: span 2; background: linear-gradient(135deg, #ffb88c, #d97757); color: white; }
+                .hug-action-btn.surprise:disabled { background: #ddd; }
                 .hug-options-block { background: rgba(255,255,255,0.55); border-radius: 16px; padding: 12px 14px; margin: 0 20px 14px; }
                 .hug-options-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
                 .hug-option { font-size: 12px; padding: 5px 11px; background: white; border-radius: 12px; cursor: pointer; border: 1px solid #f0e0d0; color: #5d4037; }
@@ -9407,77 +9455,268 @@
                     <span class="hug-title">虚拟抱抱</span>
                     <span style="width:30px;"></span>
                 </div>
+                <div class="hug-cabinet-label">我的娃柜</div>
+                <div class="hug-cabinet" id="hug-cabinet"></div>
                 <div class="hug-stage">
                     <div id="hug-toy-container"></div>
-                    <div class="hug-toy-name" id="hug-toy-name-wrap" style="display:none;">
-                        <input type="text" id="hug-toy-name" placeholder="给TA起个名字" maxlength="10">
+                    <div class="hug-toy-name-row" id="hug-toy-name-wrap" style="display:none;">
+                        <input type="text" class="hug-toy-name-input" id="hug-toy-name" placeholder="给TA起个名字" maxlength="10">
+                        <span class="hug-toy-delete" id="hug-toy-delete" title="删除这个娃">🗑</span>
                     </div>
                 </div>
-                <div class="hug-response empty" id="hug-response">点选下面的动作，让 AI 一起陪 TA 玩～</div>
+                <div class="hug-narrator-row" id="hug-narrator-row">
+                    <div class="hug-narrator-avatar" id="hug-narrator-avatar">🧸</div>
+                    <div class="hug-narrator-info">
+                        <div class="hug-narrator-label">由谁来陪玩</div>
+                        <div class="hug-narrator-name" id="hug-narrator-name">点击选择联系人</div>
+                    </div>
+                    <span style="color:#ccc;font-size:16px;">›</span>
+                </div>
+                <div class="hug-response empty" id="hug-response">先选娃娃和陪玩的人，再点下面的动作～</div>
                 <div class="hug-actions-title">想做什么呢？</div>
                 <div class="hug-actions">
-                    <button class="hug-action-btn" data-act="touch">摸摸头 🫧</button>
-                    <button class="hug-action-btn" data-act="hug">抱抱 🤗</button>
-                    <button class="hug-action-btn" data-act="clothes">换衣服 👗</button>
-                    <button class="hug-action-btn" data-act="food">喂零食 🍪</button>
-                    <button class="hug-action-btn surprise" data-act="surprise">你来选吧 ✨</button>
+                    <button class="hug-action-btn" data-act="touch" disabled>摸摸头 🫧</button>
+                    <button class="hug-action-btn" data-act="hug" disabled>抱抱 🤗</button>
+                    <button class="hug-action-btn" data-act="clothes" disabled>换衣服 👗</button>
+                    <button class="hug-action-btn" data-act="food" disabled>喂零食 🍪</button>
+                    <button class="hug-action-btn surprise" data-act="surprise" disabled>你来选吧 ✨</button>
                 </div>
                 <div class="hug-options-block" id="hug-options-block" style="display:none;"></div>
             </div>`;
 
-            const HUG_KEY = 'virtual_hug_data';
+            const HUG_KEY = 'virtual_hug_data_v2';
             function loadData() {
-                try { return JSON.parse(localStorage.getItem(HUG_KEY) || '{}'); } catch(e) { return {}; }
+                try { return JSON.parse(localStorage.getItem(HUG_KEY) || '{"toys":[],"currentIdx":0}'); }
+                catch(e) { return { toys: [], currentIdx: 0 }; }
             }
             function saveData(d) { localStorage.setItem(HUG_KEY, JSON.stringify(d)); }
 
             let data = loadData();
+            if (!data.toys) data.toys = [];
+            let selectedNarrator = null;
 
-            function renderToy() {
+            function getCurrentToy() {
+                return data.toys[data.currentIdx] || null;
+            }
+
+            function updateButtons() {
+                const toy = getCurrentToy();
+                const canAct = !!(toy?.imageRef && selectedNarrator);
+                appPage.querySelectorAll('.hug-action-btn').forEach(b => b.disabled = !canAct);
+            }
+
+            function renderCabinet() {
+                const cabinet = appPage.querySelector('#hug-cabinet');
+                cabinet.innerHTML = '';
+                data.toys.forEach((toy, idx) => {
+                    const item = document.createElement('div');
+                    item.className = 'hug-cabinet-item';
+                    const thumb = document.createElement('div');
+                    thumb.className = 'hug-cabinet-thumb' + (idx === data.currentIdx ? ' selected' : '');
+                    if (toy.imageRef) {
+                        const img = document.createElement('img');
+                        // 异步加载 IndexedDB 图片
+                        (async () => {
+                            if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                            try {
+                                if (toy.imageRef.startsWith('imgdb://')) {
+                                    const url = await ImageDB.resolve(toy.imageRef);
+                                    if (url) img.src = url;
+                                } else {
+                                    img.src = toy.imageRef; // fallback: data URL
+                                }
+                            } catch(e) {}
+                        })();
+                        thumb.appendChild(img);
+                    } else {
+                        thumb.textContent = '🧸';
+                    }
+                    const name = document.createElement('div');
+                    name.className = 'hug-cabinet-name';
+                    name.textContent = toy.name || '无名';
+                    item.appendChild(thumb);
+                    item.appendChild(name);
+                    item.onclick = () => {
+                        data.currentIdx = idx;
+                        saveData(data);
+                        renderCabinet();
+                        renderStage();
+                        updateButtons();
+                    };
+                    cabinet.appendChild(item);
+                });
+                // 添加按钮
+                const addItem = document.createElement('div');
+                addItem.className = 'hug-cabinet-item';
+                const addThumb = document.createElement('div');
+                addThumb.className = 'hug-cabinet-thumb add-btn';
+                addThumb.textContent = '+';
+                const addLabel = document.createElement('div');
+                addLabel.className = 'hug-cabinet-name';
+                addLabel.textContent = '添加';
+                addItem.appendChild(addThumb);
+                addItem.appendChild(addLabel);
+                addItem.onclick = () => {
+                    data.toys.push({ imageRef: '', name: '' });
+                    data.currentIdx = data.toys.length - 1;
+                    saveData(data);
+                    renderCabinet();
+                    renderStage();
+                    updateButtons();
+                    setTimeout(() => openFilePicker(), 100);
+                };
+                cabinet.appendChild(addItem);
+            }
+
+            async function renderStage() {
+                const toy = getCurrentToy();
                 const container = appPage.querySelector('#hug-toy-container');
                 const nameWrap = appPage.querySelector('#hug-toy-name-wrap');
-                if (data.toyImage) {
-                    container.innerHTML = `<img class="hug-toy-img" id="hug-toy-img" src="${data.toyImage}" alt="toy">`;
-                    nameWrap.style.display = 'block';
-                    appPage.querySelector('#hug-toy-name').value = data.toyName || '';
-                    appPage.querySelector('#hug-toy-img').onclick = () => {
-                        if (confirm('换一张照片吗？')) {
-                            data.toyImage = null;
-                            saveData(data);
-                            renderToy();
-                        }
+                if (!toy) {
+                    container.innerHTML = `<div class="hug-upload-area" id="hug-upload"><div style="font-size:32px;margin-bottom:8px;">🧸</div><div style="font-size:12px;">点击上传玩偶照片</div></div>`;
+                    nameWrap.style.display = 'none';
+                    appPage.querySelector('#hug-upload').onclick = () => {
+                        data.toys.push({ imageRef: '', name: '' });
+                        data.currentIdx = data.toys.length - 1;
+                        saveData(data);
+                        openFilePicker();
                     };
+                } else if (toy.imageRef) {
+                    // 异步加载
+                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                    let url = toy.imageRef;
+                    if (toy.imageRef.startsWith('imgdb://')) {
+                        try { url = await ImageDB.resolve(toy.imageRef); } catch(e) { url = ''; }
+                    }
+                    if (url) {
+                        container.innerHTML = `<img class="hug-toy-img" src="${url}" alt="toy">`;
+                        container.querySelector('img').onclick = openFilePicker;
+                    }
+                    nameWrap.style.display = 'flex';
+                    appPage.querySelector('#hug-toy-name').value = toy.name || '';
                 } else {
-                    container.innerHTML = `
-                        <div class="hug-upload-area" id="hug-upload">
-                            <div style="font-size:42px;">🧸</div>
-                            <div style="font-size:12px;margin-top:6px;">点击上传玩偶照片</div>
-                        </div>`;
+                    container.innerHTML = `<div class="hug-upload-area" id="hug-upload"><div style="font-size:32px;margin-bottom:8px;">🧸</div><div style="font-size:12px;">点击上传玩偶照片</div></div>`;
                     nameWrap.style.display = 'none';
                     appPage.querySelector('#hug-upload').onclick = openFilePicker;
                 }
             }
 
+            renderCabinet();
+            renderStage();
+            updateButtons();
+
+            // 联系人选择弹窗
+            appPage.querySelector('#hug-narrator-row').onclick = () => {
+                const contacts = DB.getContacts ? DB.getContacts() : [];
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;display:flex;flex-direction:column;justify-content:flex-end;';
+                const sheet = document.createElement('div');
+                sheet.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 30px;max-height:70%;overflow-y:auto;';
+                sheet.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <span style="font-size:15px;font-weight:600;color:#5d4037;">由谁来陪玩</span>
+                        <span id="hug-nar-close" style="font-size:22px;color:#aaa;cursor:pointer;">×</span>
+                    </div>
+                    ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有添加联系人</div>' :
+                        contacts.map((c, idx) => {
+                            const av = c.avatar || '';
+                            const displayName = (c.notes || c.name || '联系人').slice(0, 12);
+                            let avatarHtml;
+                            if (av && av.includes('<')) {
+                                avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;">${av}</div>`;
+                            } else if (av) {
+                                avatarHtml = `<img data-avatar-idx="${idx}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;" alt="">`;
+                            } else {
+                                avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;background:#f5ede8;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
+                            }
+                            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f0eb;cursor:pointer;" data-nar-id="${c.id}">
+                                ${avatarHtml}
+                                <span style="font-size:14px;color:#5d4037;">${displayName}</span>
+                            </div>`;
+                        }).join('')
+                    }
+                `;
+                overlay.appendChild(sheet);
+                appPage.querySelector('.hug-page').appendChild(overlay);
+
+                // 加载头像
+                (async () => {
+                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e) {} }
+                    sheet.querySelectorAll('img[data-avatar-idx]').forEach(async img => {
+                        const c = contacts[parseInt(img.dataset.avatarIdx)];
+                        if (!c?.avatar) return;
+                        const av = c.avatar;
+                        try {
+                            if (av.startsWith('imgdb://') && window.ImageDB) {
+                                const url = await ImageDB.resolve(av); if (url) img.src = url;
+                            } else if (av.startsWith('data:') || av.startsWith('http')) { img.src = av; }
+                        } catch(e) {}
+                    });
+                })();
+
+                sheet.querySelector('#hug-nar-close').onclick = () => overlay.remove();
+                overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+                sheet.querySelectorAll('[data-nar-id]').forEach(item => {
+                    item.onclick = () => {
+                        const c = contacts.find(x => x.id === item.dataset.narId);
+                        if (!c) return;
+                        selectedNarrator = { id: c.id, name: c.notes || c.name, avatar: c.avatar || '', persona: c.persona || '' };
+                        // 更新头像显示
+                        const avatarBox = appPage.querySelector('#hug-narrator-avatar');
+                        const av = selectedNarrator.avatar;
+                        if (av && av.includes('<')) {
+                            avatarBox.innerHTML = `<div style="width:100%;height:100%;overflow:hidden;border-radius:8px;">${av}</div>`;
+                        } else if (av) {
+                            avatarBox.innerHTML = `<img style="width:34px;height:34px;border-radius:8px;object-fit:cover;" alt="">`;
+                            const topImg = avatarBox.querySelector('img');
+                            (async () => {
+                                if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e) {} }
+                                if (av.startsWith('imgdb://') && window.ImageDB) {
+                                    const url = await ImageDB.resolve(av); if (url) topImg.src = url;
+                                } else if (av.startsWith('data:') || av.startsWith('http')) { topImg.src = av; }
+                            })();
+                        } else {
+                            avatarBox.textContent = '🧸';
+                        }
+                        appPage.querySelector('#hug-narrator-name').textContent = selectedNarrator.name;
+                        updateButtons();
+                        overlay.remove();
+                    };
+                });
+            };
+
             function openFilePicker() {
                 const fi = document.createElement('input');
-                fi.type = 'file';
-                fi.accept = 'image/*';
-                fi.onchange = e => {
+                fi.type = 'file'; fi.accept = 'image/*';
+                fi.onchange = async e => {
                     const f = e.target.files[0];
                     if (!f) return;
                     const r = new FileReader();
-                    r.onload = ev => {
+                    r.onload = async ev => {
                         const img = new Image();
-                        img.onload = () => {
-                            const maxW = 400;
-                            let w = img.width, h = img.height;
-                            if (w > maxW) { h = h * maxW / w; w = maxW; }
+                        img.onload = async () => {
+                            // 裁正方形
+                            const size = Math.min(img.width, img.height);
                             const canvas = document.createElement('canvas');
-                            canvas.width = w; canvas.height = h;
-                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                            data.toyImage = canvas.toDataURL('image/jpeg', 0.82);
+                            canvas.width = size; canvas.height = size;
+                            canvas.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                            const toy = getCurrentToy();
+                            if (!toy) return;
+                            // 存入 IndexedDB
+                            try {
+                                if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                                const ref = await ImageDB.saveAndRef(dataUrl);
+                                toy.imageRef = ref;
+                            } catch(err) {
+                                console.warn('IndexedDB 存储失败，fallback to data URL', err);
+                                toy.imageRef = dataUrl;
+                            }
+                            if (!toy.name) toy.name = '宝贝';
                             saveData(data);
-                            renderToy();
+                            renderCabinet();
+                            await renderStage();
+                            updateButtons();
                         };
                         img.src = ev.target.result;
                     };
@@ -9487,10 +9726,20 @@
             }
 
             appPage.querySelector('#hug-toy-name').addEventListener('input', e => {
-                data.toyName = e.target.value;
-                saveData(data);
+                const toy = getCurrentToy();
+                if (toy) { toy.name = e.target.value; saveData(data); renderCabinet(); }
             });
 
+            appPage.querySelector('#hug-toy-delete').onclick = () => {
+                if (data.toys.length === 0) return;
+                if (!confirm('要从娃柜里移除这个娃娃吗？')) return;
+                data.toys.splice(data.currentIdx, 1);
+                data.currentIdx = Math.max(0, data.currentIdx - 1);
+                saveData(data);
+                renderCabinet();
+                renderStage();
+                updateButtons();
+            };
             const CLOTHES_OPTIONS = ['粉色小裙子', '兔耳朵帽', '小毛衣', '小披风', '草莓围兜', '燕尾服'];
             const FOOD_OPTIONS = ['草莓蛋糕', '小饼干', '蜂蜜牛奶', '布丁', '棉花糖', '热可可'];
 
@@ -9525,8 +9774,13 @@
             }
 
             async function triggerAction(verb, detail) {
-                if (!data.toyImage) {
+                const currentToy = getCurrentToy();
+                if (!currentToy?.imageRef) {
                     alert('先上传一张玩偶照片吧～');
+                    return;
+                }
+                if (!selectedNarrator) {
+                    alert('先选择由谁来陪玩吧～');
                     return;
                 }
                 const respEl = appPage.querySelector('#hug-response');
@@ -9542,21 +9796,26 @@
                     return;
                 }
 
-                const toyName = data.toyName || '小玩偶';
+                const toyName = currentToy?.name || '小玩偶';
+                const narratorName = selectedNarrator ? selectedNarrator.name : null;
                 let userTask = '';
                 if (verb === '你来选吧') {
-                    userTask = `用户没指定动作，请你自己挑一个想跟 ${toyName} 一起做的小事（比如蹭蹭脸、给TA梳毛、捏捏小爪子、跟TA说悄悄话、把TA放在枕头边等），描述这个过程。`;
+                    userTask = `请自己挑一个跟 ${toyName} 互动的小动作（比如蹭蹭脸、梳毛、捏捏小爪子、说悄悄话、放在枕头边等），描述照顾 TA 的过程。`;
                 } else if (verb === '换衣服') {
-                    userTask = `用户想给 ${toyName} 穿上「${detail}」，请描述你帮 TA 换上的过程，以及 TA 穿上后的可爱样子。`;
+                    userTask = `帮 ${toyName} 换上「${detail}」，描述给 TA 穿衣服的过程，以及 TA 穿上后的可爱样子。`;
                 } else if (verb === '喂零食') {
-                    userTask = `用户想给 ${toyName} 喂「${detail}」，请描述你假装喂 TA 吃这个零食的过程和 TA 的反应。`;
+                    userTask = `给 ${toyName} 喂「${detail}」，描述喂 TA 吃零食的过程和 TA 的反应。`;
                 } else if (verb === '摸摸头') {
-                    userTask = `用户在摸 ${toyName} 的头，请描述你也一起摸摸 TA 的画面，触感、温度、TA 的反应。`;
+                    userTask = `轻轻摸摸 ${toyName} 的头，描述触感、温度、TA 的小反应。`;
                 } else if (verb === '抱抱') {
-                    userTask = `用户在抱 ${toyName}，请描述你和 TA 一起被抱住的温暖画面，包括 TA 的柔软触感和你的感受。`;
+                    userTask = `把 ${toyName} 抱在怀里，描述抱着 TA 的温暖画面，TA 的柔软触感和小动作。`;
                 }
 
-                const sysPrompt = `你是一个温柔的虚拟陪伴，正在和用户一起跟 TA 的毛绒玩偶「${toyName}」互动。\n\n【任务】：${userTask}\n\n【要求】：\n1. 60-120 字，简短但画面感强。\n2. 用第一人称"我"，温柔的语气，多用叠词（软软的、毛茸茸的、暖暖的）。\n3. 把玩偶当成有生命的小生灵来描述，TA 有自己的反应和小情绪。\n4. 不要用感叹号过多，要营造温暖治愈的氛围。\n5. 直接输出文字，不要前后说明，不要标题。`;
+                const narratorInstruction = narratorName
+                    ? `你现在扮演「${narratorName}」，用户把 ${toyName} 交给你照顾。以 TA 的口吻描述照顾玩偶的过程。回复格式：${narratorName}：（描述内容），直接输出，不要其他说明。`
+                    : `以第一人称"我"描述你照顾这个玩偶的过程，直接输出文字，不要前后说明。`;
+
+                const sysPrompt = `用户把心爱的毛绒玩具「${toyName}」托付给你照顾。\n\n【当前动作】：${userTask}\n\n【写作要求】：\n1. 60-120 字，温柔自然的语气。\n2. ${narratorInstruction}\n3. 玩偶是一个玩具，不要给它写真实的生理反应（不要眨眼、鼓脸、咬东西等）。可以描述它的外观触感、你对它做动作的过程、以及你照顾它时的心情。\n4. 多描述触感细节（软软的、毛茸茸的、暖暖的、轻轻的）。\n5. 语气温柔珍视，像在认真照顾一件重要的东西，直接输出文字，不要标题或说明。`;
 
                 let messages;
                 if (pPlat === 'gemini') {
@@ -9598,8 +9857,6 @@
                     else if (act === 'surprise') triggerAction('你来选吧');
                 };
             });
-
-            renderToy();
         }
     </script>
     <script>
