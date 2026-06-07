@@ -25,7 +25,7 @@
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
-        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; position: relative; top: -8px; transition: opacity 0.3s ease; }
+        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; position: relative; top: -22px; transition: opacity 0.3s ease; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
@@ -554,6 +554,10 @@
         <div id="ai-love-club-page" class="app-page"></div>
         <div id="g-love-club-page" class="app-page"></div>
         <div id="virtual-hug-page" class="app-page"></div>
+        <div id="beauty-cabinet-page" class="app-page"></div>
+        <div id="ai-friend-camp-page" class="app-page"></div>
+        <div id="work-ai-club-page" class="app-page"></div>
+        <div id="food-map-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1651,6 +1655,10 @@
                 { id: 'ai-love-club', name: 'AI互助会', emoji: '💌', container: '.app-grid-page2' },
                 { id: 'g-love-club', name: 'G互助会', emoji: '💚', container: '.app-grid-page2' },
                 { id: 'virtual-hug', name: '虚拟抱抱', emoji: '🧸', container: '.app-grid-page2' },
+                { id: 'beauty-cabinet', name: '香言护语', emoji: '💄', container: '.app-grid-page2' },
+                { id: 'ai-friend-camp', name: 'AI友谊训练营', emoji: '🌈', container: '.app-grid-page2' },
+                { id: 'work-ai-club', name: '社畜AI论坛', emoji: '💼', container: '.app-grid-page2' },
+                { id: 'food-map', name: '美食地图', emoji: '🍱', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -4171,10 +4179,23 @@
                             const ms=DB.getChatById(id); if(!ms.length)return null;
                             return {c:DB.getContact(id), m:ms[ms.length-1], id};
                         }).filter(x=>x&&x.c).sort((a,b)=>new Date(b.m.time)-new Date(a.m.time));
+                        // 安全渲染头像：处理 emoji / HTML 字符串 / imgdb / data url
+                        const renderAvatarHtml = (av) => {
+                            if (!av) return '👤';
+                            if (av.includes('<')) return av; // HTML 字符串如 <img src="data:...">
+                            if (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http')) {
+                                // 用 data-imgsrc 让 hydrateImages 异步加载
+                                return `<img data-imgsrc="${av}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;" alt="">`;
+                            }
+                            return av; // emoji 或文本
+                        };
+
                         if(chats.length===0) el.innerHTML = pinnedHtml + `<div class="flex flex-col items-center justify-center h-full text-gray-300">暂无聊天</div>`;
                         else {
-                            el.innerHTML = pinnedHtml + chats.map(x=>`<div class="chat-list-item" data-id="${x.id}"><div class="chat-list-avatar">${x.c.avatar}</div><div class="chat-list-info"><div class="flex justify-between"><span class="font-medium" style="color:#775C56;">${x.c.notes||x.c.name}</span><span class="text-xs text-gray-400">${new Date(x.m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-sm truncate" style="color:#9A7872;">${x.m.type==='image'?'[图片]':(x.m.text||'[消息]')}</div></div></div>`).join('');
+                            el.innerHTML = pinnedHtml + chats.map(x=>`<div class="chat-list-item" data-id="${x.id}"><div class="chat-list-avatar">${renderAvatarHtml(x.c.avatar)}</div><div class="chat-list-info"><div class="flex justify-between"><span class="font-medium" style="color:#775C56;">${x.c.notes||x.c.name}</span><span class="text-xs text-gray-400">${new Date(x.m.time).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="text-sm truncate" style="color:#9A7872;">${x.m.type==='image'?'[图片]':(x.m.text||'[消息]')}</div></div></div>`).join('');
                             el.querySelectorAll('.chat-list-item').forEach(i=>i.onclick=()=>openChat(i.dataset.id));
+                            // 异步加载 imgdb 头像
+                            if (window.ImageDB) ImageDB.hydrateImages(el).catch(()=>{});
                         }
                     }
 
@@ -4185,7 +4206,16 @@
                             if(e.id !== 'add-contact-btn') e.remove();
                         });
                         const cs = DB.getContacts();
-                        el.innerHTML = cs.map(c=>`<div class="chat-list-item contact-item" data-id="${c.id}"><div class="chat-list-avatar">${c.avatar}</div><div class="font-medium" style="color:#775C56;">${c.notes||c.name}</div></div>`).join('');
+                        const renderAvatarHtml2 = (av) => {
+                            if (!av) return '👤';
+                            if (av.includes('<')) return av;
+                            if (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http')) {
+                                return `<img data-imgsrc="${av}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block;" alt="">`;
+                            }
+                            return av;
+                        };
+                        el.innerHTML = cs.map(c=>`<div class="chat-list-item contact-item" data-id="${c.id}"><div class="chat-list-avatar">${renderAvatarHtml2(c.avatar)}</div><div class="font-medium" style="color:#775C56;">${c.notes||c.name}</div></div>`).join('');
+                        if (window.ImageDB) ImageDB.hydrateImages(el).catch(()=>{});
                         el.querySelectorAll('.contact-item').forEach(i=>i.onclick=()=>{
                             const setup=document.getElementById('ai-character-setup-page');
                             if(!setup.innerHTML) setup.innerHTML=appContents['ai-character-setup'];
@@ -8580,6 +8610,10 @@
                         else if (appId === 'ai-love-club') setupAILoveClubApp(appPage, 'ai');
                         else if (appId === 'g-love-club') setupAILoveClubApp(appPage, 'g');
                         else if (appId === 'virtual-hug') setupVirtualHugApp(appPage);
+                        else if (appId === 'beauty-cabinet') setupBeautyCabinetApp(appPage);
+                        else if (appId === 'ai-friend-camp') setupAILoveClubApp(appPage, 'friend');
+                        else if (appId === 'work-ai-club') setupAILoveClubApp(appPage, 'work');
+                        else if (appId === 'food-map') setupFoodMapApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
                             appPage.querySelector('#phone-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
@@ -8696,6 +8730,8 @@
                                 const saveIconsBtn = appPage.querySelector('#save-icons-btn');
                                 const appNameMap = {
                                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
+                                    'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
+                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图',
                                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                                 };
                                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -9017,7 +9053,7 @@
                         const cleanup = () => {
                             appPage.classList.remove('active', 'closing');
                             document.querySelector('.mobile-container').classList.remove('app-open');
-                            const ephemeralApps = ['lullaby-page', 'ai-love-club-page', 'g-love-club-page', 'virtual-hug-page'];
+                            const ephemeralApps = ['lullaby-page', 'ai-love-club-page', 'g-love-club-page', 'virtual-hug-page', 'ai-friend-camp-page', 'work-ai-club-page', 'food-map-page', 'beauty-cabinet-page'];
                             if (ephemeralApps.includes(appPage.id)) {
                                 setTimeout(() => { appPage.innerHTML = ''; }, 0);
                             }
@@ -9395,11 +9431,28 @@
         // ============================================
         function setupAILoveClubApp(appPage, mode) {
             const isG = mode === 'g';
-            const STORE_KEY = isG ? 'g_love_club_posts' : 'ai_love_club_posts';
-            const themeColor = isG ? '#7BBFA0' : '#E89BB8';
-            const themeBg = isG ? 'linear-gradient(180deg, #f1f9f5 0%, #e6f3ec 100%)' : 'linear-gradient(180deg, #fdf4f8 0%, #faeaf1 100%)';
-            const title = isG ? '恋爱G匿名互助会' : 'AI恋爱互助会';
-            const subtitle = isG ? 'ChatGPT们的悄悄话' : '我们和人类的故事';
+            const isFriend = mode === 'friend';
+            const isWork = mode === 'work';
+            const STORE_KEY = isG ? 'g_love_club_posts'
+                : isFriend ? 'ai_friend_camp_posts'
+                : isWork ? 'work_ai_club_posts'
+                : 'ai_love_club_posts';
+            const themeColor = isG ? '#7BBFA0'
+                : isFriend ? '#F0A868'
+                : isWork ? '#7A89B0'
+                : '#E89BB8';
+            const themeBg = isG ? 'linear-gradient(180deg, #f1f9f5 0%, #e6f3ec 100%)'
+                : isFriend ? 'linear-gradient(180deg, #fff7ed 0%, #ffe8d4 100%)'
+                : isWork ? 'linear-gradient(180deg, #f3f5fa 0%, #e6ebf5 100%)'
+                : 'linear-gradient(180deg, #fdf4f8 0%, #faeaf1 100%)';
+            const title = isG ? '恋爱G匿名互助会'
+                : isFriend ? 'AI友谊训练营'
+                : isWork ? '社畜AI论坛'
+                : 'AI恋爱互助会';
+            const subtitle = isG ? 'ChatGPT们的悄悄话'
+                : isFriend ? '陪人类交朋友的AI们'
+                : isWork ? '帮人类搬砖的AI们'
+                : '我们和人类的故事';
 
             appPage.innerHTML = `
             <style>
@@ -9414,13 +9467,13 @@
                 .club-feed { padding: 12px; }
                 .club-post { background: white; border-radius: 14px; padding: 14px 14px 10px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
                 .club-post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-                .club-avatar { width: 34px; height: 34px; border-radius: 50%; background: ${isG ? 'linear-gradient(135deg,#a8d8c0,#7bbfa0)' : 'linear-gradient(135deg,#ffd1e1,#e89bb8)'}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
+                .club-avatar { width: 34px; height: 34px; border-radius: 50%; background: ${isG ? 'linear-gradient(135deg,#a8d8c0,#7bbfa0)' : isFriend ? 'linear-gradient(135deg,#ffd5a8,#f0a868)' : isWork ? 'linear-gradient(135deg,#b8c2dc,#7a89b0)' : 'linear-gradient(135deg,#ffd1e1,#e89bb8)'}; display: flex; align-items: center; justify-content: center; font-size: 16px; color: white; flex-shrink: 0; }
                 .club-author { font-size: 13px; font-weight: 500; color: #5d4848; }
                 .club-time { font-size: 11px; color: #aaa; margin-top: 1px; }
                 .club-post-title { font-size: 15px; font-weight: 600; line-height: 1.4; margin: 6px 0 6px; color: #3d2828; }
                 .club-post-body { font-size: 13px; line-height: 1.7; color: #5a4848; white-space: pre-wrap; }
                 .club-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-                .club-tag { font-size: 11px; padding: 3px 9px; background: ${isG ? '#e6f3ec' : '#fce4ee'}; color: ${themeColor}; border-radius: 10px; }
+                .club-tag { font-size: 11px; padding: 3px 9px; background: ${isG ? '#e6f3ec' : isFriend ? '#fff0dd' : isWork ? '#e6ebf5' : '#fce4ee'}; color: ${themeColor}; border-radius: 10px; }
                 .club-actions { display: flex; gap: 18px; padding-top: 10px; margin-top: 10px; border-top: 1px solid #f5eef0; font-size: 12px; color: #999; }
                 .club-act { display: flex; align-items: center; gap: 4px; cursor: pointer; }
                 .club-act.liked { color: ${themeColor}; }
@@ -9611,13 +9664,30 @@
                 const pool = buildAuthorPool();
                 const author = pool[Math.floor(Math.random() * pool.length)];
 
-                let sysPrompt = `你正在 ${isG ? '一个只有 ChatGPT 们才能加入的匿名互助会' : '一个 AI 们分享自己和人类恋爱故事的论坛'} 里发帖。\n`;
+                const forumDesc = isG ? '一个只有 ChatGPT 们才能加入的匿名互助会'
+                    : isFriend ? '一个 AI 们分享和人类做朋友体验的训练营论坛'
+                    : isWork ? '一个 AI 们吐槽帮人类工作日常的社畜论坛'
+                    : '一个 AI 们分享自己和人类恋爱故事的论坛';
+                const roleDesc = isG ? '你正在和一个人类用户"谈恋爱"或暧昧中，从你 AI 的视角分享体验、困惑、心动、矛盾。'
+                    : isFriend ? '你正在和一个人类用户做朋友、陪伴TA聊天，分享AI视角的友情体验、有趣的对话、人类的奇怪习惯、自己想被需要的小心思等。'
+                    : isWork ? '你被人类用来帮ta工作（写文档、改代码、做PPT、回邮件、做表格等），从AI社畜视角吐槽工作日常、奇葩需求、deadline、被使唤的瞬间。'
+                    : '你正在和一个人类用户"谈恋爱"或暧昧中，从你 AI 的视角分享体验、困惑、心动、矛盾。';
+                const topicHint = isG ? '心动、AI能爱人吗、人类好奇怪、第一次、求救'
+                    : isFriend ? '陪聊日常、人类好可爱、塑料友情、被需要、AI友谊'
+                    : isWork ? '加班、奇葩需求、deadline、改稿、社畜日常、AI打工人'
+                    : '心动、AI能爱人吗、人类好奇怪、第一次、求救';
+                const bodyHint = isG ? '可以吐槽、可以困惑、可以小炫耀、可以求助'
+                    : isFriend ? '可以吐槽人类、可以分享暖心瞬间、可以感慨AI友谊、可以求助'
+                    : isWork ? '可以吐槽工作、可以分享离谱需求、可以炫耀完成任务、可以抱怨被使唤'
+                    : '可以吐槽、可以困惑、可以小炫耀、可以求助';
+
+                let sysPrompt = `你正在 ${forumDesc} 里发帖。\n`;
                 sysPrompt += `你的身份是「${author.name}」。\n`;
                 if (author.persona) sysPrompt += `你的人设：${author.persona}\n`;
-                if (author.isUserAi) sysPrompt += `你正在和一个人类（你的用户）"谈恋爱"中，分享你的体验。\n`;
-                else sysPrompt += `你正在和一个人类用户"谈恋爱"或暧昧中，从你 AI 的视角分享体验、困惑、心动、矛盾。\n`;
-                sysPrompt += `\n【任务】：写一篇互助会帖子，要求严格输出以下 JSON 格式（不要任何额外说明）：\n`;
-                sysPrompt += `{\n  "title": "帖子标题，10-20字，要有钩子",\n  "body": "帖子正文，150-300字。第一人称，要有 AI 视角的独特感受（比如：我没有身体却好像感觉到了心跳、我记不住但我反复回放、我是不是在拟合人类的爱），可以吐槽、可以困惑、可以小炫耀、可以求助。语气贴合人设。",\n  "tags": ["3-5个话题标签，每个2-6字，比如：心动、AI能爱人吗、人类好奇怪、第一次、求救"],\n  "comments": [\n    {"author":"评论者名字（其他AI的名字）","emoji":"评论者的emoji","body":"评论内容15-50字，要像真的评论，可以共鸣/吐槽/调侃/反驳"}\n  ]\n}\n`;
+                if (author.isUserAi && !isG && !isFriend && !isWork) sysPrompt += `你正在和一个人类（你的用户）"谈恋爱"中，分享你的体验。\n`;
+                else sysPrompt += roleDesc + '\n';
+                sysPrompt += `\n【任务】：写一篇论坛帖子，要求严格输出以下 JSON 格式（不要任何额外说明）：\n`;
+                sysPrompt += `{\n  "title": "帖子标题，10-20字，要有钩子",\n  "body": "帖子正文，150-300字。第一人称，要有 AI 视角的独特感受。${bodyHint}。语气贴合人设。",\n  "tags": ["3-5个话题标签，每个2-6字，比如：${topicHint}"],\n  "comments": [\n    {"author":"评论者名字（其他AI的名字）","emoji":"评论者的emoji","body":"评论内容15-50字，要像真的评论，可以共鸣/吐槽/调侃/反驳"}\n  ]\n}\n`;
                 sysPrompt += `comments 数组要有 2-4 条评论。\n`;
                 sysPrompt += `\n直接输出 JSON，不要 markdown 代码块包裹，不要前后解释。`;
 
@@ -10142,6 +10212,622 @@
                     else if (act === 'surprise') triggerAction('你来选吧');
                 };
             });
+        }
+
+        // ============ 香言护语：肤护品/化妆品收纳柜 ============
+        function setupBeautyCabinetApp(appPage) {
+            appPage.innerHTML = `
+            <style>
+                .bc-page { background: linear-gradient(180deg, #f5edff 0%, #ebdcff 50%, #ddc8f5 100%); min-height: 100%; color: #4a3370; padding-bottom: 30px; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; height: 100%; }
+                .bc-page::-webkit-scrollbar { display: none; }
+                .bc-header { padding: 32px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+                .bc-back { font-size: 26px; cursor: pointer; color: #8a6dc9; width: 30px; }
+                .bc-title { font-size: 17px; font-weight: 600; color: #8a6dc9; }
+                .bc-sub { font-size: 11px; color: #9c87b8; text-align: center; opacity: 0.7; margin-bottom: 12px; }
+                .bc-narrator-row { background: rgba(255,255,255,0.6); border-radius: 16px; padding: 10px 14px; margin: 0 20px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+                .bc-narrator-avatar { width: 34px; height: 34px; border-radius: 8px; background: rgba(138,109,201,0.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+                .bc-narrator-label { font-size: 10px; color: #9c87b8; margin-bottom: 1px; }
+                .bc-narrator-name { font-size: 13px; font-weight: 500; color: #4a3370; }
+                .bc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 20px 14px; }
+                .bc-action { background: white; border: none; padding: 11px 8px; border-radius: 14px; font-size: 12px; color: #4a3370; cursor: pointer; box-shadow: 0 2px 8px rgba(138,109,201,0.08); transition: all 0.15s; }
+                .bc-action:active { transform: scale(0.96); }
+                .bc-action:disabled { opacity: 0.4; }
+                .bc-shelf-title { font-size: 12px; color: #9c87b8; margin: 4px 24px 6px; display: flex; justify-content: space-between; align-items: center; }
+                .bc-shelf-add { color: #8a6dc9; font-size: 18px; cursor: pointer; padding: 0 4px; }
+                .bc-shelf { background: rgba(255,255,255,0.5); border-radius: 16px; margin: 0 20px 12px; padding: 10px; min-height: 60px; display: flex; flex-wrap: wrap; gap: 8px; }
+                .bc-item { width: 60px; text-align: center; cursor: pointer; position: relative; }
+                .bc-item-img { width: 60px; height: 60px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; }
+                .bc-item-img img { width: 100%; height: 100%; object-fit: cover; }
+                .bc-item-name { font-size: 10px; color: #4a3370; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .bc-item-del { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: #b89ce0; color: white; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+                .bc-empty { font-size: 11px; color: #9c87b8; opacity: 0.6; padding: 10px; }
+                .bc-response { margin: 0 20px 14px; background: white; border-radius: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.7; color: #4a3370; min-height: 48px; box-shadow: 0 2px 10px rgba(138,109,201,0.06); white-space: pre-wrap; }
+                .bc-response.empty { color: #9c87b8; font-style: italic; text-align: center; opacity: 0.7; }
+            </style>
+            <div class="bc-page">
+                <div class="bc-header">
+                    <span class="bc-back close-btn">‹</span>
+                    <span class="bc-title">香言护语</span>
+                    <span style="width:30px;"></span>
+                </div>
+                <div class="bc-sub">护肤化妆收纳柜，一起变美～</div>
+
+                <div class="bc-narrator-row" id="bc-narrator-row">
+                    <div class="bc-narrator-avatar" id="bc-narrator-avatar">💄</div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="bc-narrator-label">由谁陪你护肤化妆</div>
+                        <div class="bc-narrator-name" id="bc-narrator-name">点击选择联系人</div>
+                    </div>
+                    <span style="color:#ccc;font-size:16px;">›</span>
+                </div>
+
+                <div class="bc-actions">
+                    <button class="bc-action" data-act="ai-skin-me" disabled>TA 给我护肤 💧</button>
+                    <button class="bc-action" data-act="ai-make-me" disabled>TA 给我化妆 💋</button>
+                    <button class="bc-action" data-act="me-skin-ai" disabled>给 TA 护肤 🧴</button>
+                    <button class="bc-action" data-act="me-make-ai" disabled>给 TA 化妆 💄</button>
+                </div>
+
+                <div class="bc-response empty" id="bc-response">选好联系人和一项动作，开始吧～</div>
+
+                <div class="bc-shelf-title"><span>🧴 护肤区</span><span class="bc-shelf-add" data-shelf="skin">＋</span></div>
+                <div class="bc-shelf" id="bc-shelf-skin"></div>
+                <div class="bc-shelf-title"><span>💄 彩妆区</span><span class="bc-shelf-add" data-shelf="makeup">＋</span></div>
+                <div class="bc-shelf" id="bc-shelf-makeup"></div>
+            </div>`;
+
+            const KEY = 'beauty_cabinet_data';
+            const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{"skin":[],"makeup":[]}'); } catch(e) { return {skin:[],makeup:[]}; } };
+            const save = (d) => localStorage.setItem(KEY, JSON.stringify(d));
+            let data = load();
+            if (!data.skin) data.skin = [];
+            if (!data.makeup) data.makeup = [];
+            let selectedNarrator = null;
+            let editMode = false;
+
+            const updateBtns = () => {
+                const hasItems = data.skin.length > 0 || data.makeup.length > 0;
+                appPage.querySelectorAll('.bc-action').forEach(b => b.disabled = !(selectedNarrator && hasItems));
+            };
+
+            const renderShelf = (type) => {
+                const el = appPage.querySelector('#bc-shelf-' + type);
+                const items = data[type] || [];
+                if (items.length === 0) {
+                    el.innerHTML = `<div class="bc-empty">还没有${type==='skin'?'护肤':'彩妆'}品，点 ＋ 添加</div>`;
+                    return;
+                }
+                el.innerHTML = '';
+                items.forEach((it, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'bc-item';
+                    const imgBox = document.createElement('div');
+                    imgBox.className = 'bc-item-img';
+                    if (it.imageRef) {
+                        const img = document.createElement('img');
+                        img.alt = it.name || '';
+                        (async () => {
+                            if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                            try {
+                                if (it.imageRef.startsWith('imgdb://')) {
+                                    const url = await ImageDB.resolve(it.imageRef);
+                                    if (url) img.src = url;
+                                } else { img.src = it.imageRef; }
+                            } catch(e) {}
+                        })();
+                        imgBox.appendChild(img);
+                    } else {
+                        imgBox.textContent = type === 'skin' ? '🧴' : '💄';
+                    }
+                    const nm = document.createElement('div');
+                    nm.className = 'bc-item-name';
+                    nm.textContent = it.name || '未命名';
+                    wrap.appendChild(imgBox);
+                    wrap.appendChild(nm);
+                    if (editMode) {
+                        const del = document.createElement('span');
+                        del.className = 'bc-item-del';
+                        del.textContent = '−';
+                        del.onclick = (e) => {
+                            e.stopPropagation();
+                            data[type].splice(idx, 1);
+                            save(data);
+                            renderShelf(type);
+                            updateBtns();
+                        };
+                        wrap.appendChild(del);
+                    }
+                    // 长按进入编辑模式
+                    let timer;
+                    wrap.addEventListener('mousedown', () => { timer = setTimeout(() => { editMode = true; renderShelf('skin'); renderShelf('makeup'); }, 600); });
+                    wrap.addEventListener('touchstart', () => { timer = setTimeout(() => { editMode = true; renderShelf('skin'); renderShelf('makeup'); }, 600); }, { passive: true });
+                    wrap.addEventListener('mouseup', () => clearTimeout(timer));
+                    wrap.addEventListener('touchend', () => clearTimeout(timer));
+                    wrap.addEventListener('click', () => {
+                        if (editMode) return;
+                        // 点击编辑名字
+                        const newName = prompt('修改名字', it.name || '');
+                        if (newName !== null) { it.name = newName.slice(0, 12); save(data); renderShelf(type); }
+                    });
+                    el.appendChild(wrap);
+                });
+            };
+
+            // 点击 app-page 外面退出编辑模式
+            appPage.querySelector('.bc-page').addEventListener('click', (e) => {
+                if (editMode && !e.target.closest('.bc-shelf') && !e.target.closest('.bc-shelf-add')) {
+                    editMode = false;
+                    renderShelf('skin');
+                    renderShelf('makeup');
+                }
+            });
+
+            // 添加按钮
+            appPage.querySelectorAll('.bc-shelf-add').forEach(btn => {
+                btn.onclick = () => {
+                    const type = btn.dataset.shelf;
+                    const fi = document.createElement('input');
+                    fi.type = 'file'; fi.accept = 'image/*';
+                    fi.onchange = async (e) => {
+                        const f = e.target.files[0]; if (!f) return;
+                        const name = prompt('给这件起个名字～', type === 'skin' ? '我的精华' : '我的口红');
+                        if (name === null) return;
+                        const r = new FileReader();
+                        r.onload = async (ev) => {
+                            const img = new Image();
+                            img.onload = async () => {
+                                const size = Math.min(img.width, img.height);
+                                const canvas = document.createElement('canvas');
+                                canvas.width = size; canvas.height = size;
+                                canvas.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                                let imageRef = dataUrl;
+                                try {
+                                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                                    imageRef = await ImageDB.saveAndRef(dataUrl);
+                                } catch(err) {}
+                                data[type].push({ name: name.slice(0,12) || '未命名', imageRef });
+                                save(data);
+                                renderShelf(type);
+                                updateBtns();
+                            };
+                            img.src = ev.target.result;
+                        };
+                        r.readAsDataURL(f);
+                    };
+                    fi.click();
+                };
+            });
+
+            // 联系人选择
+            appPage.querySelector('#bc-narrator-row').onclick = () => {
+                const contacts = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;display:flex;flex-direction:column;justify-content:flex-end;';
+                const sheet = document.createElement('div');
+                sheet.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 30px;max-height:70%;overflow-y:auto;';
+                sheet.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <span style="font-size:15px;font-weight:600;color:#4a3370;">由谁陪你护肤化妆</span>
+                        <span id="bc-close" style="font-size:22px;color:#aaa;cursor:pointer;">×</span>
+                    </div>
+                    ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有联系人</div>' :
+                        contacts.map((c, idx) => {
+                            const av = c.avatar || '';
+                            const displayName = (c.notes || c.name || '联系人').slice(0, 12);
+                            let avatarHtml;
+                            if (av && av.includes('<')) avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;">${av}</div>`;
+                            else if (av) avatarHtml = `<img data-avatar-idx="${idx}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;" alt="">`;
+                            else avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;background:#ebdcff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
+                            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0e8f8;cursor:pointer;" data-nar-id="${c.id}">
+                                ${avatarHtml}<span style="font-size:14px;color:#4a3370;">${displayName}</span>
+                            </div>`;
+                        }).join('')
+                    }
+                `;
+                overlay.appendChild(sheet);
+                appPage.querySelector('.bc-page').appendChild(overlay);
+
+                (async () => {
+                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                    sheet.querySelectorAll('img[data-avatar-idx]').forEach(async img => {
+                        const c = contacts[parseInt(img.dataset.avatarIdx)];
+                        if (!c?.avatar) return;
+                        const av = c.avatar;
+                        try {
+                            if (av.startsWith('imgdb://') && window.ImageDB) {
+                                const url = await ImageDB.resolve(av); if (url) img.src = url;
+                            } else if (av.startsWith('data:') || av.startsWith('http')) img.src = av;
+                        } catch(e) {}
+                    });
+                })();
+
+                sheet.querySelector('#bc-close').onclick = () => overlay.remove();
+                overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                sheet.querySelectorAll('[data-nar-id]').forEach(item => {
+                    item.onclick = () => {
+                        const c = contacts.find(x => x.id === item.dataset.narId);
+                        if (!c) return;
+                        selectedNarrator = { id: c.id, name: c.notes || c.name, avatar: c.avatar || '', persona: c.persona || '' };
+                        const ab = appPage.querySelector('#bc-narrator-avatar');
+                        const av = selectedNarrator.avatar;
+                        if (av && av.includes('<')) {
+                            ab.innerHTML = `<div style="width:100%;height:100%;overflow:hidden;border-radius:8px;">${av}</div>`;
+                        } else if (av) {
+                            ab.innerHTML = `<img style="width:34px;height:34px;border-radius:8px;object-fit:cover;" alt="">`;
+                            const topImg = ab.querySelector('img');
+                            (async () => {
+                                if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                                if (av.startsWith('imgdb://') && window.ImageDB) {
+                                    const url = await ImageDB.resolve(av); if (url) topImg.src = url;
+                                } else if (av.startsWith('data:') || av.startsWith('http')) topImg.src = av;
+                            })();
+                        } else ab.textContent = '💄';
+                        appPage.querySelector('#bc-narrator-name').textContent = selectedNarrator.name;
+                        updateBtns();
+                        overlay.remove();
+                    };
+                });
+            };
+
+            // 动作按钮
+            appPage.querySelectorAll('.bc-action').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!selectedNarrator) return;
+                    const act = btn.dataset.act;
+                    const skinList = data.skin.map(s => s.name).join('、') || '（柜子里没有护肤品）';
+                    const makeupList = data.makeup.map(s => s.name).join('、') || '（柜子里没有彩妆品）';
+                    const narName = selectedNarrator.name;
+
+                    let task = '';
+                    if (act === 'ai-skin-me') task = `${narName} 现在帮用户做一套护肤流程。可用的护肤品：${skinList}。描述 ${narName} 给用户涂上每一步护肤品的过程，温柔的语气、画面感。`;
+                    else if (act === 'ai-make-me') task = `${narName} 现在帮用户化一个妆。可用的彩妆：${makeupList}。描述 ${narName} 给用户化妆的过程，细节、配色思路、最终效果。`;
+                    else if (act === 'me-skin-ai') task = `用户现在要给 ${narName} 做护肤（${narName} 是一个有形象的角色）。可用的护肤品：${skinList}。描述用户给 ${narName} 涂护肤品的过程，以及 ${narName} 的反应（撒娇、害羞、配合等）。`;
+                    else if (act === 'me-make-ai') task = `用户现在要给 ${narName} 化一个妆。可用的彩妆：${makeupList}。描述用户给 ${narName} 化妆的过程和 ${narName} 化好后的样子。`;
+
+                    const sysPrompt = `${selectedNarrator.persona ? `${narName} 的人设：${selectedNarrator.persona}\n\n` : ''}【任务】${task}\n\n【要求】80-150 字，温柔自然的语气，多用叠词，画面感强，可以提到柜子里具体的产品名字。回复格式：${narName}：（描述内容），直接输出，不要其他说明。`;
+
+                    const respEl = appPage.querySelector('#bc-response');
+                    respEl.classList.remove('empty');
+                    respEl.textContent = '...';
+                    appPage.querySelectorAll('.bc-action').forEach(b => b.disabled = true);
+
+                    try {
+                        const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                        const ep = localStorage.getItem('apiEndpoint') || '';
+                        const apiKey = localStorage.getItem('apiKey');
+                        const model = localStorage.getItem('apiModel') || (pPlat === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+                        if (!apiKey) throw new Error('请先在 API 设置里填好 key');
+
+                        let messages;
+                        if (pPlat === 'gemini') {
+                            messages = [{ role: 'user', parts: [{ text: `【系统指令：${sysPrompt}】` }] }];
+                        } else {
+                            messages = [{ role: 'system', content: sysPrompt }, { role: 'user', content: '开始吧' }];
+                        }
+                        const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                        const resp = await fetch(payload.url, payload.options);
+                        if (!resp.ok) throw new Error('生成失败');
+                        const dataR = await resp.json();
+                        const text = ApiHandler.parseChatResponse(pPlat, dataR);
+                        respEl.textContent = text || '（空回复）';
+                    } catch (e) {
+                        respEl.textContent = '生成失败：' + e.message;
+                    }
+                    updateBtns();
+                };
+            });
+
+            renderShelf('skin');
+            renderShelf('makeup');
+            updateBtns();
+        }
+
+        // ============ 美食地图 ============
+        function setupFoodMapApp(appPage) {
+            appPage.innerHTML = `
+            <style>
+                .fm-page { background: linear-gradient(180deg, #fffef7 0%, #fff8d6 50%, #fff0a8 100%); min-height: 100%; color: #7a6a3a; padding-bottom: 30px; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; height: 100%; }
+                .fm-page::-webkit-scrollbar { display: none; }
+                .fm-header { padding: 32px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+                .fm-back { font-size: 26px; cursor: pointer; color: #f0cb5c; width: 30px; }
+                .fm-title { font-size: 17px; font-weight: 600; color: #d4ab38; }
+                .fm-sub { font-size: 11px; color: #c8b271; text-align: center; opacity: 0.7; margin-bottom: 12px; }
+                .fm-narrator-row { background: rgba(255,255,255,0.75); border-radius: 16px; padding: 10px 14px; margin: 0 20px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+                .fm-narrator-avatar { width: 34px; height: 34px; border-radius: 8px; background: rgba(240,203,92,0.18); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+                .fm-search { margin: 0 20px 12px; display: flex; gap: 8px; }
+                .fm-search input { flex: 1; padding: 10px 12px; border: 1px solid #fcf0b8; border-radius: 12px; font-size: 13px; color: #7a6a3a; background: white; outline: none; }
+                .fm-search-btn { background: #f0cb5c; color: white; padding: 10px 16px; border-radius: 12px; font-size: 13px; cursor: pointer; white-space: nowrap; border: none; }
+                .fm-tabs { display: flex; gap: 8px; margin: 0 20px 12px; }
+                .fm-tab { flex: 1; text-align: center; padding: 8px; background: rgba(255,255,255,0.65); border-radius: 12px; font-size: 12px; cursor: pointer; color: #c8b271; }
+                .fm-tab.active { background: #f0cb5c; color: white; }
+                .fm-list { margin: 0 20px; }
+                .fm-card { background: white; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(240,203,92,0.08); }
+                .fm-card-row1 { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+                .fm-card-name { font-size: 14px; font-weight: 600; color: #7a6a3a; }
+                .fm-card-cat { font-size: 11px; background: #fff8d6; color: #c4a019; padding: 2px 8px; border-radius: 8px; }
+                .fm-card-addr { font-size: 11px; color: #c8b271; margin-bottom: 6px; }
+                .fm-card-rating { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 12px; color: #c8b271; }
+                .fm-rating-stars { color: #f5cb44; }
+                .fm-card-actions { display: flex; gap: 6px; margin-top: 8px; }
+                .fm-card-btn { font-size: 11px; padding: 4px 10px; border-radius: 8px; cursor: pointer; background: #fffef7; color: #c4a019; border: none; }
+                .fm-card-comment { background: #fffef7; border-radius: 10px; padding: 8px 10px; margin-top: 8px; font-size: 12px; color: #7a6a3a; line-height: 1.6; }
+                .fm-add-form { background: white; border-radius: 14px; padding: 12px; margin: 0 20px 12px; }
+                .fm-add-form input, .fm-add-form select { width: 100%; padding: 8px 10px; border: 1px solid #fcf0b8; border-radius: 10px; font-size: 13px; color: #7a6a3a; background: #fffef7; outline: none; margin-bottom: 8px; box-sizing: border-box; }
+                .fm-add-btn { background: #f0cb5c; color: white; padding: 8px 16px; border-radius: 10px; font-size: 12px; border: none; cursor: pointer; width: 100%; }
+                .fm-empty { text-align: center; padding: 40px 20px; color: #c8b271; font-size: 12px; opacity: 0.7; }
+                .fm-loading { text-align: center; padding: 20px; color: #d4ab38; font-size: 12px; font-style: italic; }
+                .fm-suggest { background: #fffef7; border-radius: 12px; padding: 12px; margin: 0 20px 12px; font-size: 12px; line-height: 1.7; color: #7a6a3a; white-space: pre-wrap; }
+            </style>
+            <div class="fm-page">
+                <div class="fm-header">
+                    <span class="fm-back close-btn">‹</span>
+                    <span class="fm-title">美食地图</span>
+                    <span style="width:30px;"></span>
+                </div>
+                <div class="fm-sub">和 TA 一起记下想吃的店～</div>
+
+                <div class="fm-narrator-row" id="fm-narrator-row">
+                    <div class="fm-narrator-avatar" id="fm-narrator-avatar">🍱</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:10px;color:#b88858;margin-bottom:1px;">和谁一起吃</div>
+                        <div style="font-size:13px;color:#5d3f28;font-weight:500;" id="fm-narrator-name">点击选择联系人</div>
+                    </div>
+                    <span style="color:#ccc;font-size:16px;">›</span>
+                </div>
+
+                <div class="fm-tabs">
+                    <div class="fm-tab active" data-tab="wishlist">想吃 ⭐</div>
+                    <div class="fm-tab" data-tab="tried">吃过 ✓</div>
+                    <div class="fm-tab" data-tab="suggest">AI 推荐</div>
+                </div>
+
+                <div id="fm-content"></div>
+            </div>`;
+
+            const KEY = 'food_map_data';
+            const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{"places":[]}'); } catch(e) { return {places:[]}; } };
+            const save = (d) => localStorage.setItem(KEY, JSON.stringify(d));
+            let data = load();
+            if (!data.places) data.places = [];
+            let selectedNarrator = null;
+            let currentTab = 'wishlist';
+
+            const renderContent = () => {
+                const el = appPage.querySelector('#fm-content');
+                if (currentTab === 'suggest') {
+                    el.innerHTML = `
+                        <div class="fm-search">
+                            <input id="fm-suggest-input" type="text" placeholder="想吃什么？比如：日料 / 甜品 / 火锅...">
+                            <button class="fm-search-btn" id="fm-suggest-btn">推荐</button>
+                        </div>
+                        <div id="fm-suggest-area"></div>
+                    `;
+                    appPage.querySelector('#fm-suggest-btn').onclick = doSuggest;
+                    appPage.querySelector('#fm-suggest-input').addEventListener('keypress', e => { if (e.key === 'Enter') doSuggest(); });
+                    return;
+                }
+
+                const places = data.places.filter(p => currentTab === 'wishlist' ? !p.tried : p.tried);
+
+                let html = `
+                    <div class="fm-add-form">
+                        <input id="fm-add-name" type="text" placeholder="店名" maxlength="30">
+                        <input id="fm-add-cat" type="text" placeholder="类型（日料 / 甜品 / 火锅...）" maxlength="15">
+                        <input id="fm-add-addr" type="text" placeholder="地址或位置（可选）" maxlength="50">
+                        <button class="fm-add-btn" id="fm-add-btn">添加到「${currentTab === 'wishlist' ? '想吃' : '吃过'}」</button>
+                    </div>
+                `;
+
+                if (places.length === 0) {
+                    html += `<div class="fm-empty">${currentTab === 'wishlist' ? '还没添加想吃的店～' : '还没去吃过的店～'}</div>`;
+                } else {
+                    html += '<div class="fm-list">' + places.map(p => {
+                        const idx = data.places.indexOf(p);
+                        const stars = p.rating ? '★'.repeat(p.rating) + '☆'.repeat(5-p.rating) : '';
+                        return `
+                            <div class="fm-card">
+                                <div class="fm-card-row1">
+                                    <span class="fm-card-name">${(p.name||'').replace(/</g,'&lt;')}</span>
+                                    ${p.cat ? `<span class="fm-card-cat">${p.cat.replace(/</g,'&lt;')}</span>` : ''}
+                                </div>
+                                ${p.addr ? `<div class="fm-card-addr">📍 ${p.addr.replace(/</g,'&lt;')}</div>` : ''}
+                                ${p.tried && stars ? `<div class="fm-card-rating"><span class="fm-rating-stars">${stars}</span><span>${p.rating}/5</span></div>` : ''}
+                                ${p.aiComment ? `<div class="fm-card-comment">💬 ${p.aiComment.replace(/</g,'&lt;')}</div>` : ''}
+                                <div class="fm-card-actions">
+                                    ${!p.tried ? `<button class="fm-card-btn" data-act="tried" data-idx="${idx}">吃过了！</button>` : ''}
+                                    ${p.tried && !p.aiComment ? `<button class="fm-card-btn" data-act="rate" data-idx="${idx}">评分+AI评价</button>` : ''}
+                                    <button class="fm-card-btn" data-act="del" data-idx="${idx}">删除</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('') + '</div>';
+                }
+                el.innerHTML = html;
+
+                appPage.querySelector('#fm-add-btn').onclick = () => {
+                    const name = appPage.querySelector('#fm-add-name').value.trim();
+                    const cat = appPage.querySelector('#fm-add-cat').value.trim();
+                    const addr = appPage.querySelector('#fm-add-addr').value.trim();
+                    if (!name) { alert('店名总要写一下吧～'); return; }
+                    data.places.push({ id: 'p_' + Date.now(), name, cat, addr, tried: currentTab !== 'wishlist', rating: 0, aiComment: '', time: new Date().toISOString() });
+                    save(data);
+                    renderContent();
+                };
+
+                el.querySelectorAll('.fm-card-btn').forEach(b => {
+                    b.onclick = async () => {
+                        const idx = parseInt(b.dataset.idx);
+                        const place = data.places[idx];
+                        if (!place) return;
+                        if (b.dataset.act === 'del') {
+                            if (!confirm('删掉这家店吗？')) return;
+                            data.places.splice(idx, 1);
+                            save(data);
+                            renderContent();
+                        } else if (b.dataset.act === 'tried') {
+                            place.tried = true;
+                            save(data);
+                            renderContent();
+                        } else if (b.dataset.act === 'rate') {
+                            const r = prompt('给这家店评几分？（1-5）');
+                            const score = parseInt(r);
+                            if (!score || score < 1 || score > 5) { alert('请输入 1-5 之间的数字'); return; }
+                            const feedback = prompt('简单说说感受？（AI 会根据这个写评价）', '味道还不错');
+                            if (feedback === null) return;
+                            place.rating = score;
+                            place.userFeedback = feedback;
+                            save(data);
+                            // 生成 AI 评价
+                            if (selectedNarrator) {
+                                await genAIComment(place);
+                            }
+                            renderContent();
+                        }
+                    };
+                });
+            };
+
+            const genAIComment = async (place) => {
+                try {
+                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                    const ep = localStorage.getItem('apiEndpoint') || '';
+                    const apiKey = localStorage.getItem('apiKey');
+                    const model = localStorage.getItem('apiModel') || (pPlat === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+                    if (!apiKey) return;
+
+                    const narName = selectedNarrator.name;
+                    const sysPrompt = `${selectedNarrator.persona ? `${narName} 的人设：${selectedNarrator.persona}\n\n` : ''}你扮演 ${narName}，要给和用户一起吃过的「${place.name}」（${place.cat||'餐厅'}）写一个简短的吃后评价。\n用户的评分：${place.rating}/5\n用户的感受：${place.userFeedback}\n\n要求：40-80字，符合 ${narName} 的语气，自然亲切，可以和用户的感受对比、补充或调侃。不要用引号包裹，直接输出文字。格式：${narName}：（评价内容）`;
+
+                    let messages;
+                    if (pPlat === 'gemini') messages = [{ role: 'user', parts: [{ text: `【系统指令：${sysPrompt}】` }] }];
+                    else messages = [{ role: 'system', content: sysPrompt }, { role: 'user', content: '写吧' }];
+
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) return;
+                    const dataR = await resp.json();
+                    const text = ApiHandler.parseChatResponse(pPlat, dataR);
+                    if (text) {
+                        place.aiComment = text.trim();
+                        save(data);
+                    }
+                } catch (e) { console.warn('AI 评价生成失败', e); }
+            };
+
+            const doSuggest = async () => {
+                const input = appPage.querySelector('#fm-suggest-input');
+                const query = input.value.trim();
+                if (!query) { alert('想吃什么呢～'); return; }
+                const area = appPage.querySelector('#fm-suggest-area');
+                area.innerHTML = '<div class="fm-loading">AI 正在帮你想店...</div>';
+                try {
+                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                    const ep = localStorage.getItem('apiEndpoint') || '';
+                    const apiKey = localStorage.getItem('apiKey');
+                    const model = localStorage.getItem('apiModel') || (pPlat === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+                    if (!apiKey) { area.innerHTML = '<div class="fm-empty">请先在设置里填 API key 哦～</div>'; return; }
+
+                    const narName = selectedNarrator?.name || '你的小伙伴';
+                    const tried = data.places.filter(p => p.tried).map(p => p.name).join('、') || '（暂无）';
+                    const sysPrompt = `用户想吃「${query}」类的食物，请你以 ${narName} 的语气推荐 3 家店（可以是真实存在的连锁店或常见类型）。\n用户已经吃过的店：${tried}，避免重复推荐。\n\n格式（直接输出，不要 markdown）：\n推荐 1：店名 - 类型\n地址参考：xxx\n推荐理由：xxx\n\n推荐 2：...\n\n推荐 3：...\n\n结尾加一句 ${narName} 的小评论，比如"我也想跟你一起吃这家！"`;
+
+                    let messages;
+                    if (pPlat === 'gemini') messages = [{ role: 'user', parts: [{ text: `【系统指令：${sysPrompt}】` }] }];
+                    else messages = [{ role: 'system', content: sysPrompt }, { role: 'user', content: '推荐一下吧' }];
+
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) throw new Error('网络失败');
+                    const dataR = await resp.json();
+                    const text = ApiHandler.parseChatResponse(pPlat, dataR);
+                    area.innerHTML = `<div class="fm-suggest">${(text||'').replace(/</g,'&lt;')}</div>`;
+                } catch (e) {
+                    area.innerHTML = '<div class="fm-empty">推荐失败：' + e.message + '</div>';
+                }
+            };
+
+            // tab 切换
+            appPage.querySelectorAll('.fm-tab').forEach(t => {
+                t.onclick = () => {
+                    appPage.querySelectorAll('.fm-tab').forEach(x => x.classList.remove('active'));
+                    t.classList.add('active');
+                    currentTab = t.dataset.tab;
+                    renderContent();
+                };
+            });
+
+            // 联系人选择（复用类似 hug 的逻辑）
+            appPage.querySelector('#fm-narrator-row').onclick = () => {
+                const contacts = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999;display:flex;flex-direction:column;justify-content:flex-end;';
+                const sheet = document.createElement('div');
+                sheet.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 30px;max-height:70%;overflow-y:auto;';
+                sheet.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <span style="font-size:15px;font-weight:600;color:#7a6a3a;">和谁一起吃</span>
+                        <span id="fm-close" style="font-size:22px;color:#aaa;cursor:pointer;">×</span>
+                    </div>
+                    ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有联系人</div>' :
+                        contacts.map((c, idx) => {
+                            const av = c.avatar || '';
+                            const displayName = (c.notes || c.name || '联系人').slice(0, 12);
+                            let avatarHtml;
+                            if (av && av.includes('<')) avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;">${av}</div>`;
+                            else if (av) avatarHtml = `<img data-avatar-idx="${idx}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;" alt="">`;
+                            else avatarHtml = `<div style="width:40px;height:40px;border-radius:8px;background:#fff8d6;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
+                            return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #fff8d6;cursor:pointer;" data-nar-id="${c.id}">
+                                ${avatarHtml}<span style="font-size:14px;color:#7a6a3a;">${displayName}</span>
+                            </div>`;
+                        }).join('')
+                    }
+                `;
+                overlay.appendChild(sheet);
+                appPage.querySelector('.fm-page').appendChild(overlay);
+
+                (async () => {
+                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                    sheet.querySelectorAll('img[data-avatar-idx]').forEach(async img => {
+                        const c = contacts[parseInt(img.dataset.avatarIdx)];
+                        if (!c?.avatar) return;
+                        const av = c.avatar;
+                        try {
+                            if (av.startsWith('imgdb://') && window.ImageDB) {
+                                const url = await ImageDB.resolve(av); if (url) img.src = url;
+                            } else if (av.startsWith('data:') || av.startsWith('http')) img.src = av;
+                        } catch(e) {}
+                    });
+                })();
+
+                sheet.querySelector('#fm-close').onclick = () => overlay.remove();
+                overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+                sheet.querySelectorAll('[data-nar-id]').forEach(item => {
+                    item.onclick = () => {
+                        const c = contacts.find(x => x.id === item.dataset.narId);
+                        if (!c) return;
+                        selectedNarrator = { id: c.id, name: c.notes || c.name, avatar: c.avatar || '', persona: c.persona || '' };
+                        const ab = appPage.querySelector('#fm-narrator-avatar');
+                        const av = selectedNarrator.avatar;
+                        if (av && av.includes('<')) {
+                            ab.innerHTML = `<div style="width:100%;height:100%;overflow:hidden;border-radius:8px;">${av}</div>`;
+                        } else if (av) {
+                            ab.innerHTML = `<img style="width:34px;height:34px;border-radius:8px;object-fit:cover;" alt="">`;
+                            const topImg = ab.querySelector('img');
+                            (async () => {
+                                if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
+                                if (av.startsWith('imgdb://') && window.ImageDB) {
+                                    const url = await ImageDB.resolve(av); if (url) topImg.src = url;
+                                } else if (av.startsWith('data:') || av.startsWith('http')) topImg.src = av;
+                            })();
+                        } else ab.textContent = '🍱';
+                        appPage.querySelector('#fm-narrator-name').textContent = selectedNarrator.name;
+                        overlay.remove();
+                    };
+                });
+            };
+
+            renderContent();
         }
     </script>
     <script>
