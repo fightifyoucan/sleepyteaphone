@@ -21,11 +21,11 @@
         html { background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); height: 100%; min-height: -webkit-fill-available; }
         html { background: #ffeaf0; } /* 底部safe area填充色 */
         body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; background-color: #ffeaf0;}
-        .mobile-container { width: 330px; height: 620px; background-color: #FBF9F4; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
+        .mobile-container { width: 330px; height: 620px; background-color: #000000; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
-        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; transition: opacity 0.3s ease; }
+        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; position: relative; top: -8px; transition: opacity 0.3s ease; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
@@ -1992,6 +1992,20 @@
                                         <div style="font-size:10px;color:#9A7872;margin-top:1px;">让我也心疼你</div>
                                     </div>
                                 </div>
+                                <div class="hs-tab" data-tab="mood" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">📓</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">心情记录</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">写下 TA 会回信</div>
+                                    </div>
+                                </div>
+                                <div class="hs-tab" data-tab="wishlist" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">⭐</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">愿望清单</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">一起兑现的小事</div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- 数据小角 -->
@@ -2781,7 +2795,8 @@
                     }, true);
                     
                     let lastRenderedCount = 0;
-                    const render = () => {
+                    let renderScheduled = false;
+                    const _renderImpl = () => {
                         // Anchor to first visible message
                         let anchorIdx = null;
                         const boxRect = box.getBoundingClientRect();
@@ -3042,10 +3057,41 @@
                             }).join('');
                         }).join('');
 
-                        // 只在内容真的变了时才重写 innerHTML，避免不必要的 DOM 重建导致闪烁
+                        // 只在内容真的变了时才更新 DOM
                         if (box._lastHTML !== newHTML) {
-                            box.innerHTML = newHTML;
+                            const wasAtBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
+
+                            // 把新 HTML 解析成 DOM 节点，然后做增量 diff，避免整体重建闪烁
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = newHTML;
+                            const newChildren = Array.from(tempDiv.children);
+                            const oldChildren = Array.from(box.children);
+
+                            // 简单 diff：从头开始比较 outerHTML，相同就跳过，不同就替换/插入
+                            let i = 0;
+                            // 跳过头部不变的节点
+                            while (i < oldChildren.length && i < newChildren.length &&
+                                   oldChildren[i].outerHTML === newChildren[i].outerHTML) {
+                                i++;
+                            }
+                            // 删掉旧的尾部多余节点（如果新的更短，比如撤回了消息）
+                            while (oldChildren.length > i && oldChildren.length > newChildren.length) {
+                                oldChildren.pop().remove();
+                                oldChildren.length;
+                            }
+                            // 从分歧点开始：替换旧的、append 新的
+                            for (let j = i; j < newChildren.length; j++) {
+                                if (oldChildren[j]) {
+                                    // 内容不同才替换
+                                    if (oldChildren[j].outerHTML !== newChildren[j].outerHTML) {
+                                        oldChildren[j].replaceWith(newChildren[j]);
+                                    }
+                                } else {
+                                    box.appendChild(newChildren[j]);
+                                }
+                            }
                             box._lastHTML = newHTML;
+                            if (wasAtBottom) box.scrollTop = box.scrollHeight;
                         }
 
                         // 异步加载 IndexedDB 中的图片（imgdb:// 前缀）
@@ -3465,6 +3511,15 @@
                             }
                         });
                     };
+                    // 用 rAF 节流：连续多次调用 render() 在同一帧只执行一次，避免手机上闪烁
+                    const render = () => {
+                        if (renderScheduled) return;
+                        renderScheduled = true;
+                        requestAnimationFrame(() => {
+                            renderScheduled = false;
+                            _renderImpl();
+                        });
+                    };
                     render();
 
                     const send = (msg) => { 
@@ -3801,6 +3856,7 @@
                                         systemPrompt += "  4. 你需要记得自己之前的心声，保持角色心理的连贯性。如果之前心声里说过『其实我很在意他』，那后续行为应该和这个心理一致。\n";
                                     }
                                     
+                                    systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
                                     systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
 
                                     const getMsgText = (msg) => {
@@ -3815,7 +3871,7 @@
                                     // 过滤掉已撤回的消息，AI不应看到它们
                                     const visibleHistory = history.filter(m => !m.revoked);
                                     if (pPlat === 'gemini') {
-                                        messages = visibleHistory.slice(-15).map(msg => ({
+                                        messages = visibleHistory.slice(-30).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'model',
                                             parts: [{ text: getMsgText(msg) }]
                                         }));
@@ -3827,7 +3883,7 @@
                                             messages[lastUserIdx].parts[0].text = `【系统指令：${systemPrompt}】\n\n${messages[lastUserIdx].parts[0].text}`;
                                         }
                                     } else {
-                                        messages = visibleHistory.slice(-15).map(msg => ({
+                                        messages = visibleHistory.slice(-30).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'assistant',
                                             content: getMsgText(msg)
                                         }));
@@ -6653,6 +6709,8 @@
                         else if (t === 'quiz') hsOpenQuiz(appPage, c, userNick);
                         else if (t === 'habit') hsOpenHabits(appPage, c, userNick);
                         else if (t === 'period') hsOpenPeriod(appPage, c, userNick);
+                        else if (t === 'mood') hsOpenMood(appPage, c, userNick);
+                        else if (t === 'wishlist') hsOpenWishlist(appPage, c, userNick);
                     };
                 });
             }
@@ -7927,7 +7985,208 @@
                 };
                 render();
             }
-            
+
+            // ====== 心情记录本 ======
+            function hsOpenMood(appPage, c, userNick) {
+                const layer = hsOpenLayer(appPage, '心情记录本', '');
+                const body = layer.querySelector('.hs-layer-body');
+
+                const renderList = () => {
+                    const entries = hsGet(c.id, 'moodEntries', []);
+                    body.innerHTML = `
+                        <div style="text-align:center;margin-bottom:14px;">
+                            <div style="font-size:12px;color:#9A7872;">写下来 TA 会回信哦～</div>
+                        </div>
+                        <div id="hs-mood-input-area" style="background:rgba(255,255,255,0.7);border-radius:14px;padding:12px;margin-bottom:14px;">
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="hs-mood-tags">
+                                ${['😊 开心','😢 难过','😣 烦躁','😴 累','🥺 想 TA','😡 生气','😌 平静','💭 想说点什么'].map(m =>
+                                    `<span class="hs-mood-tag" data-mood="${m}" style="font-size:12px;padding:4px 10px;background:#FBF9F4;border-radius:10px;cursor:pointer;color:#775C56;">${m}</span>`
+                                ).join('')}
+                            </div>
+                            <textarea id="hs-mood-text" placeholder="写下此刻的心情..." style="width:100%;min-height:60px;padding:10px;border:1px solid #f0e0dc;border-radius:10px;font-size:13px;color:#775C56;background:#FFFCFA;box-sizing:border-box;outline:none;resize:none;font-family:inherit;"></textarea>
+                            <div style="text-align:right;margin-top:8px;">
+                                <span id="hs-mood-submit" style="background:#FFD3D4;color:#775C56;padding:6px 22px;border-radius:12px;font-size:13px;cursor:pointer;display:inline-block;">记下来 💌</span>
+                            </div>
+                        </div>
+                        <div id="hs-mood-list"></div>
+                    `;
+
+                    let selectedMood = '';
+                    body.querySelectorAll('.hs-mood-tag').forEach(t => {
+                        t.onclick = () => {
+                            body.querySelectorAll('.hs-mood-tag').forEach(x => x.style.background = '#FBF9F4');
+                            t.style.background = '#FFD3D4';
+                            selectedMood = t.dataset.mood;
+                        };
+                    });
+
+                    body.querySelector('#hs-mood-submit').onclick = async () => {
+                        const text = body.querySelector('#hs-mood-text').value.trim();
+                        if (!text && !selectedMood) { alert('写点什么吧～'); return; }
+                        const entry = {
+                            id: 'm_' + Date.now(),
+                            mood: selectedMood,
+                            text,
+                            time: new Date().toISOString(),
+                            reply: null,
+                            replying: true
+                        };
+                        const list = hsGet(c.id, 'moodEntries', []);
+                        list.unshift(entry);
+                        hsSet(c.id, 'moodEntries', list);
+                        renderList();
+                        // 异步生成 TA 的回信
+                        try {
+                            const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 在"心情记录本"里写下了 TA 现在的心情。请你以 ${c.name} 的口吻写一段简短温柔的回信（30-60字），自然亲切，符合你的人设和你们的关系。不要加引号、不要加额外说明，直接输出一段话。`;
+                            const userMsg = `${userNick} 选了的心情标签：${selectedMood || '无'}\n${userNick} 写的：${text || '（没写内容）'}`;
+                            const reply = await hsCallAI(sysPrompt, userMsg);
+                            const list2 = hsGet(c.id, 'moodEntries', []);
+                            const target = list2.find(x => x.id === entry.id);
+                            if (target) { target.reply = reply; target.replying = false; hsSet(c.id, 'moodEntries', list2); renderList(); }
+                        } catch(e) {
+                            const list2 = hsGet(c.id, 'moodEntries', []);
+                            const target = list2.find(x => x.id === entry.id);
+                            if (target) { target.reply = '（TA 暂时收不到呢，等一下再试试看）'; target.replying = false; hsSet(c.id, 'moodEntries', list2); renderList(); }
+                        }
+                    };
+
+                    const listEl = body.querySelector('#hs-mood-list');
+                    if (entries.length === 0) {
+                        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#B89B95;font-size:12px;opacity:0.7;">还没写过心情～</div>';
+                    } else {
+                        listEl.innerHTML = entries.map(e => {
+                            const d = new Date(e.time);
+                            const timeStr = `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                            let replyBlock = '';
+                            if (e.replying) {
+                                replyBlock = `<div style="margin-top:8px;padding:8px 10px;background:rgba(213,235,228,0.5);border-radius:10px;font-size:12px;color:#9A7872;font-style:italic;">${c.name} 正在写回信...</div>`;
+                            } else if (e.reply) {
+                                replyBlock = `<div style="margin-top:8px;padding:10px 12px;background:#D5EBE4;border-radius:10px;font-size:12px;color:#5D6D6A;line-height:1.6;">💌 ${c.name}：${e.reply}</div>`;
+                            }
+                            const moodLabel = e.mood ? `<span style="font-size:12px;background:#FFE4E6;padding:2px 8px;border-radius:8px;color:#775C56;margin-right:6px;">${e.mood}</span>` : '';
+                            return `<div style="background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;margin-bottom:10px;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                                    <div>${moodLabel}<span style="font-size:10px;color:#B89B95;">${timeStr}</span></div>
+                                    <span data-del="${e.id}" style="font-size:11px;color:#C8A8A8;cursor:pointer;">🗑</span>
+                                </div>
+                                ${e.text ? `<div style="font-size:13px;color:#775C56;line-height:1.6;">${e.text.replace(/</g,'&lt;')}</div>` : ''}
+                                ${replyBlock}
+                            </div>`;
+                        }).join('');
+                        listEl.querySelectorAll('[data-del]').forEach(el => {
+                            el.onclick = () => {
+                                if (!confirm('要删掉这条吗？')) return;
+                                const list = hsGet(c.id, 'moodEntries', []).filter(x => x.id !== el.dataset.del);
+                                hsSet(c.id, 'moodEntries', list);
+                                renderList();
+                            };
+                        });
+                    }
+                };
+                renderList();
+            }
+
+            // ====== 共同愿望清单 ======
+            function hsOpenWishlist(appPage, c, userNick) {
+                const layer = hsOpenLayer(appPage, '共同愿望清单', '');
+                const body = layer.querySelector('.hs-layer-body');
+
+                const renderList = () => {
+                    const wishes = hsGet(c.id, 'wishlist', []);
+                    body.innerHTML = `
+                        <div style="text-align:center;margin-bottom:14px;">
+                            <div style="font-size:12px;color:#9A7872;">想一起做的小事，做完一起打勾～</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.7);border-radius:14px;padding:12px;margin-bottom:14px;display:flex;gap:8px;">
+                            <input id="hs-wish-input" type="text" placeholder="想和 TA 一起做的事..." style="flex:1;padding:8px 10px;border:1px solid #f0e0dc;border-radius:10px;font-size:13px;color:#775C56;background:#FFFCFA;outline:none;" maxlength="40">
+                            <span id="hs-wish-add" style="background:#FFD3D4;color:#775C56;padding:8px 16px;border-radius:10px;font-size:13px;cursor:pointer;white-space:nowrap;">添加</span>
+                        </div>
+                        <div id="hs-wish-list"></div>
+                    `;
+
+                    const addWish = () => {
+                        const input = body.querySelector('#hs-wish-input');
+                        const text = input.value.trim();
+                        if (!text) return;
+                        const list = hsGet(c.id, 'wishlist', []);
+                        list.unshift({
+                            id: 'w_' + Date.now(),
+                            text,
+                            done: false,
+                            doneTime: null,
+                            createdBy: 'me',
+                            time: new Date().toISOString()
+                        });
+                        hsSet(c.id, 'wishlist', list);
+                        input.value = '';
+                        renderList();
+                    };
+                    body.querySelector('#hs-wish-add').onclick = addWish;
+                    body.querySelector('#hs-wish-input').addEventListener('keypress', e => { if (e.key === 'Enter') addWish(); });
+
+                    const listEl = body.querySelector('#hs-wish-list');
+                    if (wishes.length === 0) {
+                        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#B89B95;font-size:12px;opacity:0.7;">还没有共同愿望～<br>添加一个想和 TA 一起做的事吧</div>';
+                        return;
+                    }
+                    const pending = wishes.filter(w => !w.done);
+                    const done = wishes.filter(w => w.done);
+                    let html = '';
+                    if (pending.length > 0) {
+                        html += '<div style="font-size:11px;color:#9A7872;margin-bottom:8px;letter-spacing:1px;">想做的事</div>';
+                        html += pending.map(w => `
+                            <div style="background:rgba(255,255,255,0.85);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                                <span class="hs-wish-check" data-id="${w.id}" style="width:22px;height:22px;border:1.5px solid #E89B6C;border-radius:50%;cursor:pointer;flex-shrink:0;"></span>
+                                <span style="flex:1;font-size:13px;color:#775C56;">${w.text.replace(/</g,'&lt;')}</span>
+                                <span data-del="${w.id}" style="font-size:11px;color:#C8A8A8;cursor:pointer;">×</span>
+                            </div>
+                        `).join('');
+                    }
+                    if (done.length > 0) {
+                        html += '<div style="font-size:11px;color:#9A7872;margin-top:16px;margin-bottom:8px;letter-spacing:1px;">我们兑现了 ✨</div>';
+                        html += done.map(w => {
+                            const d = w.doneTime ? new Date(w.doneTime) : null;
+                            const timeStr = d ? `${d.getMonth()+1}月${d.getDate()}日 兑现` : '';
+                            return `
+                                <div style="background:rgba(213,235,228,0.5);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                                    <span class="hs-wish-uncheck" data-id="${w.id}" style="width:22px;height:22px;background:#7BB098;color:white;border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;">✓</span>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;color:#9A7872;text-decoration:line-through;">${w.text.replace(/</g,'&lt;')}</div>
+                                        <div style="font-size:10px;color:#7BB098;margin-top:2px;">${timeStr}</div>
+                                    </div>
+                                    <span data-del="${w.id}" style="font-size:11px;color:#C8A8A8;cursor:pointer;">×</span>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                    listEl.innerHTML = html;
+
+                    listEl.querySelectorAll('.hs-wish-check').forEach(el => {
+                        el.onclick = () => {
+                            const list = hsGet(c.id, 'wishlist', []);
+                            const w = list.find(x => x.id === el.dataset.id);
+                            if (w) { w.done = true; w.doneTime = new Date().toISOString(); hsSet(c.id, 'wishlist', list); renderList(); }
+                        };
+                    });
+                    listEl.querySelectorAll('.hs-wish-uncheck').forEach(el => {
+                        el.onclick = () => {
+                            const list = hsGet(c.id, 'wishlist', []);
+                            const w = list.find(x => x.id === el.dataset.id);
+                            if (w) { w.done = false; w.doneTime = null; hsSet(c.id, 'wishlist', list); renderList(); }
+                        };
+                    });
+                    listEl.querySelectorAll('[data-del]').forEach(el => {
+                        el.onclick = () => {
+                            if (!confirm('要删掉这条吗？')) return;
+                            const list = hsGet(c.id, 'wishlist', []).filter(x => x.id !== el.dataset.del);
+                            hsSet(c.id, 'wishlist', list);
+                            renderList();
+                        };
+                    });
+                };
+                renderList();
+            }
+
             function hsOpenSymptom(appPage, c, userNick, onDone) {
                 const period = hsGet(c.id, 'periodData', null);
                 const cur = (period && period.history && period.history[0]) || null;
