@@ -25,7 +25,7 @@
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
-        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; position: relative; top: -22px; transition: opacity 0.3s ease; }
+        .time-and-date { text-align: center; color: white; z-index: 10; margin-bottom: 20px; margin-top: -35px; position: relative; top: -8px; transition: opacity 0.3s ease; }
         .time { font-size: 70px; font-weight: 600; }
         .date { font-size: 20px; font-weight: 400; }
         .home-indicator { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; background-color: transparent; border-radius: 2.5px; cursor: pointer; z-index: 1; }
@@ -341,7 +341,7 @@
 
         /* --- 202 朋友圈样式 --- */
         .moments-header { position: relative; width: 100%; padding-bottom: 85%; height: 0; margin-bottom: 40px; }
-        .moments-cover { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center; cursor: pointer; background-color: #ccc; }
+        .moments-cover { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover !important; background-position: center center !important; background-repeat: no-repeat !important; cursor: pointer; background-color: #ccc; }
         .moments-user { position: absolute; bottom: -35px; right: 16px; display: flex; align-items: flex-end; gap: 10px; z-index: 5; }
         .moments-avatar { width: 70px; height: 70px; border-radius: 14px; border: 2px solid white; background-size: cover; background-position: center; box-shadow: 0 2px 5px rgba(0,0,0,0.15); cursor: pointer; background-color: #fff; overflow: hidden; }
         .moments-nick { color: white; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.5); font-size: 20px; cursor: pointer; margin-right: 10px; margin-bottom: 45px; }
@@ -1426,12 +1426,15 @@
 
         // 联系人朋友圈个人主页
         function showContactMoments(c) {
+            // 移除可能残留的旧朋友圈 overlay
+            document.querySelectorAll('.contact-moments-overlay').forEach(o => o.remove());
             const aiName = c.notes || c.name;
             const allMoments = JSON.parse(localStorage.getItem('moments_list') || '[]');
             const myMoments = allMoments.filter(m => m.name === aiName);
             // 个人封面：优先用 contact.momentsCover，否则用默认毛毛球
             const cover = c.momentsCover || (typeof DEFAULT_MOMENTS_COVER !== 'undefined' ? DEFAULT_MOMENTS_COVER : '');
             const ov = document.createElement('div');
+            ov.className = 'contact-moments-overlay';
             ov.style.cssText = 'position:absolute;inset:0;background:#FBF9F4;z-index:600;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;';
             const avatarHtml = c.avatar
                 ? (c.avatar.includes('<') ? c.avatar : `<img src="${c.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">`)
@@ -1477,10 +1480,12 @@
 
             ov.innerHTML = `
                 <div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;position:relative;">
-                    <div style="position:relative;width:100%;padding-bottom:85%;height:0;flex-shrink:0;${cover ? `background:url(${cover}) center/cover no-repeat;` : 'background:#ccc;'}cursor:pointer;" id="cm-cover">
-                        <span id="cm-back" style="position:absolute;top:22px;left:14px;font-size:32px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.6);z-index:5;padding:4px 10px;">‹</span>
-                        <div style="position:absolute;bottom:8px;right:100px;color:#fff;font-size:20px;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);">${aiName}</div>
+                    <span id="cm-back" style="position:absolute;top:22px;left:14px;font-size:32px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.6);z-index:100;padding:4px 10px;">‹</span>
+                    <div id="cm-cover-area" style="position:relative;width:100%;padding-bottom:85%;height:0;flex-shrink:0;display:block;${cover ? `background:url(${cover}) center/cover no-repeat;` : 'background:#ccc;'}cursor:pointer;">
+                        <span style="position:absolute;top:24px;right:14px;font-size:12px;color:#fff;background:rgba(0,0,0,0.35);padding:6px 12px;border-radius:14px;z-index:4;text-shadow:0 1px 2px rgba(0,0,0,0.3);pointer-events:none;">📷 点这换封面</span>
+                        <div style="position:absolute;bottom:8px;right:100px;color:#fff;font-size:20px;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;">${aiName}</div>
                     </div>
+                    <input type="file" id="cm-cover-input" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;left:0;top:0;">
                     <div style="position:relative;min-height:75px;background:#FBF9F4;">
                         <div style="position:absolute;top:-35px;right:16px;width:70px;height:70px;border-radius:14px;overflow:hidden;border:2px solid #fff;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,0.15);">${avatarHtml}</div>
                         <div id="cm-sig" style="position:absolute;top:42px;right:16px;font-size:13px;color:#9A7872;line-height:1.5;text-align:right;min-height:18px;max-width:60%;word-break:break-word;cursor:pointer;" title="点击让 ${aiName} 根据最近聊天写新个签">
@@ -1488,13 +1493,42 @@
                         </div>
                     </div>
                     ${postsHtml}
-                </div>
-                <input type="file" id="cm-cover-up" style="display:none;" accept="image/*">`;
+                </div>`;
             const appPage = document.querySelector('.app-page.active') || document.body;
             appPage.appendChild(ov);
             ov.querySelector('#cm-back').onclick = (e) => { e.stopPropagation(); ov.remove(); };
-            // 点击封面更换
-            ov.querySelector('#cm-cover').onclick = () => ov.querySelector('#cm-cover-up').click();
+            const _inputEl = ov.querySelector('#cm-cover-input');
+            const _coverEl = ov.querySelector('#cm-cover-area');
+            _coverEl.onclick = (e) => {
+                e.stopPropagation();
+                _inputEl.click();
+            };
+            _inputEl.addEventListener('change', (ev2) => {
+                const f = ev2.target.files && ev2.target.files[0];
+                if (!f) return;
+                const r = new FileReader();
+                r.onload = (ev) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        try {
+                            const maxW = 800;
+                            let w = img.width, h = img.height;
+                            if (w > maxW) { h = h * (maxW/w); w = maxW; }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w; canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            c.momentsCover = canvas.toDataURL('image/jpeg', 0.78);
+                            DB.saveContact(c);
+                            ov.remove();
+                            showContactMoments(c);
+                        } catch(err) {
+                            alert('保存失败：' + err.message);
+                        }
+                    };
+                    img.src = ev.target.result;
+                };
+                r.readAsDataURL(f);
+            });
             
             // --- 点击个签让 AI 根据最近聊天生成新个签 ---
             const sigEl = ov.querySelector('#cm-sig');
@@ -1573,29 +1607,6 @@
                 } finally {
                     delete sigEl.dataset.loading;
                 }
-            };
-            
-            ov.querySelector('#cm-cover-up').onchange = (e) => {
-                const f = e.target.files[0];
-                if (!f) return;
-                const r = new FileReader();
-                r.onload = (ev) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const maxW = 800;
-                        let w = img.width, h = img.height;
-                        if (w > maxW) { h = h * (maxW/w); w = maxW; }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w; canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        c.momentsCover = canvas.toDataURL('image/jpeg', 0.78);
-                        DB.saveContact(c);
-                        ov.remove();
-                        showContactMoments(c);
-                    };
-                    img.src = ev.target.result;
-                };
-                r.readAsDataURL(f);
             };
         }
 
@@ -2120,6 +2131,10 @@
 
             function setupChatApp(appPage) {
                 appPage.classList.add('app-page-520');
+
+                // 关键：每次进 520 时强制隐藏可能残留的聊天详情页（避免直接进上次的聊天）
+                const existingConv = appPage.querySelector('#conversation-page');
+                if (existingConv) existingConv.style.display = 'none';
                 
                 // 初始化数据
                 if(!localStorage.getItem('user_wallet')) localStorage.setItem('user_wallet', '0');
@@ -4096,10 +4111,19 @@
                     const setsContent = p.querySelector('#sets-content');
                     p.querySelector('#chat-more').onclick=()=>{
                         p.querySelector('#chat-sets').classList.add('active');
+                        // 安全渲染头像：处理 emoji / HTML 字符串 / imgdb / data url
+                        const renderAvatarHtml = (av) => {
+                            if (!av) return '👤';
+                            if (av.includes('<')) return av;
+                            if (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http')) {
+                                return `<img data-imgsrc="${av}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block;" alt="">`;
+                            }
+                            return av;
+                        };
                         setsContent.innerHTML = `
                             <div class="mt-2 rounded-lg overflow-hidden" style="background:#FBF9F4;">
                                 <div class="p-4 flex flex-col items-center border-bottom">
-                                    <div class="w-16 h-16 rounded-lg bg-gray-200 mb-2 flex items-center justify-center text-3xl overflow-hidden">${c.avatar}</div>
+                                    <div class="w-16 h-16 rounded-lg bg-gray-200 mb-2 flex items-center justify-center text-3xl overflow-hidden">${renderAvatarHtml(c.avatar)}</div>
                                     <div class="text-sm">${c.name}</div>
                                 </div>
                             </div>
@@ -4111,6 +4135,8 @@
                             </div>
                             <button id="set-clr" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#D5EBE4; color:#775C56;">清空聊天记录</button>
                         `;
+                        // 异步加载 imgdb 头像
+                        if (window.ImageDB) ImageDB.hydrateImages(setsContent).catch(()=>{});
                         setsContent.querySelector('#set-pat').onclick=()=>{const v=prompt('拍一拍内容',c.nudge||'拍了拍我');if(v){c.nudge=v;DB.saveContact(c);}};
                         setsContent.querySelector('#set-pat').addEventListener('click', () => {
                             const box = document.getElementById('chat-box');
@@ -4156,11 +4182,15 @@
                 const go = (pid) => {
                     navs.forEach(n => n.classList.toggle('active', n.dataset.page===pid));
                     pages.forEach(p => p.classList.toggle('active', p.id===`page-${pid}`));
-                    
-                    // 默认显示 header（202会单独隐藏）
+
+                    // 默认恢复 header / title 样式（202 会单独覆盖）
                     const _hdr = appPage.querySelector('.app-header-520');
-                    if (_hdr) _hdr.style.display = '';
-                    
+                    if (_hdr) _hdr.style.cssText = '';
+                    title.style.color = '';
+                    title.style.textShadow = '';
+                    const _bk = appPage.querySelector('.app-header-520 .close-btn-520');
+                    if (_bk) { _bk.style.color = ''; _bk.style.textShadow = ''; }
+
                     const el = document.getElementById(`page-${pid}`); 
                     el.innerHTML=''; // 清空重绘
 
@@ -4233,8 +4263,16 @@
                         header.querySelectorAll('.add-btn-520').forEach(e => {
                             if (e.id !== 'add-contact-btn') e.remove();
                         });
-                        // 朋友圈页隐藏顶部 header，让封面顶到顶
-                        header.style.display = 'none';
+                        // 朋友圈页：让 header 透明浮在封面上方（保留返回键，又让封面顶到顶）
+                        header.style.cssText = 'position:absolute;top:0;left:0;right:0;z-index:50;background:transparent;color:#fff;border:none;';
+                        // 标题和返回键变白，并加阴影确保在封面上可见
+                        title.style.color = '#fff';
+                        title.style.textShadow = '0 1px 4px rgba(0,0,0,0.5)';
+                        const backBtn = header.querySelector('.close-btn-520');
+                        if (backBtn) {
+                            backBtn.style.color = '#fff';
+                            backBtn.style.textShadow = '0 1px 4px rgba(0,0,0,0.5)';
+                        }
 
                         // 进入朋友圈页：有概率让一个 AI 发朋友圈（基于聊天历史）
                         // 也让 AI 对最近几条朋友圈进行点赞/评论互动
@@ -4382,7 +4420,7 @@
 
                         el.innerHTML = `
                             <div class="moments-header">
-                                <div class="moments-cover" style="${coverUrl ? `background-image:url(${coverUrl});` : 'background:#ccc;display:flex;align-items:center;justify-content:center;'}">${coverUrl ? '' : '<span style="color:#aaa;font-size:42px;font-weight:300;line-height:1;">+</span>'}</div>
+                                <div class="moments-cover" data-cover-src="${coverUrl || ''}" style="background:#ccc;${!coverUrl ? 'display:flex;align-items:center;justify-content:center;' : ''}">${coverUrl ? '' : '<span style="color:#aaa;font-size:42px;font-weight:300;line-height:1;">+</span>'}</div>
                                 <div class="moments-user">
                                     <div class="moments-nick">${displayNick}</div>
                                     <div class="moments-avatar" data-user-avatar="true">${userAvatar ? `<img src="${userAvatar}" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">` : avatarFallback}</div>
@@ -4395,6 +4433,38 @@
                                     const likes = p.likes || [];
                                     const comments = p.comments || [];
                                     const iLiked = likes.includes(myNick);
+                                    // 微信风格的相对时间
+                                    const wxTimeStr = (() => {
+                                        const d = new Date(p.time);
+                                        const now = new Date();
+                                        const diffMs = now - d;
+                                        const diffMin = Math.floor(diffMs / 60000);
+                                        const diffHour = Math.floor(diffMs / 3600000);
+                                        if (diffMin < 1) return '刚刚';
+                                        if (diffMin < 60) return diffMin + '分钟前';
+                                        if (diffHour < 24) {
+                                            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                            const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                                            if (dDay.getTime() === today.getTime()) return diffHour + '小时前';
+                                        }
+                                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                                        const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+                                        const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                                        const hm = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                                        if (dDay.getTime() === yesterday.getTime()) return '昨天 ' + hm;
+                                        // 一周内显示"星期X"
+                                        const diffDays = Math.floor((today - dDay) / 86400000);
+                                        if (diffDays < 7) {
+                                            const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+                                            return weekdays[d.getDay()] + ' ' + hm;
+                                        }
+                                        // 同年内显示 月-日
+                                        if (d.getFullYear() === now.getFullYear()) {
+                                            return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+                                        }
+                                        // 跨年显示完整
+                                        return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+                                    })();
                                     // 评论可能是字符串（老数据）或对象 {name, avatar, text}
                                     const likesHtml = likes.length ? `<div style="font-size:13px;color:#576b95;padding:6px 10px 4px;display:flex;align-items:flex-start;gap:4px;line-height:1.5;">❤️ <span style="flex:1;">${likes.join('，')}</span></div>` : '';
                                     const dividerHtml = (likes.length && comments.length) ? `<div style="height:1px;background:#e8e0d0;margin:0 10px;"></div>` : '';
@@ -4411,7 +4481,7 @@
                                             <div class="moment-text">${p.text}</div>
                                             ${p.img ? `<div style="margin:6px 0;"><img src="${p.img}" style="max-width:200px;max-height:200px;border-radius:12px;object-fit:cover;display:block;"></div>` : ''}
                                             <div class="moment-meta" style="display:flex;justify-content:space-between;align-items:center;">
-                                                <span>${new Date(p.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+                                                <span>${wxTimeStr}</span>
                                                 <span class="moment-action-btn" data-mid="${p.id}" style="color:#9A7872;cursor:pointer;font-size:20px;padding:2px 8px;line-height:1;letter-spacing:1px;background:transparent;border:none;">⋯</span>
                                             </div>
                                             ${interactionWrap}
@@ -4427,14 +4497,38 @@
                         el.querySelector('.moments-header').appendChild(camBtn);
                         el.querySelector('#cover-up').onchange = (e) => {
                             const f = e.target.files[0];
-                            if(f) { const r=new FileReader(); r.onload=async ev=>{
+                            if (!f) return;
+                            const r = new FileReader();
+                            r.onload = async ev => {
+                                // 直接存原图（保留 EXIF 旋转信息，浏览器渲染时会自动处理）
+                                // 不用 canvas 压缩，避免 iOS 上的图片方向 bug
                                 try {
-                                    const ref = window.ImageDB && window.ImageDB.saveAndRef ? await window.ImageDB.saveAndRef(ev.target.result) : ev.target.result;
+                                    const ref = window.ImageDB && window.ImageDB.saveAndRef
+                                        ? await window.ImageDB.saveAndRef(ev.target.result)
+                                        : ev.target.result;
                                     localStorage.setItem('moments_cover', ref);
-                                } catch(err) { localStorage.setItem('moments_cover', ev.target.result); }
+                                } catch (err) {
+                                    localStorage.setItem('moments_cover', ev.target.result);
+                                }
                                 go('202');
-                            }; r.readAsDataURL(f); }
+                            };
+                            r.readAsDataURL(f);
                         };
+                        // 异步解析 imgdb:// 引用并设置背景
+                        const coverEl = el.querySelector('.moments-cover');
+                        const coverSrc = coverEl.dataset.coverSrc;
+                        if (coverSrc) {
+                            if (coverSrc.startsWith('imgdb://') && window.ImageDB) {
+                                (async () => {
+                                    try {
+                                        const dataUrl = await window.ImageDB.resolve(coverSrc);
+                                        if (dataUrl) coverEl.style.backgroundImage = `url(${dataUrl})`;
+                                    } catch (e) {}
+                                })();
+                            } else {
+                                coverEl.style.backgroundImage = `url(${coverSrc})`;
+                            }
+                        }
                         el.querySelector('.moments-nick').onclick = () => {
                             const n = prompt('修改昵称', userNick);
                             if(n) { localStorage.setItem('user_nick', n); go('202'); }
@@ -9053,6 +9147,9 @@
                         const cleanup = () => {
                             appPage.classList.remove('active', 'closing');
                             document.querySelector('.mobile-container').classList.remove('app-open');
+                            // 关闭 520 时隐藏内部的聊天详情页，避免下次进 520 直接显示上次的聊天
+                            const convPage = appPage.querySelector('#conversation-page');
+                            if (convPage) convPage.style.display = 'none';
                             const ephemeralApps = ['lullaby-page', 'ai-love-club-page', 'g-love-club-page', 'virtual-hug-page', 'ai-friend-camp-page', 'work-ai-club-page', 'food-map-page', 'beauty-cabinet-page'];
                             if (ephemeralApps.includes(appPage.id)) {
                                 setTimeout(() => { appPage.innerHTML = ''; }, 0);
