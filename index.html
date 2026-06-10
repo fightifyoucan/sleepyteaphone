@@ -1482,7 +1482,6 @@
                 <div style="flex:1;overflow-y:auto;min-height:0;-webkit-overflow-scrolling:touch;position:relative;">
                     <span id="cm-back" style="position:absolute;top:22px;left:14px;font-size:32px;cursor:pointer;color:#fff;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,0.6);z-index:100;padding:4px 10px;">‹</span>
                     <div id="cm-cover-area" style="position:relative;width:100%;padding-bottom:85%;height:0;flex-shrink:0;display:block;${cover ? `background:url(${cover}) center/cover no-repeat;` : 'background:#ccc;'}cursor:pointer;">
-                        <span style="position:absolute;top:24px;right:14px;font-size:12px;color:#fff;background:rgba(0,0,0,0.35);padding:6px 12px;border-radius:14px;z-index:4;text-shadow:0 1px 2px rgba(0,0,0,0.3);pointer-events:none;">📷 点这换封面</span>
                         <div style="position:absolute;bottom:8px;right:100px;color:#fff;font-size:20px;font-weight:bold;text-shadow:0 1px 3px rgba(0,0,0,0.5);pointer-events:none;">${aiName}</div>
                     </div>
                     <input type="file" id="cm-cover-input" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;left:0;top:0;">
@@ -1789,9 +1788,8 @@
                     currentX = startX;
                     isDragging = true;
                     isHorizontal = null;
-                    page1.style.transition = 'none';
-                    page2.style.transition = 'none';
-                    mobileContainer.classList.add('paging');
+                    // 不在这里加 paging / 关 transition，等确认是水平滑动再加
+                    // 避免轻点 app 时误触发分页逻辑，导致要点好几次才进 app
                 }, { passive: true });
 
                 screen.addEventListener('touchmove', (e) => {
@@ -1803,6 +1801,12 @@
                     if (isHorizontal === null) {
                         if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
                             isHorizontal = Math.abs(dx) > Math.abs(dy);
+                            // 确认是水平滑动，这时才进入分页拖动状态
+                            if (isHorizontal) {
+                                page1.style.transition = 'none';
+                                page2.style.transition = 'none';
+                                mobileContainer.classList.add('paging');
+                            }
                         }
                     }
                     if (!isHorizontal) return;
@@ -1822,9 +1826,11 @@
                 screen.addEventListener('touchend', () => {
                     if (!isDragging) return;
                     isDragging = false;
+                    // 只有真正水平滑动过才处理分页，轻点不做任何分页操作（让 click 正常触发）
+                    if (isHorizontal !== true) return;
                     const dx = currentX - startX;
                     const threshold = screenWidth() * 0.18;
-                    if (isHorizontal && Math.abs(dx) > threshold) {
+                    if (Math.abs(dx) > threshold) {
                         goToPage(currentPage + (dx < 0 ? 1 : -1));
                     } else {
                         goToPage(currentPage);
@@ -2052,6 +2058,12 @@
                                 <input type="text" id="api-model-custom" placeholder="输入模型名称" class="w-full p-2 border rounded-lg bg-white">
                                 <button id="fetch-models-btn" class="flex items-center justify-center w-10 h-10 flex-shrink-0 rounded-xl transition-all active:scale-95" style="background-color: rgba(255,255,255,0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px;" title="获取模型列表">🔄</button>
                             </div>
+                        </div>
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(119,92,86,0.15);">
+                            <div style="font-size:13px;color:#775C56;font-weight:bold;margin-bottom:4px;">🌤️ 天气关心（可选）</div>
+                            <div style="font-size:11px;color:#9A7872;margin-bottom:10px;line-height:1.5;">填好后 AI 会知道你所在地的天气，在聊天里自然地关心你（降温了、下雨了之类）。用的是 OpenWeatherMap 的免费 key。</div>
+                            <div class="form-group"><label>OpenWeatherMap API 密钥</label><input type="password" id="weather-key" placeholder="天气 API Key（不填则关闭）"></div>
+                            <div class="form-group"><label>所在城市</label><input type="text" id="weather-city" placeholder="例如 Beijing / Shanghai / London"></div>
                         </div>
                         <button id="save-api-settings" class="mt-4 w-full py-2 rounded-lg" style="background-color: #D5EBE4; color: #775C56; font-weight: bold;">保存设置</button>
                     </div>
@@ -3859,7 +3871,9 @@
                                     
                                     const userNick = localStorage.getItem('user_nick') || '玩家';
                                     const currentTime = new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' });
-                                    let systemPrompt = `你是一个真实的微信好友。你能够感知到当前的现实时间。请根据当前的时间点（如深夜、清晨、午饭时间等）自然地在聊天中加入对用户的日常生活关怀（如：‘这么晚还没睡呀’、‘记得吃午饭’等）。当前时间是：${currentTime}。\n请模仿人类打字习惯，将长句拆分成多条短句发送。每隔几轮你可以尝试发语音或拍拍对方。如果对方发图，请务必在第一条回复中自然地评论图片内容。引用消息时要生动，多带表情。你现在的身份是：${c.name}。\n`;
+                                    let systemPrompt = `【最重要的规则，必须遵守】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 2 到 4 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行）：\n哎呀。\n一整夜都没睡呀？\n现在肯定特别困吧。\n快去补个觉，我陪着你。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以只回一条。\n\n`;
+                                    systemPrompt += `你是一个真实的微信好友。你能感知现实时间，根据时间点（深夜、清晨、午饭时间等）自然关怀用户。当前时间是：${currentTime}。如果对方发图，务必在第一条回复里自然评论图片内容。你现在的身份是：${c.name}。\n`;
+                                    systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。绝对禁止敷衍（如只回'嗯嗯''好的''哦'）。要让用户真切感受到你在认真听、很在乎 TA。\n";
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
                                     if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
@@ -3881,6 +3895,12 @@
                                     
                                     systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
                                     systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
+
+                                    // 注入用户所在地天气（如果设置了），让 AI 自然关心
+                                    try {
+                                        const weatherInfo = await getWeatherInfo();
+                                        if (weatherInfo) systemPrompt += buildWeatherPrompt(weatherInfo);
+                                    } catch(e) {}
 
                                     const getMsgText = (msg) => {
                                         if (msg.type === 'image') return `[用户发送了一张图片，请在你的第一条回复中自然地评论这张图片的内容。图片描述: ${msg.text || '无'}]`;
@@ -3914,14 +3934,21 @@
                                     }
 
                                     const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, m, messages);
+                                    // 发起请求前就显示"正在输入…"（API 要等几秒，这段时间让用户看到对方在打字）
+                                    const _titleEl = p.querySelector('.title');
+                                    const _savedTitle0 = _titleEl ? _titleEl.textContent : '';
+                                    if (_titleEl) _titleEl.textContent = '对方正在输入…';
                                     const res = await fetch(payload.url, payload.options);
                                     if (!res.ok) {
+                                        if (_titleEl) _titleEl.textContent = _savedTitle0;
                                         const err = await res.json().catch(()=>({}));
                                         throw new Error(err.error?.message || `HTTP ${res.status}`);
                                     }
                                     
                                     const data = await res.json();
+                                    if (_titleEl) _titleEl.textContent = _savedTitle0;
                                     const rawReply = ApiHandler.parseChatResponse(pPlat, data);
+                                    try { localStorage.setItem('_lastAiRaw', rawReply || ''); } catch(e) {}
                                     
                                     if (rawReply) {
                                         turnCount++;
@@ -3933,6 +3960,13 @@
                                         let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
 
                                         function splitResponseWithSentenceMigration(text) {
+                                            // 优先：如果 AI 已经用换行分成了多行（多条消息），直接按行拆
+                                            const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+                                            if (lines.length >= 2) {
+                                                // 每行作为一条消息，但行内如果太长还是可以保留（真人一条消息也可能稍长）
+                                                return lines;
+                                            }
+
                                             const EPHOLD = 'ELLIPSIS_HOLD';
                                             const PPHOLD = 'PUNC_HOLD';
                                             let safe = text.replace(/…+/g, function(m){ return EPHOLD.repeat(m.length); });
@@ -3954,6 +3988,11 @@
                                             });
 
                                             var parts = safe.split(/(?<=[。！？])/g).map(function(s){ return s.trim(); }).filter(Boolean);
+                                            // 兜底：如果只拆出 1 句但句子较长且有逗号，按逗号进一步拆成多条短消息
+                                            if (parts.length <= 1 && safe.replace(/\u0001SEG_\d+\u0001/g,'').length > 10) {
+                                                var commaParts = safe.split(/(?<=[，、])/g).map(function(s){ return s.trim(); }).filter(Boolean);
+                                                if (commaParts.length >= 2) parts = commaParts;
+                                            }
                                             // 再把每一段里的 SEG 占位符拆成独立单元
                                             var expanded = [];
                                             parts.forEach(function(p){
@@ -3979,10 +4018,12 @@
                                                     continue;
                                                 }
                                                 var merged = carry ? carry + part : part;
-                                                if (merged.length <= 3) { carry = merged; }
+                                                if (merged.replace(/[，、。！？\s]/g,'').length <= 1) { carry = merged; }
                                                 else { bubbles.push(merged); carry = ''; }
                                             }
                                             if (carry) bubbles.push(carry);
+                                            // 去掉每条末尾多余的逗号（按逗号拆分后会留下尾逗号）
+                                            bubbles = bubbles.map(function(b){ return b.replace(/[，、]+$/, ''); });
                                             return bubbles.filter(Boolean);
                                         }
 
@@ -4137,7 +4178,7 @@
                         `;
                         // 异步加载 imgdb 头像
                         if (window.ImageDB) ImageDB.hydrateImages(setsContent).catch(()=>{});
-                        setsContent.querySelector('#set-pat').onclick=()=>{const v=prompt('拍一拍内容',c.nudge||'拍了拍我');if(v){c.nudge=v;DB.saveContact(c);}};
+                        setsContent.querySelector('#set-pat').onclick=()=>{const v=prompt('拍一拍内容',c.nudge||'的脑袋');if(v){c.nudge=v;DB.saveContact(c);}};
                         setsContent.querySelector('#set-pat').addEventListener('click', () => {
                             const box = document.getElementById('chat-box');
                             if(box) {
@@ -6607,6 +6648,61 @@
                 };
             }
 
+            // ============== 天气模块 ==============
+            // 获取天气并缓存（OpenWeatherMap）。缓存 1 小时，避免频繁请求
+            async function fetchWeatherCache() {
+                const wKey = localStorage.getItem('weatherKey');
+                const wCity = localStorage.getItem('weatherCity');
+                if (!wKey || !wCity) return null;
+                try {
+                    const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(wCity)}&appid=${wKey}&units=metric&lang=zh_cn`;
+                    const resp = await fetch(url);
+                    if (!resp.ok) { console.warn('[天气] 获取失败', resp.status); return null; }
+                    const data = await resp.json();
+                    const weather = {
+                        city: data.name,
+                        desc: data.weather?.[0]?.description || '',
+                        temp: Math.round(data.main?.temp),
+                        feelsLike: Math.round(data.main?.feels_like),
+                        humidity: data.main?.humidity,
+                        tempMin: Math.round(data.main?.temp_min),
+                        tempMax: Math.round(data.main?.temp_max),
+                        windSpeed: data.wind?.speed,
+                        time: Date.now()
+                    };
+                    localStorage.setItem('weatherCache', JSON.stringify(weather));
+                    return weather;
+                } catch (e) {
+                    console.warn('[天气] 请求异常', e);
+                    return null;
+                }
+            }
+
+            // 取天气缓存，如果过期（>1小时）就刷新
+            async function getWeatherInfo() {
+                const wKey = localStorage.getItem('weatherKey');
+                const wCity = localStorage.getItem('weatherCity');
+                if (!wKey || !wCity) return null;
+                let cache = null;
+                try { cache = JSON.parse(localStorage.getItem('weatherCache') || 'null'); } catch(e) {}
+                // 缓存超过 1 小时就刷新
+                if (!cache || Date.now() - cache.time > 3600000) {
+                    cache = await fetchWeatherCache() || cache;
+                }
+                return cache;
+            }
+
+            // 生成给 AI 的天气描述文本
+            function buildWeatherPrompt(weather) {
+                if (!weather) return '';
+                let s = `\n【${weather.city}此刻天气】${weather.desc}，气温 ${weather.temp}°C`;
+                if (weather.feelsLike !== weather.temp) s += `（体感 ${weather.feelsLike}°C）`;
+                if (weather.tempMin !== weather.tempMax) s += `，今日 ${weather.tempMin}~${weather.tempMax}°C`;
+                if (weather.humidity) s += `，湿度 ${weather.humidity}%`;
+                s += `。你知道用户那边的天气，可以在合适的时候自然地关心 TA（比如降温提醒添衣、下雨提醒带伞、天热提醒防暑等），但不要每句话都提天气，要自然，不要刻意。\n`;
+                return s;
+            }
+
             function setupApiSettingsApp(appPage) {
                 const platform = appPage.querySelector('#api-platform');
                 const endpoint = appPage.querySelector('#api-endpoint');
@@ -6619,6 +6715,11 @@
                 endpoint.value = localStorage.getItem('apiEndpoint') || '';
                 key.value = localStorage.getItem('apiKey') || '';
                 modelCustom.value = localStorage.getItem('apiModel') || '';
+
+                const weatherKey = appPage.querySelector('#weather-key');
+                const weatherCity = appPage.querySelector('#weather-city');
+                if (weatherKey) weatherKey.value = localStorage.getItem('weatherKey') || '';
+                if (weatherCity) weatherCity.value = localStorage.getItem('weatherCity') || '';
 
                 fetchBtn.onclick = async () => {
                     if (typeof ApiHandler === 'undefined') return alert('请确保 api_handler.js 已正确加载');
@@ -6652,7 +6753,13 @@
                     localStorage.setItem('apiEndpoint', endpoint.value);
                     localStorage.setItem('apiKey', key.value);
                     localStorage.setItem('apiModel', modelCustom.value);
-                    alert('API配置已保存');
+                    if (weatherKey) localStorage.setItem('weatherKey', weatherKey.value.trim());
+                    if (weatherCity) localStorage.setItem('weatherCity', weatherCity.value.trim());
+                    // 立即刷新一次天气缓存
+                    if (weatherKey && weatherKey.value.trim() && weatherCity && weatherCity.value.trim()) {
+                        fetchWeatherCache();
+                    }
+                    alert('配置已保存');
                 };
             }
 
