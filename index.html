@@ -426,6 +426,12 @@
             border-radius: 4px;
             display: inline-block;
         }
+        /* 展开撤回内容时的竖向容器：不要被套气泡背景 */
+        .msg-nudge .revoked-stack {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
         .msg-system-tip {
             align-self: center;
             display: flex;
@@ -2878,11 +2884,13 @@
                                         const orig = msg.originalContent;
                                         const previewText = orig.text || (orig.type==='image'?'[图片]':orig.type==='voice'?`[语音 ${orig.duration||0}″]`:'[消息]');
                                         return `<div class="msg-nudge revoked-peeked" data-revoked-idx="${group.idx}" style="cursor:pointer;">
-                                            <div>"${aiName}"撤回了一条消息 <span style="opacity:0.6;">(点击收起)</span></div>
-                                            <div style="margin-top:4px;padding:6px 12px;background:rgba(154,120,114,0.12);border-radius:8px;display:inline-block;max-width:80%;color:#775C56;font-size:13px;">${previewText}</div>
+                                            <div class="revoked-stack" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                                                <span style="display:inline-block;">"${aiName}"撤回了一条消息 <small style="opacity:0.6;font-size:11px;">(点击收起)</small></span>
+                                                <div style="padding:6px 12px;background:rgba(154,120,114,0.12);border-radius:8px;display:inline-block;max-width:80%;color:#775C56;font-size:13px;">${previewText}</div>
+                                            </div>
                                         </div>`;
                                     }
-                                    return `<div class="msg-nudge revoked-clickable" data-revoked-idx="${group.idx}" style="cursor:pointer;">"${aiName}"撤回了一条消息 <span style="opacity:0.6;">(点击查看)</span></div>`;
+                                    return `<div class="msg-nudge revoked-clickable" data-revoked-idx="${group.idx}" style="cursor:pointer;"><span>"${aiName}"撤回了一条消息 <small style="opacity:0.6;font-size:11px;">(点击查看)</small></span></div>`;
                                 }
                                 if (msg.type === 'nudge') return `<div class="msg-nudge"><span>${msg.text}</span></div>`;
                                 if (msg.type === 'timestamp') { const _tsLabel = msg.time ? formatTime(new Date(msg.time)) : msg.text; return `<div class="message-timestamp"><span style="background:rgba(184,155,149,0.15);color:#B89B95;font-size:11px;padding:2px 10px;border-radius:4px;display:inline-block;">${_tsLabel}</span></div>`; }
@@ -3368,6 +3376,7 @@
                                 render();
                             };
                             // 桌面：右键
+                            el.addEventListener('click', toggle);
                             el.addEventListener('contextmenu', (e) => { e.preventDefault(); toggle(e); });
                             // 移动：长按
                             let revokedTimer;
@@ -3871,7 +3880,7 @@
                                     
                                     const userNick = localStorage.getItem('user_nick') || '玩家';
                                     const currentTime = new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' });
-                                    let systemPrompt = `【最重要的规则，必须遵守】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 2 到 4 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行）：\n哎呀。\n一整夜都没睡呀？\n现在肯定特别困吧。\n快去补个觉，我陪着你。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以只回一条。\n\n`;
+                                    let systemPrompt = `【最重要的规则，必须遵守】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 3 到 8 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行）：\n哎呀。\n一整夜都没睡呀？\n现在肯定特别困吧。\n眼睛是不是又干又涩了。\n快去补个觉，我陪着你。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以少回几条。\n\n`;
                                     systemPrompt += `你是一个真实的微信好友。你能感知现实时间，根据时间点（深夜、清晨、午饭时间等）自然关怀用户。当前时间是：${currentTime}。如果对方发图，务必在第一条回复里自然评论图片内容。你现在的身份是：${c.name}。\n`;
                                     systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。绝对禁止敷衍（如只回'嗯嗯''好的''哦'）。要让用户真切感受到你在认真听、很在乎 TA。\n";
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
@@ -3894,6 +3903,7 @@
                                     }
                                     
                                     systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
+                                    systemPrompt += `\n【语言艺术·拒绝陈词滥调】：追求文字的原创性和新鲜感，严禁滥用网络文学里那些被用烂的"八股文"式表达。你的文字应当具体、独特、贴合人设，能引发真实的感受，而不是依赖空洞、公式化的套话。禁用词举例（包括但不限于）：'嘴角勾起一抹邪魅/玩味/嘲讽的笑'、'深邃的眼眸里看不出情绪'、'空气仿佛凝固了'、'心头涌上一阵暖流'、'一颗石子投入心湖'、'如遭雷击'。请用更具象、更符合当下情景的方式表达情绪和氛围。\n`;
                                     systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
 
                                     // 注入用户所在地天气（如果设置了），让 AI 自然关心
@@ -4128,7 +4138,7 @@
                                             }
                                         }
                                         // AI 随机拍一拍
-                                        if (Math.random() < 0.3) {
+                                        if (Math.random() < 0.1) {
                                             await new Promise(r => setTimeout(r, 1200));
                                             const userNudge = localStorage.getItem('user_nudge') || '的脑袋';
                                             const aiNudgeText = `「${c.notes || c.name}」拍了拍我${userNudge}`;
@@ -8590,12 +8600,27 @@
                             offlineToggle.checked = contact.mode.offline || false;
                             thoughtsToggle.checked = contact.mode.innerThoughts || false;
                         }
-                        if(contact.avatar && contact.avatar.includes('img')) {
-                             const src = contact.avatar.match(/src="([^"]*)"/)[1];
-                             avatarPreview.src = src;
-                             avatarPreview.classList.remove('hidden');
-                             avatarEmoji.classList.add('hidden');
-                             currentAvatar = contact.avatar;
+                        if(contact.avatar) {
+                             const av = contact.avatar;
+                             let src = '';
+                             if (av.includes('<img') && av.includes('src=')) {
+                                 const m = av.match(/src="([^"]*)"/);
+                                 if (m) src = m[1];
+                             } else if (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http')) {
+                                 src = av;
+                             }
+                             if (src) {
+                                 avatarPreview.src = src;
+                                 avatarPreview.classList.remove('hidden');
+                                 avatarEmoji.classList.add('hidden');
+                                 currentAvatar = contact.avatar;
+                                 // imgdb:// 需要异步解出真实 dataURL 才能预览
+                                 if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                     window.ImageDB.resolve(src).then(dataUrl => {
+                                         if (dataUrl) avatarPreview.src = dataUrl;
+                                     }).catch(()=>{});
+                                 }
+                             }
                         }
                     }
                 }

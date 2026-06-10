@@ -67,7 +67,10 @@ const ApiHandler = {
             const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
             url = `${cleanedEndpoint}/v1beta/models/${model}:generateContent?key=${apiKey}`;
             // Gemini expects the 'contents' field to be the array of messages.
-            body = JSON.stringify({ contents: messages });
+            body = JSON.stringify({
+                contents: messages,
+                generationConfig: { maxOutputTokens: 2048, temperature: 1 }
+            });
             return { url, options: { method: 'POST', headers, body } };
         }
         
@@ -82,7 +85,9 @@ const ApiHandler = {
         
         body = JSON.stringify({
             model: model,
-            messages: messages
+            messages: messages,
+            max_tokens: 2048,
+            temperature: 1
         });
         return { url, options: { method: 'POST', headers, body } };
     },
