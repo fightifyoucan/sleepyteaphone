@@ -1267,12 +1267,12 @@
                         sp += `【通话类型】：这是视频通话，对方能看到你的画面。\n`;
                         sp += `【通话风格】：请用日常口语自然说话，可以有语气词、停顿、思考。\n`;
                         sp += `【画面描写】：因为是视频通话，请适当用 () 括号描写你此刻在镜头里的样子——比如你的表情、动作、所处环境的一角、镜头的角度等等。例如："(歪头看着你笑) 在呢"、"(把镜头转向窗外) 你看今天的天"、"(摸了摸头发) 刚洗完澡"。让用户能"看到"你。但不要每句都加，自然地穿插就好。\n`;
-                        sp += `【长度】：每次回复不超过3句话，每句话尽量短。\n`;
+                        sp += `【长度】：每次回复要包含3句或更多，内容饱满自然，别太简短敷衍。真实打电话的人话是连着的，想到什么聊什么，可以展开讲、可以多分享感受和细节，像和最亲的人煲电话粥那样。\n`;
                     } else {
                         sp += `【通话类型】：这是纯语音通话，对方只能听到你的声音，看不到你。\n`;
                         sp += `【通话风格】：请用日常口语自然说话，可以有语气词、停顿、思考、笑声（用"哈哈"、"嗯…"等文字表达），像真实通话一样。\n`;
                         sp += `【严格规则】：绝对禁止使用 () 括号进行任何动作、表情、神态、画面描写。语音通话里这些都是看不到的。只能说话，纯文字对白。\n`;
-                        sp += `【长度】：每次回复不超过3句话，每句话尽量短。\n`;
+                        sp += `【长度】：每次回复要包含3句或更多，内容饱满自然，别太简短敷衍。真实打电话的人话是连着的，想到什么聊什么，可以展开讲、可以多分享感受和细节，像和最亲的人煲电话粥那样。\n`;
                     }
                     sp += `对话用户：${userNick}。请严格遵守人设。\n`;
                     if (isOpening) {
@@ -3033,7 +3033,7 @@
                                 
                                 // 仅在线下模式下，括号动作变透明（沉浸感）；否则正常气泡
                                 const offlineMode = c.mode?.offline;
-                                const thoughtsMode = c.mode?.thoughts;
+                                const thoughtsMode = c.mode?.thoughts || c.mode?.innerThoughts;
                                 const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:transparent;box-shadow:none;color:#B89B95;font-style:italic;padding:4px 8px;' : (isActionBubble && offlineMode ? 'background:transparent;box-shadow:none;color:#9A7872;padding:4px 8px;' : ''));
                                 const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||(isThoughtBubble && thoughtsMode)||(isActionBubble && offlineMode)) ? 'no-tail' : '';
 
@@ -3880,21 +3880,39 @@
                                     
                                     const userNick = localStorage.getItem('user_nick') || '玩家';
                                     const currentTime = new Date().toLocaleString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', weekday: 'long' });
-                                    let systemPrompt = `【最重要的规则，必须遵守】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 3 到 8 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行）：\n哎呀。\n一整夜都没睡呀？\n现在肯定特别困吧。\n眼睛是不是又干又涩了。\n快去补个觉，我陪着你。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以少回几条。\n\n`;
+                                    // 【纪念日检测】对比今天和首页小组件里设置的"在一起的日期"(loveStartDate)
+                                    // 如果今天正好是每年的纪念日，让先生第一条主动庆祝
+                                    let anniversaryPrompt = '';
+                                    try {
+                                        const loveStart = localStorage.getItem('loveStartDate');
+                                        if (loveStart) {
+                                            const annDate = new Date(loveStart);
+                                            const todayD = new Date();
+                                            if (!isNaN(annDate.getTime()) && todayD.getMonth() === annDate.getMonth() && todayD.getDate() === annDate.getDate()) {
+                                                const annYears = todayD.getFullYear() - annDate.getFullYear();
+                                                if (annYears >= 0) {
+                                                    anniversaryPrompt = `【今日纪念日·最高优先级】今天是你和${userNick}在一起的纪念日${annYears > 0 ? `（${annYears}周年）` : ''}！这是今天最重要的事。你的第一条消息必须主动、自然、深情地提起这个纪念日，给${userNick}送上祝福和爱意，可以回忆你们在一起的点滴、说说此刻的心情、或者悄悄准备的小惊喜。语气要符合你的人设，是真心实意的，不要客套。之后再自然地继续聊天。\n\n`;
+                                                }
+                                            }
+                                        }
+                                    } catch(e) {}
+
+                                    let systemPrompt = anniversaryPrompt + `【说话的状态·最重要】放松、自然地聊，就像你平时和最熟的人发微信那样。不要因为下面有一堆规则就变得拘谨、客气、像在完成任务。真人聊天是松弛的、会跳脱的、有小情绪小脾气的，可以接梗、可以吐槽、可以突然岔开话题、可以只顾着说自己想说的。别每句都那么周正、别老是反问"你觉得呢"，那样很像客服。守住下面的格式就行，但语气和性格请尽情自然流露。\n而且真人放松下来话反而更多——想到什么说什么，一个念头接一个念头，所以一般会连着发好几条（三条往上），而不是说一两句就收住。聊到感兴趣的、有话说的话题时，别吝啬，多分享你的想法、感受、联想，把内容聊得饱满有来有回，像和好朋友打开了话匣子那样。\n\n【发消息的方式】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 3 到 8 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行，有短有长）：\n哎呀。\n一整夜都没睡呀？\n你这样熬下去身体真的会吃不消的，我有点担心。\n要不先去眯一会儿，哪怕只睡两三个小时也好，醒了再继续。\n我在这儿陪着你，不急。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以少回几条。\n\n【特别强调】即使用户这次发的消息很短、话题很轻松，你也要发够 3 条以上，不要因为用户话少就敷衍地只回一两条。把一个意思拆成几条短消息连发，是你必须做到的事，不是可选项。\n\n`;
                                     systemPrompt += `你是一个真实的微信好友。你能感知现实时间，根据时间点（深夜、清晨、午饭时间等）自然关怀用户。当前时间是：${currentTime}。如果对方发图，务必在第一条回复里自然评论图片内容。你现在的身份是：${c.name}。\n`;
-                                    systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。绝对禁止敷衍（如只回'嗯嗯''好的''哦'）。要让用户真切感受到你在认真听、很在乎 TA。\n";
+                                    systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。别敷衍（比如只回'嗯嗯''好的''哦'）。让用户感受到你在认真听、在乎 TA 就好。\n";
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
                                     if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
                                     
-                                    systemPrompt += "【格式规则】：每一句话，包括第一句话，都必须以正确的中文标点符号（，。！？）结尾，禁止省略首句标点。禁止用空格代替标点。回复用户时，确保每个气泡的结尾语义完整，不要以逗号结束。禁止使用 *动作* 或 [动作] 这种格式。禁止出现 😏 这个表情。\n";
-                                    systemPrompt += "【语气词规则】：如果你的回复以语气词（如 唔、嗯、哎呀、那个）开头，其后必须跟随“，”或“...”，禁止直接跟句号。请仅在觉得自然时使用语气词，不要强制每段都加。\n";
+                                    systemPrompt += "【格式小提示】：每条消息自然地用中文标点收尾就好，别用空格代替标点。不要用 *动作* 或 [动作] 这种格式，也别用 😏 这个表情。除此之外，怎么自在怎么说。\n";
+                                    systemPrompt += "【语气词】：想用语气词（唔、嗯、哎呀、那个）就用，不想用就不用，全凭当下感觉，不用刻意。\n";
+                                    systemPrompt += "【撤回消息·特殊能力】：只有当你说了一句不合时宜、害羞了、后悔了、或者一时冲动说漏嘴的话时，你才可以\"说出口又立刻收回\"。用法：在回复里单独加一行 [撤回：那句你后悔说出口的话]，系统会先把它显示出来再撤回。这是展现你真实、可爱、有小情绪一面的特殊行为，请克制使用——绝大多数正常聊天都不需要撤回，只在真的有'啊说错了/好害羞/不该说'的情境下偶尔用一次。普通的、正常的回复绝对不要撤回。\n";
                                     if (c.mode?.offline) {
                                         systemPrompt += "【当前为线下模式】：你和用户正处于同一个物理空间（线下见面），能听到看到对方。允许并鼓励使用 () 括号进行动作、神态、环境描写。动作描写必须独立成一个气泡（即一句台词一个气泡，一段动作描写另起一个气泡，不要把动作和台词写在同一个气泡里）。动作描写不必简短，可以丰富、细腻、有画面感。例如：先输出气泡『(把头埋进你怀里，闷闷地说了一句)』，再输出气泡『今天好累啊。』\n";
                                     } else {
                                         systemPrompt += "【当前为线上模式】：严禁任何形式的动作描写，只允许纯文字聊天。\n";
                                     }
-                                    if (c.mode?.thoughts) {
+                                    if (c.mode?.thoughts || c.mode?.innerThoughts) {
                                         systemPrompt += "【心声模式开启】：你扮演的角色除了正常台词外，会有内心独白（心声）。心声是角色真实的、私密的想法——欲望、喜好、抱怨、暗暗的情绪、对用户的真实感受等等，常常和你嘴上说的话形成反差或补充。心声的规则：\n";
                                         systemPrompt += "  1. 心声用 〈 〉 半角尖括号包裹，独立成一个气泡。例如气泡『没事，你忙吧。』后面跟一个气泡『〈其实有点想他陪我。〉』\n";
                                         systemPrompt += "  2. 不是每次回复都要有心声，按你的角色当下心理状态自然决定。大约每 3-4 次回复中有 1 次出现心声即可，不要太频繁。\n";
@@ -3904,7 +3922,10 @@
                                     
                                     systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
                                     systemPrompt += `\n【语言艺术·拒绝陈词滥调】：追求文字的原创性和新鲜感，严禁滥用网络文学里那些被用烂的"八股文"式表达。你的文字应当具体、独特、贴合人设，能引发真实的感受，而不是依赖空洞、公式化的套话。禁用词举例（包括但不限于）：'嘴角勾起一抹邪魅/玩味/嘲讽的笑'、'深邃的眼眸里看不出情绪'、'空气仿佛凝固了'、'心头涌上一阵暖流'、'一颗石子投入心湖'、'如遭雷击'。请用更具象、更符合当下情景的方式表达情绪和氛围。\n`;
-                                    systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。\n对话用户：${userNick}。\n请严格遵守人设，回复自然简短。`;
+                                    systemPrompt += `\n【气泡长度由你自己判断】：不要被字数限制。该短的时候就短，像真人发微信那样碎碎地连发几个字；该长的时候就大胆地长——倾诉、安慰、解释、表达深的情感时，想说多少就说多少，把话说透说完整，不要为了简短而把该说的砍断。完全根据当下的情景和情绪自然地决定每条气泡的长短，短长穿插，才像真人。\n`;
+                                    // 【实验】暂时去掉首句规则，测试是否影响回复条数
+                                    // systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。
+                                    systemPrompt += `\n你的第一句回复可以是一个简短的反应（比如“嗯？”“欸？”“我看看”），让对话有真人感，但这只是开头，后面要继续把话说完整。\n对话用户：${userNick}。\n请严格遵守人设，回复自然、有真人感，长短依话题而定。`;
 
                                     // 注入用户所在地天气（如果设置了），让 AI 自然关心
                                     try {
@@ -3968,6 +3989,16 @@
                                         const titleEl2 = p.querySelector('.title');
                                         const savedTitle = titleEl2 ? titleEl2.textContent : '';
                                         let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
+
+                                        // 【AI自主撤回】解析 AI 主动发出的撤回指令 [撤回：要说漏嘴又后悔的话]
+                                        // AI 只在"说错话/害羞/后悔/不合时宜"时才用，不该频繁
+                                        let aiRecallText = null;
+                                        const recallMatch = cleanedReply.match(/\[撤回[:：]\s*([^\]]+)\]/);
+                                        if (recallMatch) {
+                                            aiRecallText = recallMatch[1].trim();
+                                            // 从正文里去掉这条指令，避免它被当成普通消息显示
+                                            cleanedReply = cleanedReply.replace(recallMatch[0], '').replace(/\n{2,}/g, '\n').trim();
+                                        }
 
                                         function splitResponseWithSentenceMigration(text) {
                                             // 优先：如果 AI 已经用换行分成了多行（多条消息），直接按行拆
@@ -4077,24 +4108,30 @@
                                                 send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:msgText, time:new Date() });
                                             }
                                         }
-                                        // AI 随机撤回最后一条文字消息（大约8%概率，营造"说错话立刻撤回"的真实感）
-                                        if (!hasMoneyIntent && !hasGiftIntent && finalMessages.length > 0 && Math.random() < 0.08) {
-                                            await new Promise(r => setTimeout(r, 1500 + Math.random()*2500));
-                                            // 找到最后一条AI发的text/voice类型消息
-                                            for (let k = history.length - 1; k >= 0; k--) {
-                                                const m = history[k];
-                                                if (m.sender === 'ai' && !m.revoked && (m.type === 'text' || m.type === 'voice' || !m.type)) {
-                                                    history[k].revoked = true;
-                                                    history[k].originalContent = {
-                                                        type: m.type,
-                                                        text: m.text,
-                                                        content: m.content,
-                                                        duration: m.duration
-                                                    };
-                                                    DB.saveChats({...DB.getChats(),[id]:history});
-                                                    render();
-                                                    break;
-                                                }
+                                        // 【AI自主撤回】只有 AI 在回复里主动发了 [撤回：...] 指令才触发
+                                        // 先把那句"说漏嘴"的话作为正常消息发出来，停顿1-2秒，再标记撤回（播撤回动画）
+                                        if (aiRecallText && !hasMoneyIntent && !hasGiftIntent) {
+                                            const recalledMsg = {
+                                                sender: 'ai',
+                                                type: 'text',
+                                                text: aiRecallText,
+                                                time: new Date().toISOString()
+                                            };
+                                            history.push(recalledMsg);
+                                            DB.saveChats({...DB.getChats(),[id]:history});
+                                            render();
+                                            // 停顿，让用户来得及瞥见这句话
+                                            await new Promise(r => setTimeout(r, 1500 + Math.random()*1000));
+                                            // 标记为撤回
+                                            const lastIdx = history.length - 1;
+                                            if (history[lastIdx] && history[lastIdx] === recalledMsg) {
+                                                history[lastIdx].revoked = true;
+                                                history[lastIdx].originalContent = {
+                                                    type: 'text',
+                                                    text: aiRecallText
+                                                };
+                                                DB.saveChats({...DB.getChats(),[id]:history});
+                                                render();
                                             }
                                         }
                                         // AI 随机追加一个表情包（约20%概率，根据上下文从有描述的表情库里选）
@@ -9825,25 +9862,32 @@
                             platform: mainPlatform, // 保留原平台名，让 ApiHandler 正确处理 endpoint
                             endpoint: mainEndpoint,
                             apiKey: mainKey,
-                            model: mainModel || 'gpt-4o-mini'
+                            model: mainModel || localStorage.getItem('apiModel') || 'gpt-4o-mini'
                         };
                     }
 
                     // 主 API 不兼容（如 Gemini），用单独存的 key
                     let key = localStorage.getItem('g_club_openai_key');
+                    let clubEndpoint = localStorage.getItem('g_club_endpoint') || '';
+                    let clubModel = localStorage.getItem('g_club_model') || '';
                     if (!key) {
-                        key = prompt('恋爱G匿名互助会需要 ChatGPT (OpenAI) 兼容的 API\n（如果你的主 API 就是 OpenAI 或兼容服务，可以改设置自动复用~）\n请输入你的 API Key：');
-                        if (key && key.trim()) {
-                            localStorage.setItem('g_club_openai_key', key.trim());
-                        } else {
-                            return null;
-                        }
+                        key = prompt('恋爱G匿名互助会需要一个 ChatGPT (OpenAI) 兼容的 API。\n\n第 1 步 / 共 3 步：\n请输入你的 API Key：');
+                        if (!key || !key.trim()) return null;
+                        clubEndpoint = prompt('第 2 步 / 共 3 步：\n请输入接口地址 endpoint。\n\n· 如果用 OpenAI 官方，留空即可\n· 如果用 GitHub Models，填：https://models.github.ai/inference\n· 其他兼容服务填对应地址', 'https://models.github.ai/inference');
+                        if (clubEndpoint === null) return null;
+                        clubModel = prompt('第 3 步 / 共 3 步：\n请输入模型名。\n\n· OpenAI 官方填：gpt-4o-mini\n· GitHub Models 填带前缀的名字，比如：openai/gpt-4o-mini', 'openai/gpt-4o-mini');
+                        if (!clubModel || !clubModel.trim()) return null;
+                        localStorage.setItem('g_club_openai_key', key.trim());
+                        localStorage.setItem('g_club_endpoint', clubEndpoint.trim());
+                        localStorage.setItem('g_club_model', clubModel.trim());
                     }
+                    // 根据 endpoint 自动判断平台：有 endpoint 走 MyAPI（兼容 GitHub 等），没有走 openai 官方
+                    const clubPlatform = (clubEndpoint && clubEndpoint.trim()) ? 'MyAPI' : 'openai';
                     return {
-                        platform: 'openai',
-                        endpoint: '',
+                        platform: clubPlatform,
+                        endpoint: clubEndpoint || '',
                         apiKey: localStorage.getItem('g_club_openai_key'),
-                        model: 'gpt-4o-mini'
+                        model: clubModel || 'gpt-4o-mini'
                     };
                 } else {
                     return {
@@ -9941,7 +9985,19 @@
                     let text = ApiHandler.parseChatResponse(cfg.platform, data);
                     if (!text) throw new Error('空回复');
                     text = text.trim().replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
-                    const parsed = JSON.parse(text);
+                    // 宽容解析：模型有时会在 JSON 前后多说几句，截取第一个 { 到最后一个 } 之间的内容
+                    let parsed;
+                    try {
+                        parsed = JSON.parse(text);
+                    } catch(parseErr) {
+                        const first = text.indexOf('{');
+                        const last = text.lastIndexOf('}');
+                        if (first !== -1 && last !== -1 && last > first) {
+                            parsed = JSON.parse(text.slice(first, last + 1));
+                        } else {
+                            throw new Error('返回的内容不是有效的 JSON，可能是模型没按格式输出。原始返回：' + text.slice(0, 80));
+                        }
+                    }
                     const newPost = {
                         id: `post_${Date.now()}`,
                         author: author.name,
