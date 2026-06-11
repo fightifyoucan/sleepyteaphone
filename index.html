@@ -1940,6 +1940,7 @@
                                 <div style="flex:1;min-width:0;">
                                     <div id="hs-target-name" style="font-size:14px;color:#775C56;font-weight:600;"></div>
                                     <div id="hs-target-rel" style="font-size:11px;color:#B89B95;margin-top:2px;"></div>
+                                    <div id="hs-target-status" style="font-size:11px;color:#E89B6C;margin-top:3px;display:flex;align-items:center;gap:4px;cursor:pointer;" title="点击刷新状态"><span style="opacity:0.7;">读取此刻状态…</span></div>
                                 </div>
                             </div>
                             
@@ -6888,6 +6889,13 @@
                     }
                     appPage.querySelector('#hs-target-name').textContent = c.notes || c.name;
                     appPage.querySelector('#hs-target-rel').textContent = hsIsPartner(c, userNick) ? '💕 同频恋人' : '🍀 同频好友';
+                    // 顶部实时状态（带缓存，每小时更新一次）
+                    hsRenderLiveStatus(appPage, c, userNick);
+                    const statusEl = appPage.querySelector('#hs-target-status');
+                    if (statusEl) statusEl.onclick = () => {
+                        hsSet(c.id, 'liveStatus', null); // 清缓存强制刷新
+                        hsRenderLiveStatus(appPage, c, userNick);
+                    };
                 }
                 
                 function renderECG() {
@@ -7071,6 +7079,33 @@
                 if (recent) s += `\n最近和${userNick}的聊天：\n${recent}\n`;
                 s += `\n${c.name} 和 ${userNick} 的关系：` + (hsIsPartner(c, userNick) ? '恋人' : '朋友') + '\n';
                 return s;
+            }
+
+            // ===== 顶部实时状态：让 TA 用一句话报告此刻在干嘛（带每小时缓存）=====
+            async function hsRenderLiveStatus(appPage, c, userNick) {
+                const el = appPage.querySelector('#hs-target-status');
+                if (!el || !c) return;
+                // 缓存：同一小时内不重复请求
+                const hourKey = new Date().toISOString().slice(0, 13); // 精确到小时
+                const cached = hsGet(c.id, 'liveStatus', null);
+                if (cached && cached.hour === hourKey && cached.text) {
+                    el.innerHTML = `<span>${cached.text}</span>`;
+                    return;
+                }
+                el.innerHTML = `<span style="opacity:0.7;">读取此刻状态…</span>`;
+                try {
+                    const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：你是 ${c.name}。现在是 ${new Date().getHours()} 点左右。请用一句极简短的"在线状态"告诉 ${userNick} 你此刻在干嘛，要符合人设和当前时间。\n格式：一个 emoji + 4到8个字，例如「💤 准备睡觉」「🍜 在吃午饭」「💻 加班赶工」「🚶 散步回家」「📖 窝着看书」。\n只输出这一句，不要任何多余的字、不要引号、不要解释。`;
+                    const text = await hsCallAI(sysPrompt, '请直接输出状态。');
+                    const clean = (text || '').trim().replace(/^["'「【]|["'」】]$/g, '').split('\n')[0].slice(0, 20);
+                    if (clean) {
+                        el.innerHTML = `<span>${clean}</span>`;
+                        hsSet(c.id, 'liveStatus', { hour: hourKey, text: clean });
+                    } else {
+                        el.innerHTML = `<span style="opacity:0.6;">🍃 在线</span>`;
+                    }
+                } catch(err) {
+                    el.innerHTML = `<span style="opacity:0.6;">🍃 在线</span>`;
+                }
             }
             
             // 工具：把同频卡片存进 memory
@@ -9851,43 +9886,24 @@
                     const mainPlatform = localStorage.getItem('apiPlatform') || 'openai';
                     const mainKey = localStorage.getItem('apiKey');
                     const mainEndpoint = localStorage.getItem('apiEndpoint') || '';
+
+                    // 门禁：只允许 OpenAI 官方，或 GitHub Models 的 GPT
+                    const isOpenAIOfficial = mainPlatform === 'openai';
+                    const isGithubGPT = mainPlatform === 'MyAPI' && /github\.ai/i.test(mainEndpoint);
+
+                    if (!mainKey || (!isOpenAIOfficial && !isGithubGPT)) {
+                        alert('恋爱G匿名互助会只对 ChatGPT 开放哦～\n\n需要你在「设置」里把 API 配成下面任意一种：\n· OpenAI 官方（平台选 openai）\n· GitHub Models 的 GPT（平台选 MyAPI，接口地址填 https://models.github.ai/inference）\n\n配好之后再来玩吧 🍃');
+                        return null;
+                    }
+
+                    // 通过门禁，复用主 API，模型也用用户自己在设置里选的（只要是 GPT 就行）
                     const mainModel = localStorage.getItem('apiModel') || '';
-
-                    // 判断是否 OpenAI 兼容
-                    const isOpenAICompat = mainPlatform === 'openai' ||
-                        (mainPlatform === 'MyAPI' && /github\.ai|openai|azure|deepseek|moonshot|together|groq|siliconflow/i.test(mainEndpoint));
-
-                    if (mainKey && isOpenAICompat) {
-                        return {
-                            platform: mainPlatform, // 保留原平台名，让 ApiHandler 正确处理 endpoint
-                            endpoint: mainEndpoint,
-                            apiKey: mainKey,
-                            model: mainModel || localStorage.getItem('apiModel') || 'gpt-4o-mini'
-                        };
-                    }
-
-                    // 主 API 不兼容（如 Gemini），用单独存的 key
-                    let key = localStorage.getItem('g_club_openai_key');
-                    let clubEndpoint = localStorage.getItem('g_club_endpoint') || '';
-                    let clubModel = localStorage.getItem('g_club_model') || '';
-                    if (!key) {
-                        key = prompt('恋爱G匿名互助会需要一个 ChatGPT (OpenAI) 兼容的 API。\n\n第 1 步 / 共 3 步：\n请输入你的 API Key：');
-                        if (!key || !key.trim()) return null;
-                        clubEndpoint = prompt('第 2 步 / 共 3 步：\n请输入接口地址 endpoint。\n\n· 如果用 OpenAI 官方，留空即可\n· 如果用 GitHub Models，填：https://models.github.ai/inference\n· 其他兼容服务填对应地址', 'https://models.github.ai/inference');
-                        if (clubEndpoint === null) return null;
-                        clubModel = prompt('第 3 步 / 共 3 步：\n请输入模型名。\n\n· OpenAI 官方填：gpt-4o-mini\n· GitHub Models 填带前缀的名字，比如：openai/gpt-4o-mini', 'openai/gpt-4o-mini');
-                        if (!clubModel || !clubModel.trim()) return null;
-                        localStorage.setItem('g_club_openai_key', key.trim());
-                        localStorage.setItem('g_club_endpoint', clubEndpoint.trim());
-                        localStorage.setItem('g_club_model', clubModel.trim());
-                    }
-                    // 根据 endpoint 自动判断平台：有 endpoint 走 MyAPI（兼容 GitHub 等），没有走 openai 官方
-                    const clubPlatform = (clubEndpoint && clubEndpoint.trim()) ? 'MyAPI' : 'openai';
+                    const fallbackModel = isGithubGPT ? 'openai/gpt-4o' : 'gpt-4o';
                     return {
-                        platform: clubPlatform,
-                        endpoint: clubEndpoint || '',
-                        apiKey: localStorage.getItem('g_club_openai_key'),
-                        model: clubModel || 'gpt-4o-mini'
+                        platform: mainPlatform,
+                        endpoint: mainEndpoint,
+                        apiKey: mainKey,
+                        model: mainModel || fallbackModel
                     };
                 } else {
                     return {
