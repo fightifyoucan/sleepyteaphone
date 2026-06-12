@@ -3045,7 +3045,7 @@
                                 // 仅在线下模式下，括号动作变透明（沉浸感）；否则正常气泡
                                 const offlineMode = c.mode?.offline;
                                 const thoughtsMode = c.mode?.thoughts || c.mode?.innerThoughts;
-                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file'||m.type==='plot') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:rgba(213,235,228,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:none;color:#5C8073;font-style:italic;padding:8px 12px;border-radius:14px;border:1px solid rgba(213,235,228,0.7);' : '');
+                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file'||m.type==='plot') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:rgba(213,235,228,0.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(8px);box-shadow:none;color:#A08578;font-style:italic;' : '');
                                 const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||m.type==='plot'||(isThoughtBubble && thoughtsMode)) ? 'no-tail' : '';
 
                                 if(m.type==='photo') return `<div class="message-bubble-wrapper">
@@ -4014,10 +4014,30 @@
                                             messages[lastUserIdx].parts[0].text = `【系统指令：${systemPrompt}】\n\n${messages[lastUserIdx].parts[0].text}`;
                                         }
                                     } else {
-                                        messages = visibleHistory.slice(-30).map(msg => ({
-                                            role: msg.sender === 'me' ? 'user' : 'assistant',
-                                            content: getMsgText(msg)
-                                        }));
+                                        messages = [];
+                                        for (const msg of visibleHistory.slice(-30)) {
+                                            const role = msg.sender === 'me' ? 'user' : 'assistant';
+                                            // 图片消息：尝试取出真实图片，按 vision 格式发给 AI，让它真的"看到"
+                                            if (msg.type === 'image' && msg.sender === 'me') {
+                                                let imgData = null;
+                                                try {
+                                                    if (window.ImageDB && msg.content) {
+                                                        imgData = await window.ImageDB.resolve(msg.content);
+                                                    }
+                                                } catch(e) {}
+                                                if (imgData && imgData.startsWith('data:image')) {
+                                                    messages.push({
+                                                        role: 'user',
+                                                        content: [
+                                                            { type: 'text', text: msg.text ? msg.text : '（我发了一张图片，请仔细看看是什么，然后像平时聊天那样自然地回应我——记得连发好几条短消息，别只回一条就完事）' },
+                                                            { type: 'image_url', image_url: { url: imgData } }
+                                                        ]
+                                                    });
+                                                    continue;
+                                                }
+                                            }
+                                            messages.push({ role, content: getMsgText(msg) });
+                                        }
                                         messages.unshift({ role: 'system', content: systemPrompt });
                                     }
 
