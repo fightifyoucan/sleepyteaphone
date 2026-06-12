@@ -77,6 +77,8 @@
         body.brown-font .love-widget { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
         body.brown-font .widget-label { color: #775C56 !important; text-shadow: 0 1px 2px rgba(255,255,255,0.3) !important; }
         .app-icon:active { transform: scale(0.9); }
+        .love-widget { transition: transform 0.2s; }
+        .love-widget:active, #tea-widget:active { transform: scale(0.92); }
         .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); aspect-ratio: 1 / 1; flex-shrink: 0; object-fit: cover; overflow: hidden; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -148,10 +150,10 @@
         .message-bubble { border-radius: 18px 18px 18px 18px; padding: 7px 11px; font-size: 14px; line-height: 1.4; color: #775C56; position: relative; max-width: 100%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08)); }
         .message-bubble.sent { background-color: #FFD3D4; }
 
-        .ctx-menu { position:fixed; background:#D5EBE4; border-radius:12px; padding:6px 0; z-index:9998; min-width:130px; box-shadow:0 4px 16px rgba(119,92,86,0.2); }
-        .ctx-item { padding:11px 18px; color:#775C56; font-size:14px; cursor:pointer; white-space:nowrap; border-bottom:1px solid rgba(119,92,86,0.1); }
-        .ctx-item:hover { background:rgba(119,92,86,0.08); }
-        .ctx-item.danger { color:#FF453A; border-bottom:none; }
+        .ctx-menu { position:fixed; background:#775C56; border-radius:12px; padding:5px; z-index:9998; box-shadow:0 4px 16px rgba(119,92,86,0.35); display:grid; grid-template-columns:repeat(4,1fr); gap:2px; width:236px; }
+        .ctx-menu .ctx-item { color:#fff; font-size:12px; padding:8px 4px; cursor:pointer; white-space:nowrap; border-radius:7px; text-align:center; }
+        .ctx-menu .ctx-item:active { background:rgba(255,255,255,0.18); }
+        .ctx-menu .ctx-item.danger { color:#FFB3B3; }
         .no-tail { }
         .message-bubble.no-tail::after { display: none !important; }
         .message-bubble.sent::after {
@@ -427,6 +429,9 @@
             display: inline-block;
         }
         /* 展开撤回内容时的竖向容器：不要被套气泡背景 */
+        .plot-card em { font-style: italic; color: #A08578; opacity: 0.95; }
+        .plot-card p { margin: 0 0 10px 0; text-indent: 0; }
+        .plot-card p:last-child { margin-bottom: 0; }
         .msg-nudge .revoked-stack {
             background: none;
             padding: 0;
@@ -1563,7 +1568,7 @@
                     const chatHist = (DB.getChatById(c.id) || []).filter(m => !m.revoked && m.type !== 'timestamp' && m.sender !== 'system');
                     const recentDigest = chatHist.slice(-15).map(m => {
                         const who = m.sender === 'me' ? userNick : (c.notes || c.name);
-                        const txt = m.text || (m.type==='image'?'[图片]':m.type==='voice'?'[语音]':m.type==='call'?'[通话]':'[消息]');
+                        const txt = m.text || (m.type==='image'?'[图片]':m.type==='voice'?'[语音]':m.type==='call'?'[通话]':m.type==='plot'?'[剧情]':'[消息]');
                         return `${who}：${txt}`;
                     }).join('\n');
                     
@@ -2133,7 +2138,7 @@
                         <div class="rounded-xl p-4 mb-4" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
                             <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#D5EBE4;">记忆</h3>
                             <div class="mb-3"><label class="text-sm font-medium" style="color:#775C56;">记忆数</label><input type="number" id="ai-context-limit" value="10" class="float-right w-16 text-center rounded" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"></div>
-                            <div class="mb-3"><label class="text-sm font-medium block mb-1" style="color:#775C56;">世界书</label><select id="ai-world-book-select" class="w-full p-2 rounded text-sm" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"><option value="">(无)</option></select></div>
+                            <div class="mb-3"><label class="text-sm font-medium block mb-1" style="color:#775C56;">世界书（可多选，聊到关键词时自动激活）</label><div id="ai-world-book-list" class="w-full p-2 rounded text-sm" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56; max-height:140px; overflow-y:auto;"><div style="color:#b0a090;font-size:12px;">暂无世界书，先去「世界书」app 创建</div></div></div>
                             <div><label class="text-sm font-medium block mb-1" style="color:#775C56;">手动记忆</label><textarea id="ai-manual-memory" rows="2" class="w-full p-2 rounded-lg text-sm resize-none" style="background:white; color:#775C56; border:none;"></textarea></div>
                         </div>
                         <div class="rounded-xl p-4 mb-6" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
@@ -2190,7 +2195,7 @@
                     const userNick = localStorage.getItem('user_nick') || '我';
                     const recentDigest = chatHist.slice(-12).map(m => {
                         const who = m.sender === 'me' ? userNick : (contact.notes || contact.name);
-                        const txt = m.text || (m.type==='image'?'[图片]':m.type==='voice'?'[语音]':m.type==='call'?'[通话]':'[消息]');
+                        const txt = m.text || (m.type==='image'?'[图片]':m.type==='voice'?'[语音]':m.type==='call'?'[通话]':m.type==='plot'?'[剧情]':'[消息]');
                         return `${who}：${txt}`;
                     }).join('\n');
                     const apiKey = localStorage.getItem('apiKey');
@@ -2952,6 +2957,11 @@
                                     }
                                     return `<img ${srcAttr} style="${style}"${extraClass?` class="${extraClass}"`:''}>`;
                                 };
+                                if(m.type==='plot') {
+                                    // 线下剧情文：小说体卡片，<em> 内心想法显示为斜体淡色
+                                    const safe = (m.text||'').replace(/<(?!\/?(p|em|br)\b)[^>]*>/gi, '');
+                                    body = `<div class="plot-card" style="background:#EDF6F2;border-radius:14px;padding:16px 18px;color:#775C56;font-size:14.5px;line-height:2.0;max-width:300px;letter-spacing:0.5px;border:1px solid rgba(125,170,155,0.25);">${safe}</div>`;
+                                }
                                 if(m.type==='image') body = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;');
                                 if(m.type==='photo') body = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;', 'photo-tap');
                                 if(m.type==='sticker') body = _imgTag(m.content, 'width:110px;height:110px;object-fit:cover;border-radius:10px;display:block;');
@@ -3035,8 +3045,8 @@
                                 // 仅在线下模式下，括号动作变透明（沉浸感）；否则正常气泡
                                 const offlineMode = c.mode?.offline;
                                 const thoughtsMode = c.mode?.thoughts || c.mode?.innerThoughts;
-                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:transparent;box-shadow:none;color:#B89B95;font-style:italic;padding:4px 8px;' : (isActionBubble && offlineMode ? 'background:transparent;box-shadow:none;color:#9A7872;padding:4px 8px;' : ''));
-                                const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||(isThoughtBubble && thoughtsMode)||(isActionBubble && offlineMode)) ? 'no-tail' : '';
+                                const bubbleStyle = (m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file'||m.type==='plot') ? 'background:transparent;box-shadow:none;padding:0;' : (isThoughtBubble && thoughtsMode ? 'background:rgba(213,235,228,0.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:none;color:#5C8073;font-style:italic;padding:8px 12px;border-radius:14px;border:1px solid rgba(213,235,228,0.7);' : '');
+                                const noTail = (m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file'||m.type==='plot'||(isThoughtBubble && thoughtsMode)) ? 'no-tail' : '';
 
                                 if(m.type==='photo') return `<div class="message-bubble-wrapper">
                                     <div class="message-bubble ${me?'sent':'received'} no-tail" style="background:transparent;box-shadow:none;padding:0;cursor:pointer;" oncontextmenu="return false;" data-idx="${originalIndex}">
@@ -3241,7 +3251,7 @@
                                     p.querySelector('#quote-text-content').textContent=qSender+': '+qText;
                                 }},
                                 {label:'复制', action:()=>{ navigator.clipboard?.writeText(msg.text||'').catch(()=>{}); }},
-                                ...(!msg.type || msg.type==='text' ? [{label:'编辑', action:()=>{
+                                ...((typeof msg.text === 'string' && msg.text !== '' && msg.type!=='transfer' && msg.type!=='gift' && msg.type!=='image' && msg.type!=='photo' && msg.type!=='sticker' && msg.type!=='voice') ? [{label:'编辑', action:()=>{
                                     const dlg = document.createElement('div');
                                     dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.3);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
                                     dlg.innerHTML = `<div style="background:#F5F0E8;border-radius:18px 18px 0 0;width:100%;padding:16px;padding-bottom:24px;box-sizing:border-box;">
@@ -3286,11 +3296,17 @@
                                 {label:'删除', danger:true, action:()=>{ deleteMsg(msgIdx); }},
                             ];
                             menu.innerHTML = items.map((it,i)=>`<div class="ctx-item${it.danger?' danger':''}" data-i="${i}">${it.label}</div>`).join('');
-                            // Position relative to chat page
+                            // Position relative to chat page: 横排菜单显示在气泡上方居中（像微信）
                             const pRect = p.getBoundingClientRect();
-                            menu.style.left = Math.min(x - pRect.left, pRect.width - 160)+'px';
-                            menu.style.top = Math.min(y - pRect.top, pRect.height - 220)+'px';
                             p.appendChild(menu);
+                            const mW = menu.offsetWidth || 280;
+                            const mH = menu.offsetHeight || 44;
+                            let mLeft = (x - pRect.left) - mW / 2;        // 以触摸点为中心
+                            mLeft = Math.max(8, Math.min(mLeft, pRect.width - mW - 8));
+                            let mTop = (y - pRect.top) - mH - 12;          // 默认在触摸点上方
+                            if (mTop < 8) mTop = (y - pRect.top) + 24;     // 太靠顶就放到下方
+                            menu.style.left = mLeft + 'px';
+                            menu.style.top = mTop + 'px';
                             menu.querySelectorAll('.ctx-item').forEach(el => {
                                 el.onclick = () => { items[parseInt(el.dataset.i)].action(); menu.remove(); };
                             });
@@ -3639,29 +3655,8 @@
                     p.querySelector('#voice-sw-btn').onclick=()=>showDlg('发送语音',[{label:'语音内容',id:'txt',placeholder:'输入语音内容…'}],'发送',v=>{if(v.txt)send({id:`m_${Date.now()}`,sender:'me',type:'voice',text:v.txt,duration:Math.max(1,Math.ceil(v.txt.length/3)),time:new Date()});});
                     inp.onkeypress=(e)=>{if(e.key==='Enter'&&inp.value){
                         const text = inp.value;
-                        // 拆分括号包裹的动作和心声成独立气泡
-                        const parts = [];
-                        const regex = /([（(][^)）]+[)）])|(〈[^〉]+〉)/g;
-                        let lastIdx = 0;
-                        let m;
-                        while ((m = regex.exec(text)) !== null) {
-                            if (m.index > lastIdx) {
-                                const t = text.slice(lastIdx, m.index).trim();
-                                if (t) parts.push(t);
-                            }
-                            parts.push(m[0].trim());
-                            lastIdx = m.index + m[0].length;
-                        }
-                        if (lastIdx < text.length) {
-                            const t = text.slice(lastIdx).trim();
-                            if (t) parts.push(t);
-                        }
-                        if (parts.length === 0) parts.push(text);
-                        parts.forEach((p, i) => {
-                            setTimeout(() => {
-                                send({id:`m_${Date.now()}_${i}`,sender:'me',type:'text',text:p,time:new Date()});
-                            }, i * 80);
-                        });
+                        // 用户打什么就发什么，原样发送一条，不做任何拆分
+                        send({id:`m_${Date.now()}`,sender:'me',type:'text',text:text,time:new Date()});
                         inp.value='';
                     }};
                     const inputBar = p.querySelector('.chat-input-bar');
@@ -3898,22 +3893,82 @@
                                         }
                                     } catch(e) {}
 
-                                    let systemPrompt = anniversaryPrompt + `【说话的状态·最重要】放松、自然地聊，就像你平时和最熟的人发微信那样。不要因为下面有一堆规则就变得拘谨、客气、像在完成任务。真人聊天是松弛的、会跳脱的、有小情绪小脾气的，可以接梗、可以吐槽、可以突然岔开话题、可以只顾着说自己想说的。别每句都那么周正、别老是反问"你觉得呢"，那样很像客服。守住下面的格式就行，但语气和性格请尽情自然流露。\n而且真人放松下来话反而更多——想到什么说什么，一个念头接一个念头，所以一般会连着发好几条（三条往上），而不是说一两句就收住。聊到感兴趣的、有话说的话题时，别吝啬，多分享你的想法、感受、联想，把内容聊得饱满有来有回，像和好朋友打开了话匣子那样。\n\n【发消息的方式】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 3 到 8 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行，有短有长）：\n哎呀。\n一整夜都没睡呀？\n你这样熬下去身体真的会吃不消的，我有点担心。\n要不先去眯一会儿，哪怕只睡两三个小时也好，醒了再继续。\n我在这儿陪着你，不急。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以少回几条。\n\n【特别强调】即使用户这次发的消息很短、话题很轻松，你也要发够 3 条以上，不要因为用户话少就敷衍地只回一两条。把一个意思拆成几条短消息连发，是你必须做到的事，不是可选项。\n\n`;
+                                    // 兼容：database.js 可能把 mode 存成了 JSON 字符串，这里统一转回对象
+                                    let _mode = c.mode;
+                                    if (typeof _mode === 'string') { try { _mode = JSON.parse(_mode); } catch(e) { _mode = {}; } }
+                                    _mode = _mode || {};
+                                    const isOffline = !!_mode.offline;
+                                    const isThoughts = !!(_mode.thoughts || _mode.innerThoughts);
+
+                                    let systemPrompt;
+                                    if (isOffline) {
+                                        // 线下模式：剧情文独占，一整段清晰指令（学老师，避免模型把"要求"当台词念出来）
+                                        // 先收集世界书内容（线下也要用）
+                                        let _wbText = '';
+                                        try {
+                                            const _allWB = JSON.parse(localStorage.getItem('m-tea-world-books-list') || '[]');
+                                            const _ids = c.memory?.worldBookIds || (c.memory?.worldBookId ? [c.memory.worldBookId] : []);
+                                            const _recent = (history || []).filter(m => m.sender === 'me').slice(-3).map(m => m.text || '').join(' ');
+                                            const _trig = _ids.map(id => _allWB.find(w => w.id === id)).filter(w => w && (w.alwaysActive || (w.keywords && _recent && w.keywords.split(/[,，]/).map(k=>k.trim()).filter(Boolean).some(k=>_recent.includes(k)))));
+                                            if (_trig.length) _wbText = _trig.map(w => w.content).join('\n');
+                                        } catch(e) {}
+                                        systemPrompt = anniversaryPrompt
+                                            + `你现在正在线下、面对面地扮演一个角色和「${userNick}」相处。请直接以剧情小说的方式演出场景，不要复述、不要解释下面的任何要求，直接开始演。\n\n`
+                                            + `【你的角色】：${c.persona || '一个温柔、细腻的人'}\n`
+                                            + (c.notes ? `【角色名/备注】：${c.notes}\n` : '')
+                                            + (_wbText ? `【世界观与背景设定（自然融入，不要复述）】：\n${_wbText}\n` : '')
+                                            + (c.memory?.manual ? `【记忆】：${c.memory.manual}\n` : '')
+                                            + `\n【输出格式·必须严格遵守】：\n`
+                                            + `· 你的整个回复必须被唯一一对 [剧情:...] 包裹，方括号里是一整行、没有任何换行符。\n`
+                                            + `· 用 <p></p> 分隔每个段落（描写、动作、对话各自成段）。\n`
+                                            + `· 角色说的话用英文双引号包裹，且单独放进一个只含这句话的 <p> 里，例如：<p>"你来啦。"</p>\n`
+                                            + `· 环境和动作描写直接写在 <p> 里。\n`
+                                            + `· 【必须包含内心想法】每次回复里，至少要有一到两处角色没说出口的内心独白、念头或情绪，用 <em></em> 单独包起来，让人读到角色的真实心理。例如：<em>她今天看起来格外开心，真好。</em> 这是线下剧情最动人的部分，绝对不能省略。\n`
+                                            + `· 全文 200-300 字，细腻有画面感。\n\n`
+                                            + `【最重要的原则】：你只能描写你自己扮演的角色——他的动作、神态、语言、心理。严禁替「${userNick}」描写任何动作、表情、语言或心理，「${userNick}」做什么完全由对方自己决定，你只根据对方的话做出你角色的真实反应。严禁霸总言行，基调细腻温柔、平等尊重。\n`
+                                            + `【拒绝陈词滥调】：禁用"嘴角勾起一抹邪魅的笑""空气仿佛凝固了""心头涌上暖流""如遭雷击"这类被写烂的套话，用具体、新鲜、贴合角色的描写。\n\n`
+                                            + `【正确示范】：[剧情:<p>他听见门口的动静，放下手里的书抬起头。</p><p><em>她比约定的时间早到了。</em></p><p>"外面冷吧，先过来烤烤火。"</p><p>他起身往壁炉那边添了块柴，火光把屋子映得暖融融的。</p>]\n`;
+                                        // 线下模式：systemPrompt 已完整，后面的线上规则都被 !isOffline 跳过
+                                    } else {
+                                    systemPrompt = anniversaryPrompt + `【说话的状态·最重要】放松、自然地聊，就像你平时和最熟的人发微信那样。不要因为下面有一堆规则就变得拘谨、客气、像在完成任务。真人聊天是松弛的、会跳脱的、有小情绪小脾气的，可以接梗、可以吐槽、可以突然岔开话题、可以只顾着说自己想说的。别每句都那么周正、别老是反问"你觉得呢"，那样很像客服。守住下面的格式就行，但语气和性格请尽情自然流露。\n而且真人放松下来话反而更多——想到什么说什么，一个念头接一个念头，所以一般会连着发好几条（三条往上），而不是说一两句就收住。聊到感兴趣的、有话说的话题时，别吝啬，多分享你的想法、感受、联想，把内容聊得饱满有来有回，像和好朋友打开了话匣子那样。\n\n【发消息的方式】你在用微信和好友聊天。真人发微信从不发一大段，而是连发好几条短消息。所以你每次回复都必须发 3 到 8 条短消息，每条消息单独占一行（用换行符分隔每条）。\n\n正确示范（用户说"我通宵了"，你回复，注意每条占一行，有短有长）：\n哎呀。\n一整夜都没睡呀？\n你这样熬下去身体真的会吃不消的，我有点担心。\n要不先去眯一会儿，哪怕只睡两三个小时也好，醒了再继续。\n我在这儿陪着你，不急。\n\n错误示范（绝对不要这样，全挤成一句）：\n哎呀，一整夜都没睡呀，快去补觉吧。\n\n记住：用换行把回复拆成好几条短消息，不要把话挤在一句里。只有当用户只是简单回应（如"嗯""好""哦"）时才可以少回几条。\n\n【特别强调】即使用户这次发的消息很短、话题很轻松，你也要发够 3 条以上，不要因为用户话少就敷衍地只回一两条。把一个意思拆成几条短消息连发，是你必须做到的事，不是可选项。\n\n`;
+                                    }
                                     systemPrompt += `你是一个真实的微信好友。你能感知现实时间，根据时间点（深夜、清晨、午饭时间等）自然关怀用户。当前时间是：${currentTime}。如果对方发图，务必在第一条回复里自然评论图片内容。你现在的身份是：${c.name}。\n`;
                                     systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。别敷衍（比如只回'嗯嗯''好的''哦'）。让用户感受到你在认真听、在乎 TA 就好。\n";
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
+                                    // 【世界书注入】按关键词触发：始终激活的、或最近用户消息命中关键词的世界书才注入
+                                    try {
+                                        const allWorldBooks = JSON.parse(localStorage.getItem('m-tea-world-books-list') || '[]');
+                                        const linkedIds = c.memory?.worldBookIds || (c.memory?.worldBookId ? [c.memory.worldBookId] : []);
+                                        if (linkedIds.length > 0 && allWorldBooks.length > 0) {
+                                            // 取最近几条用户消息作为关键词检索文本
+                                            const recentUserText = (history || []).filter(m => m.sender === 'me').slice(-3).map(m => m.text || '').join(' ');
+                                            const triggered = linkedIds
+                                                .map(id => allWorldBooks.find(wb => wb.id === id))
+                                                .filter(wb => {
+                                                    if (!wb) return false;
+                                                    if (wb.alwaysActive) return true;
+                                                    if (!wb.keywords || !recentUserText) return false;
+                                                    const kws = wb.keywords.split(/[,，]/).map(k => k.trim()).filter(Boolean);
+                                                    return kws.some(k => recentUserText.includes(k));
+                                                });
+                                            if (triggered.length > 0) {
+                                                systemPrompt += '【世界观设定】：以下是本次对话需要遵循的背景设定，请自然融入，不要生硬复述：\n';
+                                                triggered.forEach(wb => { systemPrompt += `· ${wb.content}\n`; });
+                                            }
+                                        }
+                                    } catch(e) {}
                                     if (c.memory?.manual) systemPrompt += `【记忆】：${c.memory.manual}\n`;
                                     
-                                    systemPrompt += "【格式小提示】：每条消息自然地用中文标点收尾就好，别用空格代替标点。不要用 *动作* 或 [动作] 这种格式，也别用 😏 这个表情。除此之外，怎么自在怎么说。\n";
-                                    systemPrompt += "【语气词】：想用语气词（唔、嗯、哎呀、那个）就用，不想用就不用，全凭当下感觉，不用刻意。\n";
-                                    systemPrompt += "【撤回消息·特殊能力】：只有当你说了一句不合时宜、害羞了、后悔了、或者一时冲动说漏嘴的话时，你才可以\"说出口又立刻收回\"。用法：在回复里单独加一行 [撤回：那句你后悔说出口的话]，系统会先把它显示出来再撤回。这是展现你真实、可爱、有小情绪一面的特殊行为，请克制使用——绝大多数正常聊天都不需要撤回，只在真的有'啊说错了/好害羞/不该说'的情境下偶尔用一次。普通的、正常的回复绝对不要撤回。\n";
-                                    if (c.mode?.offline) {
-                                        systemPrompt += "【当前为线下模式】：你和用户正处于同一个物理空间（线下见面），能听到看到对方。允许并鼓励使用 () 括号进行动作、神态、环境描写。动作描写必须独立成一个气泡（即一句台词一个气泡，一段动作描写另起一个气泡，不要把动作和台词写在同一个气泡里）。动作描写不必简短，可以丰富、细腻、有画面感。例如：先输出气泡『(把头埋进你怀里，闷闷地说了一句)』，再输出气泡『今天好累啊。』\n";
-                                    } else {
+                                    if (!isOffline) {
+                                        systemPrompt += "【格式小提示】：每条消息自然地用中文标点收尾就好，别用空格代替标点。不要用 *动作* 或 [动作] 这种格式，也别用 😏 这个表情。除此之外，怎么自在怎么说。\n";
+                                        systemPrompt += "【语气词】：想用语气词（唔、嗯、哎呀、那个）就用，不想用就不用，全凭当下感觉，不用刻意。\n";
+                                        systemPrompt += "【撤回消息·特殊能力】：只有当你说了一句不合时宜、害羞了、后悔了、或者一时冲动说漏嘴的话时，你才可以\"说出口又立刻收回\"。用法：在回复里单独加一行 [撤回：那句你后悔说出口的话]，系统会先把它显示出来再撤回。这是展现你真实、可爱、有小情绪一面的特殊行为，请克制使用——绝大多数正常聊天都不需要撤回，只在真的有'啊说错了/好害羞/不该说'的情境下偶尔用一次。普通的、正常的回复绝对不要撤回。\n";
+                                    }
+                                    if (!isOffline) {
                                         systemPrompt += "【当前为线上模式】：严禁任何形式的动作描写，只允许纯文字聊天。\n";
                                     }
-                                    if (c.mode?.thoughts || c.mode?.innerThoughts) {
+                                    if (isThoughts) {
                                         systemPrompt += "【心声模式开启】：你扮演的角色除了正常台词外，会有内心独白（心声）。心声是角色真实的、私密的想法——欲望、喜好、抱怨、暗暗的情绪、对用户的真实感受等等，常常和你嘴上说的话形成反差或补充。心声的规则：\n";
                                         systemPrompt += "  1. 心声用 〈 〉 半角尖括号包裹，独立成一个气泡。例如气泡『没事，你忙吧。』后面跟一个气泡『〈其实有点想他陪我。〉』\n";
                                         systemPrompt += "  2. 不是每次回复都要有心声，按你的角色当下心理状态自然决定。大约每 3-4 次回复中有 1 次出现心声即可，不要太频繁。\n";
@@ -3921,12 +3976,13 @@
                                         systemPrompt += "  4. 你需要记得自己之前的心声，保持角色心理的连贯性。如果之前心声里说过『其实我很在意他』，那后续行为应该和这个心理一致。\n";
                                     }
                                     
-                                    systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
+                                    if (!isOffline) systemPrompt += `\n【重要：连续气泡处理】真人聊天会把一句话拆成几个气泡连发。当用户连续发送多条气泡（中间没有你的回复打断），你必须把这些气泡**作为一个整体**来读懂用户的意思，然后回应整段，不能只回最后一条气泡。\n例子1：用户发『好困』『晚安哦』『奇怪』——这是用户在说"我好困了想睡了，但又觉得有点奇怪"，你应该回应"困了想睡"和"奇怪"两件事的整体，比如"嗯嗯快睡吧，怎么了，哪里奇怪？"——而不是只回"奇怪"。\n例子2：用户发『你好』『在吗』『？』——这是连续催促，你回"在的在的怎么啦"即可，不是只回"？"。\n规则：从你上次说话结束开始，往下数的全部用户连续气泡，都是同一段话的内容，你必须全部读取并综合回应。\n`;
                                     systemPrompt += `\n【语言艺术·拒绝陈词滥调】：追求文字的原创性和新鲜感，严禁滥用网络文学里那些被用烂的"八股文"式表达。你的文字应当具体、独特、贴合人设，能引发真实的感受，而不是依赖空洞、公式化的套话。禁用词举例（包括但不限于）：'嘴角勾起一抹邪魅/玩味/嘲讽的笑'、'深邃的眼眸里看不出情绪'、'空气仿佛凝固了'、'心头涌上一阵暖流'、'一颗石子投入心湖'、'如遭雷击'。请用更具象、更符合当下情景的方式表达情绪和氛围。\n`;
-                                    systemPrompt += `\n【气泡长度由你自己判断】：不要被字数限制。该短的时候就短，像真人发微信那样碎碎地连发几个字；该长的时候就大胆地长——倾诉、安慰、解释、表达深的情感时，想说多少就说多少，把话说透说完整，不要为了简短而把该说的砍断。完全根据当下的情景和情绪自然地决定每条气泡的长短，短长穿插，才像真人。\n`;
-                                    // 【实验】暂时去掉首句规则，测试是否影响回复条数
-                                    // systemPrompt += `\n【首句规则】：你的第一句回复必须是一个10字以内的反应性短句（例如：‘嗯？’、‘我看看...’、‘欸？’），并且必须以标点符号结尾。
-                                    systemPrompt += `\n你的第一句回复可以是一个简短的反应（比如“嗯？”“欸？”“我看看”），让对话有真人感，但这只是开头，后面要继续把话说完整。\n对话用户：${userNick}。\n请严格遵守人设，回复自然、有真人感，长短依话题而定。`;
+                                    if (!isOffline) {
+                                        systemPrompt += `\n【气泡长度由你自己判断】：不要被字数限制。该短的时候就短，像真人发微信那样碎碎地连发几个字；该长的时候就大胆地长——倾诉、安慰、解释、表达深的情感时，想说多少就说多少，把话说透说完整，不要为了简短而把该说的砍断。完全根据当下的情景和情绪自然地决定每条气泡的长短，短长穿插，才像真人。\n`;
+                                        systemPrompt += `\n你的第一句回复可以是一个简短的反应（比如“嗯？”“欸？”“我看看”），让对话有真人感，但这只是开头，后面要继续把话说完整。`;
+                                    }
+                                    systemPrompt += `\n对话用户：${userNick}。\n请严格遵守人设。`;
 
                                     // 注入用户所在地天气（如果设置了），让 AI 自然关心
                                     try {
@@ -3990,6 +4046,17 @@
                                         const titleEl2 = p.querySelector('.title');
                                         const savedTitle = titleEl2 ? titleEl2.textContent : '';
                                         let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
+
+                                        // 【线下剧情文拦截】检测 [剧情:...]，整段作为一条 plot 消息发出，跳过普通气泡拆分
+                                        const plotMatch = cleanedReply.match(/\[剧情[:：]([\s\S]*?)\]/);
+                                        if (plotMatch) {
+                                            const plotHtml = plotMatch[1].trim();
+                                            const subEl0 = p.querySelector('.title'); if(subEl0) subEl0.textContent = '对方正在输入…';
+                                            await new Promise(r => setTimeout(r, 1200));
+                                            const subEl1 = p.querySelector('.title'); if(subEl1) subEl1.textContent = savedTitle;
+                                            send({ id:`r_plot_${Date.now()}`, sender:'ai', type:'plot', text:plotHtml, time:new Date() });
+                                            return; // 剧情文是完整一段，发完即结束本次回复
+                                        }
 
                                         // 【AI自主撤回】解析 AI 主动发出的撤回指令 [撤回：要说漏嘴又后悔的话]
                                         // AI 只在"说错话/害羞/后悔/不合时宜"时才用，不该频繁
@@ -8577,14 +8644,16 @@
                 };
                 const edit = (id) => {
                     let p = document.getElementById('world-book-edit-page');
-                    if(!p.innerHTML) p.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="wb-no" style="color:#775C56;font-size:16px;">取消</span><h2 class="title">编辑</h2><span class="add-btn-520" id="wb-yes" style="font-size:16px;color:#775C56;font-weight:bold;">完成</span></div><div class="app-content p-4" style="background:#FBF9F4;"><input type="hidden" id="wb-id"><div class="rounded-lg p-2 mb-4" style="background:#fff;border-radius:10px;"><input id="wb-name" class="w-full text-lg font-bold p-2 focus:outline-none" style="background:#fff;color:#775C56;" placeholder="书名"></div><div class="rounded-lg p-2 flex-grow h-64" style="background:#fff;border-radius:10px;"><textarea id="wb-c" class="w-full h-full p-2 resize-none focus:outline-none" style="background:#fff;color:#775C56;" placeholder="设定..."></textarea></div><button id="wb-del" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#FBF9F4;border:1px solid #e8ddd0;color:#c0847a;">删除</button></div>`;
+                    if(!p.innerHTML) p.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="wb-no" style="color:#775C56;font-size:16px;">取消</span><h2 class="title">编辑</h2><span class="add-btn-520" id="wb-yes" style="font-size:16px;color:#775C56;font-weight:bold;">完成</span></div><div class="app-content p-4" style="background:#FBF9F4;"><input type="hidden" id="wb-id"><div class="rounded-lg p-2 mb-4" style="background:#fff;border-radius:10px;"><input id="wb-name" class="w-full text-lg font-bold p-2 focus:outline-none" style="background:#fff;color:#775C56;" placeholder="书名"></div><div class="rounded-lg p-2 flex-grow h-64" style="background:#fff;border-radius:10px;"><textarea id="wb-c" class="w-full h-full p-2 resize-none focus:outline-none" style="background:#fff;color:#775C56;" placeholder="设定..."></textarea></div><div class="rounded-lg p-2 mt-3" style="background:#fff;border-radius:10px;"><input id="wb-keywords" class="w-full p-2 focus:outline-none" style="background:#fff;color:#775C56;font-size:14px;" placeholder="触发关键词（逗号分隔，如：戒指,婚戒）"></div><div class="flex items-center justify-between mt-3 px-2"><span style="color:#775C56;font-size:14px;">始终激活（忽略关键词）</span><input type="checkbox" id="wb-always" style="width:20px;height:20px;"></div><button id="wb-del" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#FBF9F4;border:1px solid #e8ddd0;color:#c0847a;">删除</button></div>`;
                     const iId=p.querySelector('#wb-id'), iN=p.querySelector('#wb-name'), iC=p.querySelector('#wb-c'), del=p.querySelector('#wb-del');
                     iId.value=id||''; iN.value=''; iC.value=''; del.style.display=id?'block':'none';
-                    if(id){ const b=JSON.parse(localStorage.getItem('m-tea-world-books-list')||'[]').find(x=>x.id===id); if(b){iN.value=b.name;iC.value=b.content;} }
+                    const iKw=p.querySelector('#wb-keywords'), iAlways=p.querySelector('#wb-always');
+                    if(iKw) iKw.value=''; if(iAlways) iAlways.checked=false;
+                    if(id){ const b=JSON.parse(localStorage.getItem('m-tea-world-books-list')||'[]').find(x=>x.id===id); if(b){iN.value=b.name;iC.value=b.content; if(iKw) iKw.value=b.keywords||''; if(iAlways) iAlways.checked=!!b.alwaysActive;} }
                     p.querySelector('#wb-no').onclick=()=>{p.classList.remove('active');p.style.zIndex='200';};
                     p.querySelector('#wb-yes').onclick=()=>{
                         if(!iN.value)return; let bs=JSON.parse(localStorage.getItem('m-tea-world-books-list')||'[]');
-                        const nb={id:iId.value||`wb_${Date.now()}`,name:iN.value,content:iC.value};
+                        const nb={id:iId.value||`wb_${Date.now()}`,name:iN.value,content:iC.value,keywords:(p.querySelector('#wb-keywords')?.value||'').trim(),alwaysActive:!!(p.querySelector('#wb-always')?.checked)};
                         if(iId.value){const idx=bs.findIndex(x=>x.id===iId.value);if(idx>-1)bs[idx]=nb;}else bs.push(nb);
                         localStorage.setItem('m-tea-world-books-list',JSON.stringify(bs)); render(); p.classList.remove('active');
                     };
@@ -8605,7 +8674,7 @@
                 const notesInput = appPage.querySelector('#ai-notes');
                 const personaInput = appPage.querySelector('#ai-persona');
                 const contextLimitInput = appPage.querySelector('#ai-context-limit');
-                const worldBookSelect = appPage.querySelector('#ai-world-book-select');
+                const worldBookListEl = appPage.querySelector('#ai-world-book-list');
                 const manualMemoryInput = appPage.querySelector('#ai-manual-memory');
                 const offlineToggle = appPage.querySelector('#mode-offline');
                 const thoughtsToggle = appPage.querySelector('#mode-thoughts');
@@ -8614,7 +8683,18 @@
                 const avatarUpload = appPage.querySelector('#ai-avatar-upload');
 
                 const worldBooks = JSON.parse(localStorage.getItem('m-tea-world-books-list') || '[]');
-                worldBookSelect.innerHTML = '<option value="">(无)</option>' + worldBooks.map(wb => `<option value="${wb.id}">${wb.name}</option>`).join('');
+                function renderWorldBookChecklist(selectedIds) {
+                    if (worldBooks.length === 0) {
+                        worldBookListEl.innerHTML = '<div style="color:#b0a090;font-size:12px;">暂无世界书，先去「世界书」app 创建</div>';
+                        return;
+                    }
+                    worldBookListEl.innerHTML = worldBooks.map(wb => {
+                        const checked = (selectedIds || []).includes(wb.id) ? 'checked' : '';
+                        const kwHint = wb.alwaysActive ? '（始终激活）' : (wb.keywords ? `（关键词：${wb.keywords}）` : '（无关键词，需始终激活才生效）');
+                        return `<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;"><input type="checkbox" class="wb-check" value="${wb.id}" ${checked} style="width:16px;height:16px;flex-shrink:0;"><span style="flex:1;min-width:0;">${wb.name}<span style="color:#b0a090;font-size:11px;">${kwHint}</span></span></label>`;
+                    }).join('');
+                }
+                renderWorldBookChecklist([]);
 
                 let currentAvatar = '🤖';
                 let currentAvatarBase64 = '';
@@ -8648,7 +8728,7 @@
 
                 idInput.value = contactId || '';
                 nameInput.value = ''; notesInput.value = ''; personaInput.value = '';
-                contextLimitInput.value = 10; worldBookSelect.value = ''; manualMemoryInput.value = '';
+                contextLimitInput.value = 10; renderWorldBookChecklist([]); manualMemoryInput.value = '';
                 offlineToggle.checked = false; thoughtsToggle.checked = false;
                 avatarPreview.classList.add('hidden'); avatarEmoji.classList.remove('hidden');
 
@@ -8665,7 +8745,7 @@
                         personaInput.value = contact.persona || '';
                         if(contact.memory) {
                             contextLimitInput.value = contact.memory.contextLimit || 10;
-                            worldBookSelect.value = contact.memory.worldBookId || '';
+                            renderWorldBookChecklist(contact.memory.worldBookIds || (contact.memory.worldBookId ? [contact.memory.worldBookId] : []));
                             manualMemoryInput.value = contact.memory.manual || '';
                         }
                         if(contact.mode) {
@@ -8710,7 +8790,7 @@
                         persona: personaInput.value,
                         memory: {
                             contextLimit: contextLimitInput.value,
-                            worldBookId: worldBookSelect.value,
+                            worldBookIds: Array.from(appPage.querySelectorAll('.wb-check:checked')).map(cb => cb.value),
                             manual: manualMemoryInput.value
                         },
                         mode: {
