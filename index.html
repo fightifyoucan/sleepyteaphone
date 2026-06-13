@@ -10057,15 +10057,17 @@
                 return [...userAis, ...fakeAis];
             }
 
-            async function generatePost() {
+            async function generatePost(replaceLatest) {
                 const cfg = getApiConfig();
                 if (!cfg || !cfg.apiKey) {
                     alert(isG ? '请先填写 ChatGPT API Key' : '请先去 ⚙️ API 设置里配置 API Key');
                     return;
                 }
                 const btn = appPage.querySelector('#club-gen-btn');
+                const refreshBtn = appPage.querySelector('#club-refresh');
                 btn.disabled = true;
-                btn.textContent = '生成中…';
+                if (replaceLatest === true) { if (refreshBtn) refreshBtn.style.opacity = '0.4'; btn.textContent = '换一篇中…'; }
+                else btn.textContent = '生成中…';
 
                 const pool = buildAuthorPool();
                 const author = pool[Math.floor(Math.random() * pool.length)];
@@ -10148,6 +10150,7 @@
                         time: Date.now()
                     };
                     const posts = loadPosts();
+                    if (replaceLatest === true && posts.length > 0) posts.shift(); // 换一篇：先删掉最新那篇
                     posts.unshift(newPost);
                     if (posts.length > 50) posts.length = 50;
                     savePosts(posts);
@@ -10158,15 +10161,20 @@
                 } finally {
                     btn.disabled = false;
                     btn.textContent = '生成新帖子 +';
+                    const rb = appPage.querySelector('#club-refresh');
+                    if (rb) rb.style.opacity = '';
                 }
             }
 
-            appPage.querySelector('#club-gen-btn').onclick = generatePost;
-            appPage.querySelector('#club-refresh').onclick = render;
+            appPage.querySelector('#club-gen-btn').onclick = () => generatePost(false);
+            appPage.querySelector('#club-refresh').onclick = () => {
+                if (loadPosts().length === 0) { generatePost(false); return; } // 没帖子就直接生成一篇
+                generatePost(true); // 有帖子就换掉最新这篇
+            };
 
             render();
             if (loadPosts().length === 0) {
-                setTimeout(generatePost, 400);
+                setTimeout(() => generatePost(false), 400);
             }
         }
 
@@ -10176,11 +10184,11 @@
         function setupVirtualHugApp(appPage) {
             appPage.innerHTML = `
             <style>
-                .hug-page { background: linear-gradient(180deg, #fff5e6 0%, #ffe8d6 50%, #ffd9c5 100%); min-height: 100%; color: #5d4037; padding-bottom: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+                .hug-page { background: linear-gradient(180deg, #FFF0F1 0%, #FFE3E4 50%, #FFD3D4 100%); min-height: 100%; color: #9E5F62; padding-bottom: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
                 .hug-page::-webkit-scrollbar { display: none; }
                 .hug-header { padding: 32px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
-                .hug-back { font-size: 26px; cursor: pointer; color: #d97757; width: 30px; }
-                .hug-title { font-size: 17px; font-weight: 600; color: #d97757; }
+                .hug-back { font-size: 26px; cursor: pointer; color: #F0989B; width: 30px; }
+                .hug-title { font-size: 17px; font-weight: 600; color: #F0989B; }
                 /* 娃柜 */
                 .hug-cabinet-label { font-size: 12px; color: #aaa; margin: 0 20px 6px; }
                 .hug-cabinet { display: flex; gap: 10px; padding: 0 20px 4px; overflow-x: auto; scrollbar-width: none; }
@@ -10188,38 +10196,38 @@
                 .hug-cabinet-item { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
                 .hug-cabinet-thumb { width: 54px; height: 54px; border-radius: 12px; object-fit: cover; border: 2.5px solid transparent; background: rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; }
                 .hug-cabinet-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-                .hug-cabinet-thumb.selected { border-color: #d97757; }
-                .hug-cabinet-thumb.add-btn { border: 2px dashed rgba(217,119,87,0.4); color: #d97757; font-size: 22px; }
-                .hug-cabinet-name { font-size: 10px; color: #9e7060; max-width: 54px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .hug-cabinet-thumb.selected { border-color: #F0989B; }
+                .hug-cabinet-thumb.add-btn { border: 2px dashed rgba(240,152,155,0.45); color: #F0989B; font-size: 22px; }
+                .hug-cabinet-name { font-size: 10px; color: #BA8488; max-width: 54px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 /* 舞台 */
-                .hug-stage { margin: 8px 20px 10px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px 20px; text-align: center; box-shadow: 0 6px 20px rgba(217,119,87,0.08); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; }
+                .hug-stage { margin: 8px 20px 10px; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 16px; padding: 16px 20px; text-align: center; box-shadow: 0 6px 20px rgba(240,152,155,0.12); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 180px; }
                 .hug-toy-img { width: 130px; height: 130px; border-radius: 14px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,0.1); cursor: pointer; display: block; aspect-ratio: 1/1; }
-                .hug-upload-area { width: 130px; height: 130px; border: 2px dashed rgba(217,119,87,0.4); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #d97757; aspect-ratio: 1/1; }
-                .hug-upload-area:active { transform: scale(0.97); background: rgba(217,119,87,0.05); }
+                .hug-upload-area { width: 130px; height: 130px; border: 2px dashed rgba(240,152,155,0.45); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; color: #F0989B; aspect-ratio: 1/1; }
+                .hug-upload-area:active { transform: scale(0.97); background: rgba(240,152,155,0.07); }
                 .hug-toy-name-row { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
-                .hug-toy-name-input { background: transparent; border: none; border-bottom: 1px dashed rgba(0,0,0,0.15); font-size: 14px; text-align: center; color: #5d4037; outline: none; width: 100px; }
+                .hug-toy-name-input { background: transparent; border: none; border-bottom: 1px dashed rgba(0,0,0,0.15); font-size: 14px; text-align: center; color: #9E5F62; outline: none; width: 100px; }
                 .hug-toy-delete { font-size: 12px; color: #ccc; cursor: pointer; padding: 2px 4px; }
                 /* 联系人行 */
-                .hug-narrator-row { background: rgba(255,255,255,0.6); border: 1px solid rgba(217,119,87,0.15); border-radius: 16px; padding: 10px 14px; margin: 0 20px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-                .hug-narrator-avatar { width: 34px; height: 34px; border-radius: 8px; background: rgba(217,119,87,0.15); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+                .hug-narrator-row { background: rgba(255,255,255,0.6); border: 1px solid rgba(240,152,155,0.20); border-radius: 16px; padding: 10px 14px; margin: 0 20px 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+                .hug-narrator-avatar { width: 34px; height: 34px; border-radius: 8px; background: rgba(240,152,155,0.20); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
                 .hug-narrator-info { flex: 1; min-width: 0; }
                 .hug-narrator-label { font-size: 10px; color: #aaa; margin-bottom: 1px; }
-                .hug-narrator-name { font-size: 13px; font-weight: 500; color: #5d4037; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .hug-narrator-name { font-size: 13px; font-weight: 500; color: #9E5F62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
                 .hug-response { margin: 0 20px 10px; background: white; border-radius: 16px; padding: 12px 16px; font-size: 13px; line-height: 1.75; color: #5d4848; min-height: 48px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); white-space: pre-wrap; }
                 .hug-response.empty { color: #aaa; font-style: italic; text-align: center; opacity: 0.7; }
                 .hug-actions-title { font-size: 13px; color: #999; margin: 4px 24px 6px; }
                 .hug-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0 20px 10px; }
-                .hug-action-btn { background: white; border: none; padding: 11px 10px; border-radius: 14px; font-size: 13px; color: #5d4037; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
-                .hug-action-btn:active { transform: scale(0.96); background: #fff5e6; }
+                .hug-action-btn { background: white; border: none; padding: 11px 10px; border-radius: 14px; font-size: 13px; color: #9E5F62; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.15s; }
+                .hug-action-btn:active { transform: scale(0.96); background: #FFF0F1; }
                 .hug-action-btn:disabled { opacity: 0.4; cursor: default; }
-                .hug-action-btn.surprise { grid-column: span 2; background: linear-gradient(135deg, #ffb88c, #d97757); color: white; }
+                .hug-action-btn.surprise { grid-column: span 2; background: linear-gradient(135deg, #FFD3D4, #F0989B); color: white; }
                 .hug-action-btn.surprise:disabled { background: #ddd; }
                 .hug-options-block { background: rgba(255,255,255,0.55); border-radius: 16px; padding: 12px 14px; margin: 0 20px 14px; }
                 .hug-options-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-                .hug-option { font-size: 12px; padding: 5px 11px; background: white; border-radius: 12px; cursor: pointer; border: 1px solid #f0e0d0; color: #5d4037; }
-                .hug-option:active { background: #ffe8d6; }
-                .hug-option.custom-input { padding: 0; border: 1px solid #d97757; background: white; }
-                .hug-option.custom-input input { border: none; outline: none; padding: 5px 11px; background: transparent; font-size: 12px; width: 90px; color: #5d4037; }
+                .hug-option { font-size: 12px; padding: 5px 11px; background: white; border-radius: 12px; cursor: pointer; border: 1px solid #FBE3E4; color: #9E5F62; }
+                .hug-option:active { background: #FFE3E4; }
+                .hug-option.custom-input { padding: 0; border: 1px solid #F0989B; background: white; }
+                .hug-option.custom-input input { border: none; outline: none; padding: 5px 11px; background: transparent; font-size: 12px; width: 90px; color: #9E5F62; }
                 .hug-options-label { font-size: 12px; color: #888; font-weight: 500; }
             </style>
             <div class="hug-page">
@@ -10387,7 +10395,7 @@
                 sheet.style.cssText = 'background:#fff;border-radius:20px 20px 0 0;padding:20px 16px 30px;max-height:70%;overflow-y:auto;';
                 sheet.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                        <span style="font-size:15px;font-weight:600;color:#5d4037;">由谁来陪玩</span>
+                        <span style="font-size:15px;font-weight:600;color:#9E5F62;">由谁来陪玩</span>
                         <span id="hug-nar-close" style="font-size:22px;color:#aaa;cursor:pointer;">×</span>
                     </div>
                     ${contacts.length === 0 ? '<div style="opacity:0.4;font-size:12px;text-align:center;padding:20px;">还没有添加联系人</div>' :
@@ -10404,7 +10412,7 @@
                             }
                             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f5f0eb;cursor:pointer;" data-nar-id="${c.id}">
                                 ${avatarHtml}
-                                <span style="font-size:14px;color:#5d4037;">${displayName}</span>
+                                <span style="font-size:14px;color:#9E5F62;">${displayName}</span>
                             </div>`;
                         }).join('')
                     }
@@ -10652,13 +10660,13 @@
                 .bc-action:disabled { opacity: 0.4; }
                 .bc-shelf-title { font-size: 12px; color: #9c87b8; margin: 4px 24px 6px; display: flex; justify-content: space-between; align-items: center; }
                 .bc-shelf-add { color: #8a6dc9; font-size: 18px; cursor: pointer; padding: 0 4px; }
-                .bc-shelf { background: rgba(255,255,255,0.5); border-radius: 16px; margin: 0 20px 12px; padding: 10px; min-height: 60px; display: flex; flex-wrap: wrap; gap: 8px; }
-                .bc-item { width: 60px; text-align: center; cursor: pointer; position: relative; }
-                .bc-item-img { width: 60px; height: 60px; border-radius: 12px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; }
+                .bc-shelf { background: rgba(255,255,255,0.5); border-radius: 16px; margin: 0 20px 12px; padding: 14px 12px; min-height: 50px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; justify-items: center; }
+                .bc-item { width: 100%; max-width: 56px; text-align: center; cursor: pointer; position: relative; }
+                .bc-item-img { width: 48px; height: 48px; margin: 0 auto; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; }
                 .bc-item-img img { width: 100%; height: 100%; object-fit: cover; }
                 .bc-item-name { font-size: 10px; color: #4a3370; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .bc-item-del { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: #b89ce0; color: white; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-                .bc-empty { font-size: 11px; color: #9c87b8; opacity: 0.6; padding: 10px; }
+                .bc-empty { grid-column: 1 / -1; font-size: 11px; color: #9c87b8; opacity: 0.6; padding: 10px; text-align: center; white-space: nowrap; }
                 .bc-response { margin: 0 20px 14px; background: white; border-radius: 16px; padding: 12px 14px; font-size: 13px; line-height: 1.7; color: #4a3370; min-height: 48px; box-shadow: 0 2px 10px rgba(138,109,201,0.06); white-space: pre-wrap; }
                 .bc-response.empty { color: #9c87b8; font-style: italic; text-align: center; opacity: 0.7; }
             </style>
@@ -10780,40 +10788,17 @@
                 }
             });
 
-            // 添加按钮
+            // 添加按钮：只输入文字名字，不拍照上传
             appPage.querySelectorAll('.bc-shelf-add').forEach(btn => {
                 btn.onclick = () => {
                     const type = btn.dataset.shelf;
-                    const fi = document.createElement('input');
-                    fi.type = 'file'; fi.accept = 'image/*';
-                    fi.onchange = async (e) => {
-                        const f = e.target.files[0]; if (!f) return;
-                        const name = prompt('给这件起个名字～', type === 'skin' ? '我的精华' : '我的口红');
-                        if (name === null) return;
-                        const r = new FileReader();
-                        r.onload = async (ev) => {
-                            const img = new Image();
-                            img.onload = async () => {
-                                const size = Math.min(img.width, img.height);
-                                const canvas = document.createElement('canvas');
-                                canvas.width = size; canvas.height = size;
-                                canvas.getContext('2d').drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, size, size);
-                                const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-                                let imageRef = dataUrl;
-                                try {
-                                    if (window.ImageDB) { try { await ImageDB.readyPromise; } catch(e){} }
-                                    imageRef = await ImageDB.saveAndRef(dataUrl);
-                                } catch(err) {}
-                                data[type].push({ name: name.slice(0,12) || '未命名', imageRef });
-                                save(data);
-                                renderShelf(type);
-                                updateBtns();
-                            };
-                            img.src = ev.target.result;
-                        };
-                        r.readAsDataURL(f);
-                    };
-                    fi.click();
+                    const name = prompt('记录一件' + (type === 'skin' ? '护肤品' : '彩妆') + '～\n（直接输入名字就好）', type === 'skin' ? '我的精华' : '我的口红');
+                    if (name === null) return;
+                    if (!name.trim()) return;
+                    data[type].push({ name: name.slice(0,12) || '未命名' });
+                    save(data);
+                    renderShelf(type);
+                    updateBtns();
                 };
             });
 
@@ -11151,10 +11136,12 @@
 
                     const narName = selectedNarrator?.name || '你的小伙伴';
                     const narPersona = selectedNarrator?.persona || selectedNarrator?.desc || '';
+                    // 读取用户在设置里填的城市（天气那栏），让推荐贴合所在地
+                    let userCity = (localStorage.getItem('weatherCity') || '').split(',')[0].trim();
                     const triedArr = data.places.filter(p => p.tried).map(p => p.name);
                     const lastRecArr = window._fmLastRecommended || [];
                     const tried = [...triedArr, ...lastRecArr].join('、') || '（暂无）';
-                    const sysPrompt = `用户想吃「${query}」类的食物，请你以 ${narName} 的语气推荐 3 家店（可以是真实存在的连锁店或常见类型）。\n${narPersona ? `你的人设：${narPersona}。请让推荐和评语都贴合这个性格。\n` : ''}用户已经吃过的店：${tried}，避免重复推荐。\n\n严格按以下格式输出每一家店，用「---」单独一行分隔三家店，不要 markdown、不要编号：\n店名：xxx\n类型：xxx（比如 日料/甜品/火锅）\n地址：xxx（大致区域或参考地址）\n理由：xxx（${narName}的语气，一句话，20字内）\n---\n店名：...\n（共三家，最后一家后面不用加 ---）\n\n三家店全部输出完之后，另起一行写「===」，再写 ${narName} 的整体评语，要求：结合你的人设性格和对用户口味的了解，自然地多说几句（2到4句，60-100字），可以聊聊为什么挑这几家、最推荐哪家、惦记着想和用户一起去吃的心情等等，亲切有温度，像真的在陪用户挑店，别只敷衍一句。`;
+                    const sysPrompt = `用户想吃「${query}」类的食物，请你以 ${narName} 的语气推荐 3 家店。\n${userCity ? `【重要】用户所在城市是 ${userCity}，请推荐这个城市（或附近）真实存在或合理的店，地址也要符合 ${userCity} 当地，不要推荐其他城市或国家的店。\n` : '可以是常见的连锁店或常见类型。\n'}${narPersona ? `你的人设：${narPersona}。请让推荐和评语都贴合这个性格。\n` : ''}用户已经吃过的店：${tried}，避免重复推荐。\n\n严格按以下格式输出每一家店，用「---」单独一行分隔三家店，不要 markdown、不要编号：\n店名：xxx\n类型：xxx（比如 日料/甜品/火锅）\n地址：xxx（大致区域或参考地址）\n理由：xxx（${narName}的语气，一句话，20字内）\n---\n店名：...\n（共三家，最后一家后面不用加 ---）\n\n三家店全部输出完之后，另起一行写「===」，再写 ${narName} 的整体评语，要求：结合你的人设性格和对用户口味的了解，自然地多说几句（2到4句，60-100字），可以聊聊为什么挑这几家、最推荐哪家、惦记着想和用户一起去吃的心情等等，亲切有温度，像真的在陪用户挑店，别只敷衍一句。`;
 
                     let messages;
                     if (pPlat === 'gemini') messages = [{ role: 'user', parts: [{ text: `【系统指令：${sysPrompt}】` }] }];
@@ -11197,7 +11184,7 @@
                                 <div style="font-size:13px;color:#9A7B4F;line-height:1.5;">${narComment.replace(/</g,'&lt;')}</div>
                             </div>`;
                         }
-                        h += `<button id="fm-refresh-btn" style="margin-top:12px;width:100%;background:rgba(213,235,228,0.4);color:#5C8073;border:1px dashed #A8CFC1;border-radius:12px;padding:10px;font-size:13px;cursor:pointer;">🔄 都不太满意？换一换</button>`;
+                        h += `<div style="display:flex;justify-content:center;margin-top:12px;"><button id="fm-refresh-btn" style="width:90%;background:#D5EBE4;color:#775C56;border:none;border-radius:12px;padding:11px;font-size:13px;cursor:pointer;">🔄 都不太满意？换一换</button></div>`;
                         window._fmLastRecommended = stores.map(s => s.name);
                         area.innerHTML = h;
                         const refreshBtn = area.querySelector('#fm-refresh-btn');
