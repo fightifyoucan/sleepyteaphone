@@ -115,9 +115,12 @@
         .app-page-520.themed-520 .app-header-520,
         .app-page-520.themed-520 .bottom-nav-520 { background-color: transparent; border-color: rgba(255,255,255,0.25); }
         .app-page-520.themed-520 .page-content-520 { background-color: transparent; }
-        .app-page-520.themed-520 #page-202 .moment-item { background: transparent; border-bottom-color: rgba(255,255,255,0.3); }
-        .app-page-520.themed-520 #page-202 .moments-feed { background: rgba(251,249,244,0.55); margin-top: -40px; padding-top: 40px; }
+        .app-page-520.themed-520 #page-202 .moments-feed { background: rgba(251,249,244,0.5); margin-top: -40px; padding-top: 40px; }
+        .app-page-520.themed-520 #page-202 .moment-item { background: transparent; }
         .app-page-520.themed-520 .chat-list-item { background: transparent; border-color: rgba(255,255,255,0.3); }
+        /* 对话页：开了主题时顶栏和输入框半透明，透出主题照片 */
+        #conversation-page.conv-themed .app-header-520,
+        #conversation-page.conv-themed .chat-footer { background-color: rgba(251,249,244,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         /* "我"页面各色块半透明，露出主题照片 */
         .app-page-520.themed-520 #page-me > div[style*="background:#D5EBE4"],
         .app-page-520.themed-520 #page-me > div[style*="background: #D5EBE4"] { background: rgba(213,235,228,0.55) !important; }
@@ -1522,6 +1525,22 @@
                 </div>`;
             const appPage = document.querySelector('.app-page.active') || document.body;
             appPage.appendChild(ov);
+            // 【自定义主题】联系人朋友圈页也跟随用户主题
+            (async () => {
+                let bg = localStorage.getItem('app_theme_bg') || '';
+                if (bg && bg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                    try { bg = await window.ImageDB.resolve(bg); } catch(e) { bg = ''; }
+                }
+                if (bg) {
+                    // 主题照片铺在滚动容器上（封面在最上方会盖住顶部，照常显示；下方内容透出主题）
+                    const scrollEl = ov.querySelector('div[style*="overflow-y:auto"]');
+                    if (scrollEl) scrollEl.style.background = `linear-gradient(rgba(255,253,250,0.82),rgba(255,253,250,0.82)), url(${bg}) center/cover no-repeat fixed`;
+                    // 签名区改全透明（去掉米色卡片底，融进背景，消除断层条）
+                    ov.querySelectorAll('div[style*="background:#FBF9F4"]').forEach(el => {
+                        el.style.background = 'transparent';
+                    });
+                }
+            })();
             ov.querySelector('#cm-back').onclick = (e) => { e.stopPropagation(); ov.remove(); };
             const _inputEl = ov.querySelector('#cm-cover-input');
             const _coverEl = ov.querySelector('#cm-cover-area');
@@ -2658,6 +2677,30 @@
                         appPage.appendChild(p); 
                     }
                     p.style.display = 'flex';
+                    // 对话页背景逻辑：全局主题照片铺满（顶栏/输入框/消息区都透出）；联系人单独的聊天背景只覆盖消息区
+                    (async () => {
+                        let themeBg = localStorage.getItem('app_theme_bg') || '';
+                        if (themeBg && themeBg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                            try { themeBg = await window.ImageDB.resolve(themeBg); } catch(e) { themeBg = ''; }
+                        }
+                        // 对话页根节点：有主题照片就铺主题（垫米色兜底），否则米色
+                        if (themeBg) {
+                            p.style.background = `linear-gradient(rgba(255,253,250,0.5),rgba(255,253,250,0.5)), url(${themeBg}) center/cover no-repeat fixed, #FBF9F4`;
+                            p.classList.add('conv-themed');
+                        } else {
+                            p.style.background = '#FBF9F4';
+                            p.classList.remove('conv-themed');
+                        }
+                        // 消息区：联系人单独聊天背景优先，否则透出对话页背景（主题照片或米色）
+                        const cbox = p.querySelector('#chat-box');
+                        if (cbox) {
+                            if (c.chatBackground) {
+                                cbox.style.background = `url(${c.chatBackground}) center/cover no-repeat`;
+                            } else {
+                                cbox.style.background = 'transparent';
+                            }
+                        }
+                    })();
                     
                     p.innerHTML = `
                         <div class="app-header-520">
@@ -2665,7 +2708,7 @@
                             <h2 class="title">${c.notes||c.name}</h2>
                             <span class="add-btn-520" id="chat-more" style="font-size:22px;">⋯</span>
                         </div>
-                        <div class="chat-messages" id="chat-box" style="${c.chatBackground?`background:url(${c.chatBackground}) center/cover no-repeat`:''}"></div>
+                        <div class="chat-messages" id="chat-box" style="background:transparent;"></div>
                         <div class="chat-footer">
                             <div id="quote-preview" style="display:none; padding:8px; font-size:12px; color:#666; background:#f7f7f7; border-top:1px solid #ddd;">
                                 引用: <span id="quote-text-content"></span> <span id="quote-cancel" style="float:right;color:red;cursor:pointer;">×</span>
