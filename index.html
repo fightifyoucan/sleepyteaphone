@@ -120,7 +120,7 @@
         .app-page-520.themed-520 .chat-list-item { background: transparent; border-color: rgba(255,255,255,0.3); }
         /* 对话页：开了主题时顶栏和输入框半透明，透出主题照片 */
         #conversation-page.conv-themed .app-header-520,
-        #conversation-page.conv-themed .chat-footer { background-color: rgba(251,249,244,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        #conversation-page.conv-themed .chat-footer { background-color: rgba(251,249,244,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         /* "我"页面各色块半透明，露出主题照片 */
         .app-page-520.themed-520 #page-me > div[style*="background:#D5EBE4"],
         .app-page-520.themed-520 #page-me > div[style*="background: #D5EBE4"] { background: rgba(213,235,228,0.55) !important; }
@@ -8812,6 +8812,38 @@
             }
 
             function setupAiCharacterPage(appPage, contactId, onSaveCallback) {
+                // 【自定义主题】联系人编辑页也跟随用户主题
+                (async () => {
+                    let bg = localStorage.getItem('app_theme_bg') || '';
+                    if (!bg) return;
+                    if (bg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { bg = await window.ImageDB.resolve(bg); } catch(e) { return; }
+                    }
+                    // 延迟到页面内容渲染完再套主题，避免被覆盖
+                    setTimeout(() => {
+                        const content = appPage.querySelector('.app-content');
+                        // 主题照片也铺到页面根节点，让顶栏后面也有照片（顶栏在 content 外面）
+                        appPage.style.setProperty('background', `linear-gradient(rgba(255,253,250,0.8),rgba(255,253,250,0.8)), url(${bg}) center/cover no-repeat fixed`, 'important');
+                        if (content) content.style.setProperty('background', `linear-gradient(rgba(255,253,250,0.8),rgba(255,253,250,0.8)), url(${bg}) center/cover no-repeat fixed`, 'important');
+                        // 顶栏（可能有多个，全设一遍）
+                        appPage.querySelectorAll('.app-header').forEach(header => {
+                            header.style.setProperty('background-color', 'rgba(251,249,244,0.5)', 'important');
+                            header.style.setProperty('background', 'rgba(251,249,244,0.5)', 'important');
+                            header.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
+                            header.style.setProperty('-webkit-backdrop-filter', 'blur(10px)', 'important');
+                            header.style.setProperty('border-bottom-color', 'rgba(255,255,255,0.3)', 'important');
+                        });
+                        // 核心/记忆等米色卡片半透明
+                        appPage.querySelectorAll('.rounded-xl').forEach(el => {
+                            const s = el.getAttribute('style') || '';
+                            if (s.includes('#FBF9F4') || s.includes('box-shadow')) el.style.setProperty('background', 'rgba(251,249,244,0.5)', 'important');
+                        });
+                        // 人设框、输入框
+                        appPage.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+                            el.style.setProperty('background', 'rgba(255,255,255,0.45)', 'important');
+                        });
+                    }, 60);
+                })();
                 const backBtn = appPage.querySelector('#back-to-contacts');
                 const saveBtn = appPage.querySelector('#ai-save-btn');
                 const chatBtn = appPage.querySelector('#ai-chat-btn');
