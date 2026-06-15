@@ -119,6 +119,9 @@
         .app-page-520.themed-520 #page-202 .moment-item { background: transparent; }
         .app-page-520.themed-520 .chat-list-item { background: transparent; border-color: rgba(255,255,255,0.3); }
         /* 对话页：开了主题时顶栏和输入框半透明，透出主题照片 */
+        .app-page-520.themed-520 .chat-details-page { background: transparent; }
+        .app-page-520.themed-520 .chat-details-page .app-content { background-color: transparent !important; }
+        .app-page-520.themed-520 .chat-details-page .app-header-520 { background-color: rgba(251,249,244,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         #conversation-page.conv-themed .app-header-520,
         #conversation-page.conv-themed .chat-footer { background-color: rgba(251,249,244,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         /* "我"页面各色块半透明，露出主题照片 */
@@ -2679,14 +2682,37 @@
                     p.style.display = 'flex';
                     // 对话页背景逻辑：全局主题照片铺满（顶栏/输入框/消息区都透出）；联系人单独的聊天背景只覆盖消息区
                     (async () => {
-                        let themeBg = localStorage.getItem('app_theme_bg') || '';
-                        if (themeBg && themeBg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
-                            try { themeBg = await window.ImageDB.resolve(themeBg); } catch(e) { themeBg = ''; }
+                        let themeBg = '';
+                        const rawRef = localStorage.getItem('app_theme_bg') || '';
+                        if (rawRef) {
+                            // 用缓存避免每次点进对话页都重新解析大图（卡顿来源）
+                            if (window._convThemeCache && window._convThemeCache.ref === rawRef) {
+                                themeBg = window._convThemeCache.url;
+                            } else {
+                                themeBg = rawRef;
+                                if (rawRef.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                    try { themeBg = await window.ImageDB.resolve(rawRef); } catch(e) { themeBg = ''; }
+                                }
+                                window._convThemeCache = { ref: rawRef, url: themeBg };
+                            }
                         }
-                        // 对话页根节点：有主题照片就铺主题（垫米色兜底），否则米色
+                        // 对话页根节点：先保持米色兜底，图片预加载完成后再无缝切换（避免闪黑）
                         if (themeBg) {
-                            p.style.background = `linear-gradient(rgba(255,253,250,0.5),rgba(255,253,250,0.5)), url(${themeBg}) center/cover no-repeat fixed, #FBF9F4`;
                             p.classList.add('conv-themed');
+                            const applyBg = () => {
+                                p.style.background = `linear-gradient(rgba(255,253,250,0.5),rgba(255,253,250,0.5)), url(${themeBg}) center/cover no-repeat, #FBF9F4`;
+                            };
+                            // 已缓存过的图（之前加载成功）直接套，否则预加载完再套
+                            if (window._convThemeImgReady) {
+                                applyBg();
+                            } else {
+                                const preImg = new Image();
+                                preImg.onload = () => { window._convThemeImgReady = true; applyBg(); };
+                                preImg.onerror = () => {};
+                                preImg.src = themeBg;
+                                // 图若已在浏览器缓存里，complete 会立即为 true
+                                if (preImg.complete) { window._convThemeImgReady = true; applyBg(); }
+                            }
                         } else {
                             p.style.background = '#FBF9F4';
                             p.classList.remove('conv-themed');
@@ -4258,8 +4284,11 @@
                                             const trimmedMsg = (msgText || '').trim();
                                             // 空消息直接跳过，不发气泡
                                             if (!trimmedMsg) continue;
-                                            if (isLast && !hasMoneyIntent && !hasGiftIntent && Math.random() < 0.2) {
-                                                // 20% 概率最后一条变语音（仅普通消息，且必须有内容）
+                                            // 心声〈...〉和动作描写（...）必须是文字，不能变语音
+                                            const isThoughtMsg = /^〈[\s\S]*〉$/.test(trimmedMsg);
+                                            const isActionMsg = /^[（(][\s\S]*[）)]$/.test(trimmedMsg);
+                                            if (isLast && !hasMoneyIntent && !hasGiftIntent && !isThoughtMsg && !isActionMsg && Math.random() < 0.2) {
+                                                // 20% 概率最后一条变语音（仅普通台词，心声/动作除外）
                                                 const dur = Math.max(1, Math.ceil(trimmedMsg.length / 4));
                                                 send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'voice', text:trimmedMsg, duration:dur, time:new Date() });
                                             } else if (isLast && hasMoneyIntent) {
@@ -4367,6 +4396,22 @@
                     const setsContent = p.querySelector('#sets-content');
                     p.querySelector('#chat-more').onclick=()=>{
                         p.querySelector('#chat-sets').classList.add('active');
+                        // 【自定义主题】详情页铺上主题照片
+                        (async () => {
+                            let bg = localStorage.getItem('app_theme_bg') || '';
+                            if (!bg) return;
+                            if (bg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                try { bg = await window.ImageDB.resolve(bg); } catch(e) { return; }
+                            }
+                            const dp = p.querySelector('#chat-sets');
+                            if (dp) dp.style.setProperty('background', `linear-gradient(rgba(255,253,250,0.8),rgba(255,253,250,0.8)), url(${bg}) center/cover no-repeat fixed`, 'important');
+                            // 头像卡片、功能列表等米色块半透明
+                            setTimeout(() => {
+                                if (dp) dp.querySelectorAll('div[style*="background:#FBF9F4"]').forEach(el => {
+                                    el.style.setProperty('background', 'rgba(251,249,244,0.45)', 'important');
+                                });
+                            }, 50);
+                        })();
                         // 安全渲染头像：处理 emoji / HTML 字符串 / imgdb / data url
                         const renderAvatarHtml = (av) => {
                             if (!av) return '👤';
@@ -4911,6 +4956,7 @@
                                     const ref = (window.ImageDB && window.ImageDB.saveAndRef) ? await window.ImageDB.saveAndRef(dataUrl) : dataUrl;
                                     localStorage.setItem('app_theme_bg', ref);
                                 } catch(err) { localStorage.setItem('app_theme_bg', dataUrl); }
+                                window._convThemeCache = null; window._convThemeImgReady = false;
                                 if (window.applyAppTheme) await window.applyAppTheme();
                                 alert('主题已更新～');
                             };
@@ -4919,6 +4965,7 @@
                         const themeReset = el.querySelector('#me-theme-reset');
                         if (themeReset) themeReset.onclick = () => {
                             localStorage.removeItem('app_theme_bg');
+                            window._convThemeCache = null; window._convThemeImgReady = false;
                             if (window.applyAppTheme) window.applyAppTheme();
                             alert('已恢复默认主题');
                         };
