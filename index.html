@@ -592,6 +592,7 @@
         <div id="work-ai-club-page" class="app-page"></div>
         <div id="food-map-page" class="app-page"></div>
         <div id="extra-room-page" class="app-page"></div>
+        <div id="game-hall-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1720,6 +1721,7 @@
                 { id: 'work-ai-club', name: '社畜AI论坛', emoji: '💼', container: '.app-grid-page2' },
                 { id: 'food-map', name: '美食地图', emoji: '🍱', container: '.app-grid-page2' },
                 { id: 'extra-room', name: '番外处', emoji: '✒️', container: '.app-grid-page2' },
+                { id: 'game-hall', name: '游戏厅', emoji: '🎮', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -9152,6 +9154,8 @@
 
                 const appNameMap = {
                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
+                    'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
+                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅',
                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                 };
                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -9233,6 +9237,7 @@
                         else if (appId === 'work-ai-club') setupAILoveClubApp(appPage, 'work');
                         else if (appId === 'food-map') setupFoodMapApp(appPage);
                         else if (appId === 'extra-room') setupExtraRoomApp(appPage);
+                        else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
                             appPage.querySelector('#phone-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
@@ -9350,7 +9355,7 @@
                                 const appNameMap = {
                                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处',
+                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅',
                                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                                 };
                                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -11131,6 +11136,681 @@
         }
 
         // ============ 美食地图 ============
+        function setupGameHallApp(appPage) {
+            // ============ 游戏厅：1v1 和先生玩游戏 ============
+            // 头像渲染（复用番外处那套思路）
+            const ghAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) {
+                    return `<img data-ghimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                }
+                return av;
+            };
+            const ghResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-ghimg]').forEach(async img => {
+                    const src = img.getAttribute('data-ghimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { img.src = await window.ImageDB.resolve(src); } catch(e) {}
+                    } else { img.src = src; }
+                });
+            };
+
+            // —— 游戏厅首页：游戏列表 ——
+            function renderHall() {
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="gh-back">‹</span>
+                        <h2 class="title">游戏厅</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="gh-content" style="background:#FBF9F4;padding:16px;overflow-y:auto;">
+                        <div style="color:#775C56;opacity:0.6;font-size:13px;margin-bottom:14px;text-align:center;">和先生一对一玩游戏吧～</div>
+                        <div class="gh-game-card" data-game="uno" style="background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);">
+                            <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">🃏</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;color:#775C56;font-size:16px;">UNO</div>
+                                <div style="font-size:12px;color:#775C56;opacity:0.55;margin-top:2px;">经典纸牌，和先生一较高下</div>
+                            </div>
+                            <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                        </div>
+                        <div class="gh-game-card" data-game="guessfood" style="background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);margin-top:12px;">
+                            <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FFB088,#FF8C69);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">🍜</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;color:#775C56;font-size:16px;">你吃我猜</div>
+                                <div style="font-size:12px;color:#775C56;opacity:0.55;margin-top:2px;">想一个吃的，互相猜猜看</div>
+                            </div>
+                            <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                        </div>
+                        <div style="text-align:center;color:#775C56;opacity:0.35;font-size:12px;margin-top:20px;">更多游戏，敬请期待～</div>
+                    </div>
+                `;
+                appPage.querySelector('#gh-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                appPage.querySelector('.gh-game-card[data-game="uno"]').onclick = () => pickContactForUno();
+                appPage.querySelector('.gh-game-card[data-game="guessfood"]').onclick = () => pickContactForGuess();
+            }
+
+            // —— 选联系人 ——
+            function pickContactForUno() {
+                const contacts = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="gh-uno-back">‹</span>
+                        <h2 class="title">选择对手</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="gh-list" style="background:#FBF9F4;padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#gh-uno-back').onclick = () => renderHall();
+                const listEl = appPage.querySelector('#gh-list');
+                if (!contacts.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:50px 20px;color:#775C56;opacity:0.5;">还没有联系人，先去 520 添加吧～</div>';
+                    return;
+                }
+                listEl.innerHTML = contacts.map(c => `
+                    <div class="chat-list-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(119,92,86,0.08);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${ghAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:500;color:#775C56;">${c.notes || c.name}</div>
+                            <div style="font-size:12px;color:#775C56;opacity:0.5;">和 TA 玩一局 UNO</div>
+                        </div>
+                        <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                ghResolveAvatars(listEl);
+                listEl.querySelectorAll('.chat-list-item').forEach(item => {
+                    item.onclick = () => startUno(item.dataset.id);
+                });
+            }
+
+            // ============ UNO 游戏核心 ============
+            function startUno(contactId) {
+                const c = (typeof DB !== 'undefined' && DB.getContact) ? DB.getContact(contactId) : null;
+                if (!c) { alert('联系人不存在'); return; }
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+
+                // —— 建一副完整 UNO 牌 ——
+                const COLORS = ['red','yellow','green','blue'];
+                const COLOR_HEX = { red:'#FF5C5C', yellow:'#FFC53D', green:'#5DCB78', blue:'#4D96FF', wild:'#3A3A4A' };
+                function buildDeck() {
+                    const deck = [];
+                    COLORS.forEach(col => {
+                        deck.push({ color: col, type: 'num', val: 0 });           // 0 各一张
+                        for (let n = 1; n <= 9; n++) {                              // 1-9 各两张
+                            deck.push({ color: col, type: 'num', val: n });
+                            deck.push({ color: col, type: 'num', val: n });
+                        }
+                        ['skip','reverse','draw2'].forEach(t => {                   // 功能牌各两张
+                            deck.push({ color: col, type: t });
+                            deck.push({ color: col, type: t });
+                        });
+                    });
+                    for (let i = 0; i < 4; i++) {                                   // 变色4 + 万能+4各四张
+                        deck.push({ color: 'wild', type: 'wild' });
+                        deck.push({ color: 'wild', type: 'wild4' });
+                    }
+                    return deck;
+                }
+                function shuffle(arr) {
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                }
+
+                // —— 游戏状态 ——
+                let drawPile, discardPile, myHand, aiHand, current, curColor, gameOver, msgLog;
+                function deal() {
+                    drawPile = shuffle(buildDeck());
+                    myHand = drawPile.splice(0, 7);
+                    aiHand = drawPile.splice(0, 7);
+                    // 第一张翻牌（避开wild/wild4，简单起见重抽）
+                    let first = drawPile.shift();
+                    while (first.color === 'wild') { drawPile.push(first); shuffle(drawPile); first = drawPile.shift(); }
+                    discardPile = [first];
+                    curColor = first.color;
+                    current = 'me';        // 玩家先手
+                    gameOver = false;
+                    msgLog = '';
+                }
+                deal();
+
+                // —— 牌面文字 ——
+                function cardLabel(card) {
+                    if (card.type === 'num') return String(card.val);
+                    if (card.type === 'skip') return '⊘';
+                    if (card.type === 'reverse') return '⇄';
+                    if (card.type === 'draw2') return '+2';
+                    if (card.type === 'wild') return '🎨';
+                    if (card.type === 'wild4') return '+4';
+                    return '?';
+                }
+                function cardName(card) {
+                    const cn = { red:'红', yellow:'黄', green:'绿', blue:'蓝' };
+                    if (card.type === 'num') return cn[card.color] + card.val;
+                    if (card.type === 'skip') return cn[card.color] + '跳过';
+                    if (card.type === 'reverse') return cn[card.color] + '反转';
+                    if (card.type === 'draw2') return cn[card.color] + '+2';
+                    if (card.type === 'wild') return '变色';
+                    if (card.type === 'wild4') return '万能+4';
+                    return '牌';
+                }
+                // —— 能否出这张牌 ——
+                function canPlay(card) {
+                    const top = discardPile[discardPile.length - 1];
+                    if (card.color === 'wild') return true;
+                    if (card.color === curColor) return true;
+                    if (card.type === 'num' && top.type === 'num' && card.val === top.val) return true;
+                    if (card.type !== 'num' && card.type === top.type) return true;
+                    return false;
+                }
+                // —— 从抽牌堆摸 n 张（堆空则用弃牌堆洗回）——
+                function drawCards(hand, n) {
+                    for (let i = 0; i < n; i++) {
+                        if (!drawPile.length) {
+                            if (discardPile.length <= 1) break;
+                            const top = discardPile.pop();
+                            drawPile = shuffle(discardPile);
+                            discardPile = [top];
+                        }
+                        if (drawPile.length) hand.push(drawPile.shift());
+                    }
+                }
+
+                renderGame();
+
+                function renderGame() {
+                    const top = discardPile[discardPile.length - 1];
+                    appPage.innerHTML = `
+                        <div class="app-header-520">
+                            <span class="close-btn-520" id="uno-back">‹</span>
+                            <h2 class="title">UNO · ${oppName}</h2>
+                            <span class="add-btn-520" id="uno-restart" style="font-size:17px;cursor:pointer;">↻</span>
+                        </div>
+                        <div class="app-content" style="background:#FBF9F4;padding:0;display:flex;flex-direction:column;overflow:hidden;">
+                            <!-- 对手区 -->
+                            <div style="padding:14px 16px 10px;text-align:center;flex-shrink:0;">
+                                <div style="display:inline-flex;align-items:center;gap:8px;color:#775C56;">
+                                    <span style="font-weight:600;">${oppName}</span>
+                                    <span style="background:#FFD3D4;border-radius:10px;padding:2px 10px;font-size:13px;">${aiHand.length} 张</span>
+                                </div>
+                                <div style="margin-top:8px;display:flex;justify-content:center;gap:3px;flex-wrap:wrap;">
+                                    ${aiHand.map(()=>`<div style="width:20px;height:30px;border-radius:4px;background:linear-gradient(135deg,#C9A9D4,#A084B6);"></div>`).join('')}
+                                </div>
+                            </div>
+                            <!-- 中央：弃牌堆 + 抽牌 -->
+                            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:24px;min-height:120px;">
+                                <div id="uno-draw" style="width:62px;height:92px;border-radius:10px;background:linear-gradient(135deg,#C9A9D4,#A084B6);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.15);font-size:13px;">摸牌</div>
+                                <div style="width:62px;height:92px;border-radius:10px;background:${COLOR_HEX[top.color]};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:26px;box-shadow:0 3px 10px rgba(0,0,0,0.2);border:3px solid #fff;">${cardLabel(top)}</div>
+                            </div>
+                            <!-- 当前颜色提示 + 状态 -->
+                            <div style="text-align:center;flex-shrink:0;padding:4px;">
+                                <span style="font-size:13px;color:#775C56;">当前颜色：<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${COLOR_HEX[curColor]};vertical-align:middle;border:1px solid rgba(0,0,0,0.1);"></span></span>
+                            </div>
+                            <div id="uno-status" style="text-align:center;flex-shrink:0;padding:6px 16px;min-height:22px;color:#775C56;font-size:13px;">${current==='me'?'轮到你出牌～':oppName+'思考中…'}</div>
+                            <!-- 我的手牌 -->
+                            <div style="flex-shrink:0;padding:10px 8px 16px;background:rgba(213,235,228,0.3);border-top:1px solid rgba(119,92,86,0.1);">
+                                <div style="display:flex;align-items:center;justify-content:space-between;padding:0 8px 8px;">
+                                    <span style="font-weight:600;color:#775C56;font-size:14px;">${userNick}</span>
+                                    <span style="background:#D5EBE4;border-radius:10px;padding:2px 10px;font-size:13px;color:#775C56;">${myHand.length} 张</span>
+                                </div>
+                                <div id="uno-myhand" style="display:flex;gap:6px;overflow-x:auto;padding:4px 8px 8px;"></div>
+                            </div>
+                        </div>
+                    `;
+                    appPage.querySelector('#uno-back').onclick = () => renderHall();
+                    appPage.querySelector('#uno-restart').onclick = () => { if(confirm('重新开始一局？')){ deal(); renderGame(); } };
+                    appPage.querySelector('#uno-draw').onclick = () => { if(current==='me' && !gameOver) myDraw(); };
+
+                    // 渲染手牌
+                    const handEl = appPage.querySelector('#uno-myhand');
+                    myHand.forEach((card, idx) => {
+                        const playable = current==='me' && !gameOver && canPlay(card);
+                        const el = document.createElement('div');
+                        el.style.cssText = `min-width:52px;width:52px;height:78px;border-radius:9px;background:${COLOR_HEX[card.color]};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:22px;cursor:${playable?'pointer':'default'};box-shadow:0 2px 6px rgba(0,0,0,0.15);border:2.5px solid ${playable?'#fff':'rgba(255,255,255,0.3)'};opacity:${(current==='me'&&!gameOver&&!playable)?'0.45':'1'};transition:transform 0.1s;flex-shrink:0;`;
+                        el.textContent = cardLabel(card);
+                        if (playable) {
+                            el.onclick = () => myPlay(idx);
+                            el.ontouchstart = () => { el.style.transform='translateY(-8px)'; };
+                            el.ontouchend = () => { el.style.transform='translateY(0)'; };
+                        }
+                        handEl.appendChild(el);
+                    });
+                }
+
+                function setStatus(txt) {
+                    const s = appPage.querySelector('#uno-status');
+                    if (s) s.textContent = txt;
+                }
+
+                // UNO! 醒目闪现提示
+                function showUno(who) {
+                    const flash = document.createElement('div');
+                    flash.style.cssText = 'position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+                    flash.innerHTML = `<div style="font-size:60px;font-weight:900;font-style:italic;letter-spacing:2px;background:linear-gradient(135deg,#FF5C5C,#FFC53D,#5DCB78,#4D96FF);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 4px 16px rgba(0,0,0,0.15);transform:scale(0.4);opacity:0;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);">UNO!</div>
+                        <div style="position:absolute;bottom:42%;color:#775C56;font-size:14px;opacity:0;transition:opacity 0.4s;" id="uno-flash-who">${who} 只剩一张牌啦！</div>`;
+                    document.body.appendChild(flash);
+                    const big = flash.firstElementChild;
+                    const sub = flash.querySelector('#uno-flash-who');
+                    requestAnimationFrame(() => {
+                        big.style.transform = 'scale(1)';
+                        big.style.opacity = '1';
+                        sub.style.opacity = '1';
+                    });
+                    setTimeout(() => {
+                        big.style.opacity = '0';
+                        sub.style.opacity = '0';
+                        setTimeout(() => flash.remove(), 350);
+                    }, 1400);
+                }
+
+                // —— 玩家摸牌 ——
+                function myDraw() {
+                    drawCards(myHand, 1);
+                    setStatus('你摸了一张牌');
+                    // 摸完如果还是不能出，自动过；这里让玩家自己决定，重渲染
+                    current = 'ai';
+                    renderGame();
+                    setTimeout(aiTurn, 600);
+                }
+
+                // —— 玩家出牌 ——
+                function myPlay(idx) {
+                    const card = myHand[idx];
+                    if (!canPlay(card)) return;
+                    myHand.splice(idx, 1);
+                    discardPile.push(card);
+                    // 变色牌：让玩家选颜色
+                    if (card.color === 'wild') {
+                        chooseColor((col) => {
+                            curColor = col;
+                            applyEffectAndContinue(card, 'me');
+                        });
+                        return;
+                    }
+                    curColor = card.color;
+                    applyEffectAndContinue(card, 'me');
+                }
+
+                // —— 选颜色弹窗 ——
+                function chooseColor(cb) {
+                    const ov = document.createElement('div');
+                    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                    ov.innerHTML = `<div style="background:#FBF9F4;border-radius:16px;padding:20px;text-align:center;">
+                        <div style="color:#775C56;font-weight:600;margin-bottom:14px;">选一个颜色</div>
+                        <div style="display:flex;gap:12px;">
+                            ${COLORS.map(col=>`<div data-col="${col}" style="width:48px;height:48px;border-radius:12px;background:${COLOR_HEX[col]};cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>`).join('')}
+                        </div></div>`;
+                    document.body.appendChild(ov);
+                    ov.querySelectorAll('[data-col]').forEach(d => {
+                        d.onclick = () => { document.body.removeChild(ov); cb(d.dataset.col); };
+                    });
+                }
+
+                // —— 应用功能牌效果，然后切换回合 ——
+                function applyEffectAndContinue(card, who) {
+                    const opponentHand = who === 'me' ? aiHand : myHand;
+                    let skipNext = false;
+                    if (card.type === 'skip' || card.type === 'reverse') skipNext = true; // 1v1里反转=跳过
+                    if (card.type === 'draw2') { drawCards(opponentHand, 2); skipNext = true; }
+                    if (card.type === 'wild4') { drawCards(opponentHand, 4); skipNext = true; }
+
+                    // 胜负判断
+                    if (who === 'me' && myHand.length === 0) { endGame(true); return; }
+                    if (who === 'ai' && aiHand.length === 0) { endGame(false); return; }
+
+                    // UNO! 提示：谁剩最后一张牌就喊 UNO
+                    if (who === 'me' && myHand.length === 1) showUno(userNick);
+                    if (who === 'ai' && aiHand.length === 1) showUno(oppName);
+
+                    if (who === 'me') {
+                        renderGame();
+                        if (skipNext) {
+                            setStatus('先生被跳过，又轮到你～');
+                            // 玩家再出一次
+                        } else {
+                            current = 'ai';
+                            renderGame();
+                            setTimeout(aiTurn, 700);
+                        }
+                    } else {
+                        renderGame();
+                        if (skipNext) {
+                            setStatus('你被跳过了，先生继续');
+                            current = 'ai';
+                            setTimeout(aiTurn, 800);
+                        } else {
+                            current = 'me';
+                            renderGame();
+                        }
+                    }
+                }
+
+                // —— AI 先生回合 ——
+                async function aiTurn() {
+                    if (gameOver) return;
+                    setStatus(oppName + '思考中…');
+                    // 找出能出的牌
+                    const playableIdx = [];
+                    aiHand.forEach((card, i) => { if (canPlay(card)) playableIdx.push(i); });
+
+                    if (!playableIdx.length) {
+                        // 摸一张
+                        drawCards(aiHand, 1);
+                        const newCard = aiHand[aiHand.length - 1];
+                        if (canPlay(newCard)) {
+                            await playAiCard(aiHand.length - 1);
+                        } else {
+                            await aiSpeak('draw_pass');
+                            current = 'me';
+                            renderGame();
+                            setStatus('先生摸了一张牌，轮到你');
+                        }
+                        return;
+                    }
+                    // 简单策略：优先出功能牌打击对手，否则出第一张能出的
+                    let chosen = playableIdx.find(i => ['draw2','wild4','skip'].includes(aiHand[i].type));
+                    if (chosen === undefined) chosen = playableIdx[0];
+                    await playAiCard(chosen);
+                }
+
+                async function playAiCard(idx) {
+                    const card = aiHand[idx];
+                    aiHand.splice(idx, 1);
+                    discardPile.push(card);
+                    if (card.color === 'wild') {
+                        // AI 选手里最多的颜色
+                        const cnt = {red:0,yellow:0,green:0,blue:0};
+                        aiHand.forEach(cc => { if (cc.color!=='wild') cnt[cc.color]++; });
+                        curColor = Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0] || 'red';
+                    } else {
+                        curColor = card.color;
+                    }
+                    await aiSpeak('play', card);
+                    applyEffectAndContinue(card, 'ai');
+                }
+
+                // —— AI 说话（调用先生）——
+                let aiTalkOn = true;
+                async function aiSpeak(action, card) {
+                    if (!aiTalkOn) return;
+                    try {
+                        const line = await callUnoAI(c, action, card, aiHand.length, myHand.length);
+                        if (line) {
+                            const s = appPage.querySelector('#uno-status');
+                            if (s) s.textContent = '先生：' + line;
+                            await new Promise(r => setTimeout(r, 2500));
+                        }
+                    } catch(e) { /* 说话失败不影响游戏 */ }
+                }
+
+                // —— 结束 ——
+                function endGame(iWin) {
+                    gameOver = true;
+                    renderGame();
+                    const ov = document.createElement('div');
+                    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:30px;';
+                    ov.innerHTML = `<div style="background:#FBF9F4;border-radius:18px;padding:28px 24px;text-align:center;max-width:280px;">
+                        <div style="font-size:40px;margin-bottom:10px;">${iWin?'🎉':'🥺'}</div>
+                        <div style="font-weight:bold;color:#775C56;font-size:18px;margin-bottom:8px;">${iWin?'你赢啦！':'先生赢了～'}</div>
+                        <div id="uno-end-line" style="color:#775C56;opacity:0.7;font-size:14px;margin-bottom:18px;line-height:1.6;">${iWin?'先生输得心服口服～':'先生赢了，要不要再来一局？'}</div>
+                        <div style="display:flex;gap:10px;">
+                            <button id="uno-again" style="flex:1;background:#D5EBE4;color:#775C56;border:none;border-radius:12px;padding:11px;font-weight:600;cursor:pointer;">再来一局</button>
+                            <button id="uno-quit" style="flex:1;background:#FFD3D4;color:#775C56;border:none;border-radius:12px;padding:11px;font-weight:600;cursor:pointer;">结束</button>
+                        </div></div>`;
+                    document.body.appendChild(ov);
+                    ov.querySelector('#uno-again').onclick = () => { document.body.removeChild(ov); deal(); renderGame(); };
+                    ov.querySelector('#uno-quit').onclick = () => { document.body.removeChild(ov); renderHall(); };
+                    // 让先生说句结束的话
+                    callUnoAI(c, iWin?'lose':'win', null, aiHand.length, myHand.length).then(line => {
+                        const el = ov.querySelector('#uno-end-line');
+                        if (line && el) el.textContent = '先生：' + line;
+                    }).catch(()=>{});
+                }
+            }
+
+            // —— UNO 里先生说话的 AI 调用 ——
+            async function callUnoAI(c, action, card, aiCount, myCount) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) return '';
+                const userNick = localStorage.getItem('user_nick') || '我';
+
+                let situation = '';
+                if (action === 'play') situation = `你刚打出了「${cardNameOf(card)}」。你还剩 ${aiCount} 张牌，对方剩 ${myCount} 张。`;
+                else if (action === 'draw_pass') situation = `你没有能出的牌，摸了一张，这一轮过了。你还剩 ${aiCount} 张牌。`;
+                else if (action === 'win') situation = `你赢了这局 UNO！对方还剩 ${myCount} 张牌没出完。`;
+                else if (action === 'lose') situation = `你输了这局 UNO，对方先出完了牌。`;
+
+                const sys = `你是「${c.notes||c.name}」。${c.persona?('人设：'+c.persona):''}\n你正在和「${userNick}」玩 UNO 纸牌游戏。\n${situation}\n请用你的人设口吻，说一句简短自然的话（不超过25字），像真的在陪TA打牌一样，可以调侃、得意、撒娇或安慰。直接输出这句话，不要任何前缀、引号或括号。`;
+
+                const messages = (pPlat === 'gemini')
+                    ? [{ role:'user', parts:[{ text: sys }] }]
+                    : [{ role:'system', content: sys }, { role:'user', content: '（说一句话）' }];
+                try {
+                    const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                    const resp = await fetch(payload.url, payload.options);
+                    if (!resp.ok) return '';
+                    const data = await resp.json();
+                    let text = ApiHandler.parseChatResponse(pPlat, data);
+                    return (text || '').trim().replace(/^["'「（(]+|["'」）)]+$/g, '').slice(0, 40);
+                } catch(e) { return ''; }
+            }
+            function cardNameOf(card) {
+                if (!card) return '牌';
+                const cn = { red:'红', yellow:'黄', green:'绿', blue:'蓝' };
+                if (card.type === 'num') return cn[card.color] + card.val;
+                if (card.type === 'skip') return cn[card.color] + '跳过';
+                if (card.type === 'reverse') return cn[card.color] + '反转';
+                if (card.type === 'draw2') return cn[card.color] + '+2';
+                if (card.type === 'wild') return '变色牌';
+                if (card.type === 'wild4') return '万能+4';
+                return '牌';
+            }
+
+            // ============ 你吃我猜 ============
+            function pickContactForGuess() {
+                const contacts = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="gf-back">‹</span>
+                        <h2 class="title">选择对手</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="gf-list" style="background:#FBF9F4;padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#gf-back').onclick = () => renderHall();
+                const listEl = appPage.querySelector('#gf-list');
+                if (!contacts.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:50px 20px;color:#775C56;opacity:0.5;">还没有联系人，先去 520 添加吧～</div>';
+                    return;
+                }
+                listEl.innerHTML = contacts.map(c => `
+                    <div class="chat-list-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(119,92,86,0.08);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${ghAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:500;color:#775C56;">${c.notes || c.name}</div>
+                            <div style="font-size:12px;color:#775C56;opacity:0.5;">一起玩你吃我猜</div>
+                        </div>
+                        <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                ghResolveAvatars(listEl);
+                listEl.querySelectorAll('.chat-list-item').forEach(item => {
+                    item.onclick = () => pickGuessMode(item.dataset.id);
+                });
+            }
+
+            // —— 选模式 ——
+            function pickGuessMode(contactId) {
+                const c = (typeof DB !== 'undefined' && DB.getContact) ? DB.getContact(contactId) : null;
+                if (!c) { alert('联系人不存在'); return; }
+                const oppName = c.notes || c.name;
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="gf-mode-back">‹</span>
+                        <h2 class="title">你吃我猜</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:#FBF9F4;padding:20px;overflow-y:auto;">
+                        <div style="color:#775C56;opacity:0.6;font-size:13px;margin-bottom:18px;text-align:center;">选一种玩法～</div>
+                        <div id="gf-mode-ai" style="background:#fff;border-radius:16px;padding:18px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);margin-bottom:14px;">
+                            <div style="font-weight:600;color:#775C56;font-size:15px;margin-bottom:4px;">🤔 你出题，${oppName}猜</div>
+                            <div style="font-size:12px;color:#775C56;opacity:0.55;line-height:1.5;">你心里想一个吃的，${oppName}提问，你打字回答，看TA能不能猜中</div>
+                        </div>
+                        <div id="gf-mode-user" style="background:#fff;border-radius:16px;padding:18px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);">
+                            <div style="font-weight:600;color:#775C56;font-size:15px;margin-bottom:4px;">🍽️ ${oppName}出题，你猜</div>
+                            <div style="font-size:12px;color:#775C56;opacity:0.55;line-height:1.5;">${oppName}心里想一个吃的，你打字提问，TA回答，你来猜</div>
+                        </div>
+                    </div>
+                `;
+                appPage.querySelector('#gf-mode-back').onclick = () => pickContactForGuess();
+                appPage.querySelector('#gf-mode-ai').onclick = () => startGuess(contactId, 'ai_guess');
+                appPage.querySelector('#gf-mode-user').onclick = () => startGuess(contactId, 'user_guess');
+            }
+
+            // —— 游戏主界面（520气泡）——
+            function startGuess(contactId, mode) {
+                const c = (typeof DB !== 'undefined' && DB.getContact) ? DB.getContact(contactId) : null;
+                if (!c) { alert('联系人不存在'); return; }
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+                // mode: 'ai_guess' = 用户出题先生猜；'user_guess' = 先生出题用户猜
+                let history = []; // {sender:'me'|'ai', text}
+                let gameEnded = false;
+
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="gf-game-back">‹</span>
+                        <h2 class="title">你吃我猜 · ${oppName}</h2>
+                        <span class="add-btn-520" id="gf-game-restart" style="font-size:17px;cursor:pointer;">↻</span>
+                    </div>
+                    <div id="gf-messages" style="flex:1;overflow-y:auto;padding:16px;background:#FBF9F4;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;"></div>
+                    <div style="flex-shrink:0;padding:10px 12px;background:#FBF9F4;border-top:1.5px solid #e8e0d0;display:flex;gap:8px;align-items:flex-end;">
+                        <textarea id="gf-input" rows="1" placeholder="${mode==='ai_guess'?'回答先生的提问…':'问点什么…'}" style="flex:1;resize:none;border:1.5px solid #e8e0d0;border-radius:18px;padding:9px 14px;font-size:15px;color:#775C56;background:#fff;max-height:100px;outline:none;font-family:inherit;line-height:1.4;"></textarea>
+                        <button id="gf-send" style="flex-shrink:0;background:#D5EBE4;color:#775C56;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:600;cursor:pointer;font-size:18px;padding:0;">➤</button>
+                    </div>
+                `;
+                appPage.querySelector('#gf-game-back').onclick = () => pickGuessMode(contactId);
+                appPage.querySelector('#gf-game-restart').onclick = () => { if(confirm('重新开始？')) startGuess(contactId, mode); };
+
+                const msgsEl = appPage.querySelector('#gf-messages');
+                const inputEl = appPage.querySelector('#gf-input');
+                const sendBtn = appPage.querySelector('#gf-send');
+                inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,100)+'px'; });
+
+                function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+                function render() {
+                    msgsEl.innerHTML = history.map(m => {
+                        if (m.sender === 'me') {
+                            return `<div style="align-self:flex-end;max-width:78%;background:#D5EBE4;color:#775C56;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div>`;
+                        } else if (m.sender === 'sys') {
+                            return `<div style="align-self:center;color:#775C56;opacity:0.5;font-size:12px;padding:4px;">${esc(m.text)}</div>`;
+                        } else {
+                            return `<div style="align-self:flex-start;max-width:78%;background:#fff;color:#775C56;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">${esc(m.text)}</div>`;
+                        }
+                    }).join('');
+                    msgsEl.scrollTop = msgsEl.scrollHeight;
+                }
+
+                function addMsg(sender, text) { history.push({sender, text}); render(); }
+                function showLoading() {
+                    const el = document.createElement('div');
+                    el.id = 'gf-loading';
+                    el.style.cssText = 'align-self:flex-start;background:#fff;color:#999;padding:9px 13px;border-radius:14px;font-size:14px;box-shadow:0 1px 3px rgba(0,0,0,0.06);';
+                    el.textContent = '...';
+                    msgsEl.appendChild(el); msgsEl.scrollTop = msgsEl.scrollHeight;
+                }
+                function hideLoading() { const e = appPage.querySelector('#gf-loading'); if(e) e.remove(); }
+
+                // 开场
+                if (mode === 'ai_guess') {
+                    addMsg('sys', '你心里想一个吃的（自己记住别说出来），准备好就回复先生～');
+                    addMsg('ai', `好呀，那我来猜！你想好一个吃的了吗？想好就告诉我，我开始提问咯～`);
+                } else {
+                    addMsg('sys', `${oppName}已经想好一个吃的了，开始提问吧～`);
+                    addMsg('ai', `我已经想好一个吃的啦，藏在心里咯。你来问吧，我会如实回答你～`);
+                }
+
+                async function doSend() {
+                    if (gameEnded) return;
+                    const text = inputEl.value.trim();
+                    if (!text) return;
+                    addMsg('me', text);
+                    inputEl.value=''; inputEl.style.height='auto';
+                    showLoading();
+                    try {
+                        const reply = await callGuessAI(c, mode, history, userNick);
+                        hideLoading();
+                        addMsg('ai', reply.text);
+                        if (reply.ended) {
+                            gameEnded = true;
+                            addMsg('sys', '🎉 这一局结束啦，点右上角 ↻ 再来一局');
+                        }
+                    } catch(err) {
+                        hideLoading();
+                        addMsg('sys', '回复失败：' + (err.message || '请检查 API 设置'));
+                    }
+                }
+                sendBtn.onclick = doSend;
+                inputEl.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); doSend(); } });
+            }
+
+            // —— 猜食物 AI 调用 ——
+            async function callGuessAI(c, mode, history, userNick) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const oppName = c.notes || c.name;
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}你正在和「${userNick}」玩"你吃我猜"猜食物游戏。请始终用你的人设口吻，自然、有人物感地对话。\n`;
+                if (mode === 'ai_guess') {
+                    sys += `【游戏规则】：${userNick}心里想了一个食物，你要通过提问来猜出它是什么。\n`;
+                    sys += `- 每次只问一个问题，问题要能帮你缩小范围（比如是甜的吗、是热的吗、是主食吗、需要餐具吗）。\n`;
+                    sys += `- ${userNick}会回答你的问题。根据所有回答推理。\n`;
+                    sys += `- 当你比较有把握时，直接猜"是不是XXX？"。\n`;
+                    sys += `- 如果${userNick}说你猜对了，就开心地确认游戏结束。\n`;
+                    sys += `- 回复要简短自然（不超过40字），一次一个问题或一次猜测。`;
+                } else {
+                    sys += `【游戏规则】：你心里已经想定了一个具体的食物（在整局游戏里要始终是同一个，不能换）。${userNick}会向你提问，你要如实、诚实地回答。\n`;
+                    sys += `- 不要主动说出答案。${userNick}问什么你答什么（是/不是/有点/算是，可以稍微描述但别太明显泄露）。\n`;
+                    sys += `- 如果${userNick}猜的食物正好是你想的那个，就承认"答对了！"并结束。\n`;
+                    sys += `- 如果猜错了就说不是，鼓励TA继续。\n`;
+                    sys += `- 回复简短自然（不超过40字），保持人设口吻。\n`;
+                    sys += `- 重要：你想的那个食物在本局对话里必须前后一致，不能中途改变。`;
+                }
+                sys += `\n\n如果这一局已经猜对、游戏该结束了，请在你回复的最后另起一行单独加上标记 [END]（用户看不到这个标记）。否则不要加。`;
+
+                const msgs = history.filter(m => m.sender !== 'sys').map(m => ({
+                    role: m.sender === 'me' ? 'user' : 'assistant',
+                    content: m.text
+                }));
+                let messages;
+                if (pPlat === 'gemini') {
+                    const merged = sys + '\n\n' + msgs.map(h => (h.role==='user'?userNick:oppName)+'：'+h.content).join('\n');
+                    messages = [{ role:'user', parts:[{ text: merged }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, ...msgs];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                let ended = false;
+                if (text.includes('[END]')) { ended = true; text = text.replace(/\[END\]/g,'').trim(); }
+                return { text: text || '...', ended };
+            }
+
+            renderHall();
+        }
+
         function setupExtraRoomApp(appPage) {
             // ============ 番外处：不设限的长篇叙事对话空间（独立记录）============
             const ER_KEY = 'extra-room-chats'; // 独立存储，与520分开
