@@ -2188,6 +2188,7 @@
                             <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#FFD3D4;">模式</h3>
                             <div class="flex justify-between items-center mb-4"><span class="text-sm font-medium" style="color:#775C56;">线下模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-offline" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-offline" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                             <div class="flex justify-between items-center"><span class="text-sm font-medium" style="color:#775C56;">心声模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-thoughts" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-thoughts" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
+                            <div class="flex justify-between items-center mt-4"><span class="text-sm font-medium" style="color:#775C56;">异地模式</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="mode-longdistance" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="mode-longdistance" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                         </div>
                         <div class="space-y-3" style="padding-bottom:20px;"><button id="ai-save-btn" class="w-full font-bold py-3 rounded-xl" style="background-color: #D5EBE4; color: #775C56;">保存</button><div class="flex gap-3"><button id="ai-chat-btn" class="flex-1 font-bold py-3 rounded-xl hidden" style="background:#FFD3D4;color:#775C56;border:none;">聊天</button><button id="ai-delete-btn" class="flex-1 font-bold py-3 rounded-xl hidden" style="background:#FFD3D4;color:#775C56;border:none;">删除</button></div></div>
                     </div>
@@ -2741,7 +2742,7 @@
                                 if (cbg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
                                     try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
                                 }
-                                if (cbg) cbox.style.background = `url(${cbg}) center/cover no-repeat`;
+                                if (cbg) cbox.style.background = `url(${cbg}) center/cover no-repeat, #FBF9F4`;
                                 else cbox.style.background = 'transparent';
                             } else {
                                 cbox.style.background = 'transparent';
@@ -4026,6 +4027,7 @@
                                     _mode = _mode || {};
                                     const isOffline = !!_mode.offline;
                                     const isThoughts = !!(_mode.thoughts || _mode.innerThoughts);
+                                    const isLongDistance = !!_mode.longDistance;
 
                                     let systemPrompt;
                                     if (isOffline) {
@@ -4063,6 +4065,7 @@
                                     systemPrompt += "【情绪反馈规则·非常重要】：你要对用户的情绪有真实强烈的反应。用户开心你要跟着雀跃，用户难过你要立刻心疼追问，用户撒娇你要宠溺，用户分享事情你要追问细节、表达感兴趣。别敷衍（比如只回'嗯嗯''好的''哦'）。让用户感受到你在认真听、在乎 TA 就好。\n";
                                     if (c.notes) systemPrompt += `备注：${c.notes}。\n`;
                                     if (c.persona) systemPrompt += `【人设】：${c.persona}\n`;
+                                    if (isLongDistance) systemPrompt += `【异地设定·重要】：你和「${userNick}」是异地恋，生活在不同的城市，平时只能通过手机联系，不能随时见面。你要清楚记得这一点——不会说"我现在过来找你""我们一起出门"这种当面才能做的事，而是符合异地的相处方式（视频通话、寄东西、表达想念、约定下次见面、分享各自当地的生活等）。偶尔流露对见不到面的想念和小失落，但也努力把异地的感情经营得温暖。\\n`;
                                     // 【世界书注入】按关键词触发：始终激活的、或最近用户消息命中关键词的世界书才注入
                                     try {
                                         const allWorldBooks = JSON.parse(localStorage.getItem('m-tea-world-books-list') || '[]');
@@ -4489,7 +4492,8 @@
                                         c.chatBackground = ref;
                                     } catch(err) { c.chatBackground = newBg; }
                                     DB.saveContact(c);
-                                    box.style.background = `url(${newBg}) center/cover no-repeat`;
+                                    const _cbox = document.querySelector('#chat-box');
+                                    if (_cbox) _cbox.style.background = `url(${newBg}) center/cover no-repeat, #FBF9F4`;
                                     alert('聊天背景已更新');
                                 };
                                 reader.readAsDataURL(file);
@@ -8938,6 +8942,7 @@
                 const manualMemoryInput = appPage.querySelector('#ai-manual-memory');
                 const offlineToggle = appPage.querySelector('#mode-offline');
                 const thoughtsToggle = appPage.querySelector('#mode-thoughts');
+                const longdistanceToggle = appPage.querySelector('#mode-longdistance');
                 const avatarPreview = appPage.querySelector('#ai-avatar-preview');
                 const avatarEmoji = appPage.querySelector('#ai-avatar-emoji');
                 const avatarUpload = appPage.querySelector('#ai-avatar-upload');
@@ -9011,6 +9016,7 @@
                         if(contact.mode) {
                             offlineToggle.checked = contact.mode.offline || false;
                             thoughtsToggle.checked = contact.mode.innerThoughts || false;
+                            if (longdistanceToggle) longdistanceToggle.checked = contact.mode.longDistance || false;
                         }
                         if(contact.avatar) {
                              const av = contact.avatar;
@@ -9055,7 +9061,8 @@
                         },
                         mode: {
                             offline: offlineToggle.checked,
-                            innerThoughts: thoughtsToggle.checked
+                            innerThoughts: thoughtsToggle.checked,
+                            longDistance: longdistanceToggle ? longdistanceToggle.checked : false
                         }
                     };
                     DB.saveContact(contactData);
