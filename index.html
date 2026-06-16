@@ -2737,7 +2737,12 @@
                         const cbox = p.querySelector('#chat-box');
                         if (cbox) {
                             if (c.chatBackground) {
-                                cbox.style.background = `url(${c.chatBackground}) center/cover no-repeat`;
+                                let cbg = c.chatBackground;
+                                if (cbg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                    try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
+                                }
+                                if (cbg) cbox.style.background = `url(${cbg}) center/cover no-repeat`;
+                                else cbox.style.background = 'transparent';
                             } else {
                                 cbox.style.background = 'transparent';
                             }
@@ -4449,6 +4454,7 @@
                                 <div class="chat-detail-item" id="set-moments"><span>朋友圈</span><span style="opacity:0.6;">›</span></div>
                                 <label for="bg-upload-input" class="chat-detail-item cursor-pointer"><span>聊天背景</span><span style="opacity:0.6;">›</span></label>
                                 <input type="file" id="bg-upload-input" class="hidden" accept="image/*">
+                                <div class="chat-detail-item cursor-pointer" id="set-bg-clear"><span>清除聊天背景</span><span style="opacity:0.6;">›</span></div>
                             </div>
                             <button id="set-clr" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#D5EBE4; color:#775C56;">清空聊天记录</button>
                         `;
@@ -4487,6 +4493,18 @@
                                     alert('聊天背景已更新');
                                 };
                                 reader.readAsDataURL(file);
+                            }
+                        };
+
+                        // 清除聊天背景
+                        const bgClearBtn = setsContent.querySelector('#set-bg-clear');
+                        if (bgClearBtn) bgClearBtn.onclick = () => {
+                            if (!c.chatBackground) { alert('当前没有设置聊天背景～'); return; }
+                            if (confirm('清除聊天背景？将恢复为默认/主题背景')) {
+                                c.chatBackground = '';
+                                DB.saveContact(c);
+                                box.style.background = 'transparent';
+                                alert('已清除聊天背景');
                             }
                         };
 
@@ -11707,11 +11725,11 @@
                 function render() {
                     msgsEl.innerHTML = history.map(m => {
                         if (m.sender === 'me') {
-                            return `<div style="align-self:flex-end;max-width:78%;background:#D5EBE4;color:#775C56;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div>`;
+                            return `<div class="message sent"><div class="bubble-group"><div class="message-bubble sent" style="white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div></div></div>`;
                         } else if (m.sender === 'sys') {
                             return `<div style="align-self:center;color:#775C56;opacity:0.5;font-size:12px;padding:4px;">${esc(m.text)}</div>`;
                         } else {
-                            return `<div style="align-self:flex-start;max-width:78%;background:#fff;color:#775C56;padding:9px 13px;border-radius:14px;font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">${esc(m.text)}</div>`;
+                            return `<div class="message received"><div class="bubble-group"><div class="message-bubble received" style="white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div></div></div>`;
                         }
                     }).join('');
                     msgsEl.scrollTop = msgsEl.scrollHeight;
@@ -11906,7 +11924,7 @@
                         if (url.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
                             try { url = await window.ImageDB.resolve(url); } catch(e) { url = ''; }
                         }
-                        if (url) msgsEl.style.background = `linear-gradient(rgba(251,249,244,0.55),rgba(251,249,244,0.55)), url(${url}) center/cover no-repeat`;
+                        if (url) msgsEl.style.background = `url(${url}) center/cover no-repeat`;
                     } else {
                         msgsEl.style.background = '#FBF9F4';
                     }
