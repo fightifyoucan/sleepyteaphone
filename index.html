@@ -428,6 +428,9 @@
         .couple-space-card { background-color: #FBF9F4; border-radius: 24px; padding: 16px; margin-bottom: 16px; box-shadow: 0 5px 15px rgba(255, 182, 193, 0.2); }
         .toggle-checkbox:checked { right: 0; border-color: #D5EBE4; }
         .toggle-checkbox:checked + .toggle-label { background-color: #D5EBE4; }
+        /* 「时间/系统消息变白」开关单独用棕色（不影响其他开关）*/
+        .toggle-checkbox.brown-toggle:checked { border-color: #775C56; }
+        .toggle-checkbox.brown-toggle:checked + .brown-toggle-label { background-color: #775C56; }
 
         .msg-nudge {
             align-self: center;
@@ -449,6 +452,13 @@
             padding: 1px 8px;
             border-radius: 4px;
             display: inline-block;
+        }
+        /* 时间戳/系统消息变白开关（深色聊天背景时用）*/
+        #conversation-page.conv-white-text .message-timestamp span,
+        #conversation-page.conv-white-text .msg-nudge span,
+        #conversation-page.conv-white-text .msg-nudge > div {
+            color: #ffffff !important;
+            background: rgba(0,0,0,0.18) !important;
         }
         /* 展开撤回内容时的竖向容器：不要被套气泡背景 */
         .plot-card em { font-style: italic; color: #A08578; opacity: 0.95; }
@@ -2734,20 +2744,8 @@
                             p.style.background = '#FBF9F4';
                             p.classList.remove('conv-themed');
                         }
-                        // 消息区：联系人单独聊天背景优先，否则透出对话页背景（主题照片或米色）
-                        const cbox = p.querySelector('#chat-box');
-                        if (cbox) {
-                            if (c.chatBackground) {
-                                let cbg = c.chatBackground;
-                                if (cbg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
-                                    try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
-                                }
-                                if (cbg) cbox.style.background = `url(${cbg}) center/cover no-repeat, #FBF9F4`;
-                                else cbox.style.background = 'transparent';
-                            } else {
-                                cbox.style.background = 'transparent';
-                            }
-                        }
+                        // 时间/系统消息变白：按联系人设置套用
+                        p.classList.toggle('conv-white-text', !!c.whiteTimestamp);
                     })();
                     
                     p.innerHTML = `
@@ -2799,6 +2797,43 @@
                     `;
 
                     const box=p.querySelector('#chat-box'), inp=p.querySelector('#chat-in'), plus=p.querySelector('#plus-p'), emojiP=p.querySelector('#emoji-p');
+                    // 聊天背景：在 chat-box 创建后设置（修复时序bug——之前在innerHTML前设导致丢失）
+                    (async () => {
+                        if (!box) return;
+                        let cbgRef = c.chatBackground;
+                        if (!cbgRef) {
+                            try {
+                                const bgMap = JSON.parse(localStorage.getItem('m-tea-chat-bg') || '{}');
+                                if (bgMap[c.id]) cbgRef = bgMap[c.id];
+                            } catch(e) {}
+                        }
+                        if (cbgRef) {
+                            let cbg = cbgRef;
+                            if (cbg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
+                            }
+                            if (cbg) {
+                                // 聊天背景铺满整个对话页（顶栏+消息区+输入栏都透出壁纸）
+                                p.style.background = `url(${cbg}) center/cover no-repeat, #FBF9F4`;
+                                p.classList.remove('conv-themed');
+                                box.style.background = 'transparent';
+                                // 顶栏和输入栏透明，让壁纸透上来
+                                const _hdr = p.querySelector('.app-header-520');
+                                const _footer = p.querySelector('.chat-footer');
+                                if (_hdr) _hdr.style.background = 'transparent';
+                                if (_footer) _footer.style.background = 'transparent';
+                            } else {
+                                box.style.background = 'transparent';
+                            }
+                        } else {
+                            box.style.background = 'transparent';
+                            // 无聊天背景：恢复顶栏/输入栏默认背景（清掉之前壁纸模式留下的透明）
+                            const _hdr = p.querySelector('.app-header-520');
+                            const _footer = p.querySelector('.chat-footer');
+                            if (_hdr) _hdr.style.background = '';
+                            if (_footer) _footer.style.background = '';
+                        }
+                    })();
                     const quotePreview = p.querySelector('#quote-preview');
                     const selectBar = p.querySelector('#select-bar');
                     const selectCount = p.querySelector('#select-count');
@@ -4458,6 +4493,7 @@
                                 <label for="bg-upload-input" class="chat-detail-item cursor-pointer"><span>聊天背景</span><span style="opacity:0.6;">›</span></label>
                                 <input type="file" id="bg-upload-input" class="hidden" accept="image/*">
                                 <div class="chat-detail-item cursor-pointer" id="set-bg-clear"><span>清除聊天背景</span><span style="opacity:0.6;">›</span></div>
+                                <div class="chat-detail-item" style="display:flex;justify-content:space-between;align-items:center;"><span>时间/系统消息变白</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="set-white-text" class="toggle-checkbox brown-toggle absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="set-white-text" class="toggle-label brown-toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                             </div>
                             <button id="set-clr" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#D5EBE4; color:#775C56;">清空聊天记录</button>
                         `;
@@ -4492,6 +4528,12 @@
                                         c.chatBackground = ref;
                                     } catch(err) { c.chatBackground = newBg; }
                                     DB.saveContact(c);
+                                    // 额外存一份到独立key，确保持久化（DB可能没把此字段写入存储）
+                                    try {
+                                        const bgMap = JSON.parse(localStorage.getItem('m-tea-chat-bg') || '{}');
+                                        bgMap[c.id] = c.chatBackground;
+                                        localStorage.setItem('m-tea-chat-bg', JSON.stringify(bgMap));
+                                    } catch(e) {}
                                     const _cbox = document.querySelector('#chat-box');
                                     if (_cbox) _cbox.style.background = `url(${newBg}) center/cover no-repeat, #FBF9F4`;
                                     alert('聊天背景已更新');
@@ -4507,10 +4549,28 @@
                             if (confirm('清除聊天背景？将恢复为默认/主题背景')) {
                                 c.chatBackground = '';
                                 DB.saveContact(c);
+                                try {
+                                    const bgMap = JSON.parse(localStorage.getItem('m-tea-chat-bg') || '{}');
+                                    delete bgMap[c.id];
+                                    localStorage.setItem('m-tea-chat-bg', JSON.stringify(bgMap));
+                                } catch(e) {}
                                 box.style.background = 'transparent';
                                 alert('已清除聊天背景');
                             }
                         };
+
+                        // 时间/系统消息变白开关
+                        const whiteTextToggle = setsContent.querySelector('#set-white-text');
+                        if (whiteTextToggle) {
+                            whiteTextToggle.checked = !!c.whiteTimestamp;
+                            const convPage = document.getElementById('conversation-page');
+                            if (convPage) convPage.classList.toggle('conv-white-text', !!c.whiteTimestamp);
+                            whiteTextToggle.onchange = () => {
+                                c.whiteTimestamp = whiteTextToggle.checked;
+                                DB.saveContact(c);
+                                if (convPage) convPage.classList.toggle('conv-white-text', whiteTextToggle.checked);
+                            };
+                        }
 
                         setsContent.querySelector('#set-clr').onclick=()=>{if(confirm('清空?')){DB.saveChats({...DB.getChats(),[id]:[]});history.length=0;render();p.querySelector('#chat-sets').classList.remove('active');}};
                     };
@@ -11961,22 +12021,87 @@
                     const TS_GAP = 10 * 60 * 1000; // 10分钟
                     let lastTime = 0;
                     let html = '';
-                    msgs.forEach(m => {
+                    msgs.forEach((m, idx) => {
                         const t = m.time ? new Date(m.time).getTime() : 0;
                         if (t && (lastTime === 0 || t - lastTime > TS_GAP)) {
                             html += `<div style="text-align:center;color:#775C56;opacity:0.4;font-size:12px;letter-spacing:1px;margin:10px 0 14px;">${fmtERTime(m.time)}</div>`;
                         }
                         if (t) lastTime = t;
+                        // 操作按钮行（复制/编辑/重新生成/删除）
+                        const btns = `<div class="er-msg-actions" style="display:flex;gap:14px;margin-top:6px;${m.sender==='me'?'justify-content:flex-end;padding-right:4px;':'justify-content:flex-start;padding-left:4px;'}">
+                            <span class="er-act" data-act="copy" data-idx="${idx}" style="cursor:pointer;font-size:12px;color:#775C56;opacity:0.55;">复制</span>
+                            <span class="er-act" data-act="edit" data-idx="${idx}" style="cursor:pointer;font-size:12px;color:#775C56;opacity:0.55;">编辑</span>
+                            <span class="er-act" data-act="regen" data-idx="${idx}" style="cursor:pointer;font-size:12px;color:#775C56;opacity:0.55;">重新生成</span>
+                            <span class="er-act" data-act="del" data-idx="${idx}" style="cursor:pointer;font-size:12px;color:#775C56;opacity:0.55;">删除</span>
+                        </div>`;
                         if (m.sender === 'me') {
-                            html += `<div style="align-self:flex-end;max-width:80%;background:rgba(213,235,228,0.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#775C56;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escapeHtmlER(m.text)}</div>`;
+                            html += `<div style="display:flex;flex-direction:column;align-items:flex-end;width:100%;margin-bottom:8px;"><div style="max-width:80%;background:rgba(213,235,228,0.5);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#775C56;padding:10px 14px;border-radius:14px;font-size:15px;line-height:1.6;white-space:pre-wrap;word-break:break-word;">${escapeHtmlER(m.text)}</div>${btns}</div>`;
                         } else {
-                            html += `<div style="align-self:stretch;width:100%;max-width:100%;background:transparent;color:#775C56;padding:8px 4px 18px;font-size:15px;line-height:2;text-align:left;white-space:pre-wrap;word-break:break-word;">${escapeHtmlER(m.text)}</div>`;
+                            html += `<div style="display:flex;flex-direction:column;align-items:flex-start;width:100%;margin-bottom:8px;"><div style="width:100%;max-width:100%;background:transparent;color:#775C56;padding:8px 4px 6px;font-size:15px;line-height:2;text-align:left;white-space:pre-wrap;word-break:break-word;">${escapeHtmlER(m.text)}</div>${btns}</div>`;
                         }
                     });
                     msgsEl.innerHTML = html;
+                    // 绑定按钮事件
+                    msgsEl.querySelectorAll('.er-act').forEach(el => {
+                        el.onclick = () => erHandleAction(el.dataset.act, parseInt(el.dataset.idx), el);
+                    });
                     msgsEl.scrollTop = msgsEl.scrollHeight;
                 }
                 function escapeHtmlER(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+                async function erHandleAction(act, idx, elBtn) {
+                    const msgs = getERChats(contactId);
+                    const m = msgs[idx];
+                    if (!m) return;
+                    if (act === 'copy') {
+                        try { await navigator.clipboard.writeText(m.text || ''); } catch(e) {
+                            const ta=document.createElement('textarea'); ta.value=m.text||''; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e2){} ta.remove();
+                        }
+                        if (elBtn) { elBtn.textContent='已复制'; setTimeout(()=>{ elBtn.textContent='复制'; }, 1200); }
+                    } else if (act === 'edit') {
+                        const nv = prompt('编辑消息：', m.text || '');
+                        if (nv !== null && nv.trim() !== '') {
+                            msgs[idx].text = nv.trim();
+                            saveERChats(contactId, msgs);
+                            renderMessages();
+                        }
+                    } else if (act === 'del') {
+                        if (confirm('删除这条消息？')) {
+                            msgs.splice(idx, 1);
+                            saveERChats(contactId, msgs);
+                            renderMessages();
+                        }
+                    } else if (act === 'regen') {
+                        // 重新生成：用这条之前的对话历史，重新生成一条AI回复，替换/插入到此处
+                        if (!confirm('重新生成这条之后的回复？（会用前面的对话重新让先生回复）')) return;
+                        // 截取到这条之前（含这条若是me；若是ai则到它前一条）
+                        let cutIdx;
+                        if (m.sender === 'me') {
+                            cutIdx = idx + 1; // 保留到这条me消息
+                        } else {
+                            cutIdx = idx; // ai消息：保留到它之前
+                        }
+                        const baseMsgs = msgs.slice(0, cutIdx);
+                        if (!baseMsgs.length) { alert('前面没有内容可以参考～'); return; }
+                        // 加载提示
+                        const loadingEl = document.createElement('div');
+                        loadingEl.style.cssText = 'align-self:center;background:transparent;color:#775C56;padding:12px;opacity:0.5;font-size:14px;text-align:center;';
+                        loadingEl.textContent = '正在重新书写……';
+                        msgsEl.appendChild(loadingEl);
+                        msgsEl.scrollTop = msgsEl.scrollHeight;
+                        try {
+                            const reply = await callExtraRoomAI(c, baseMsgs, selectedWorldBookIds, erFormatOn);
+                            const newMsgs = baseMsgs.slice();
+                            newMsgs.push({ sender: 'ai', text: reply, time: new Date().toISOString() });
+                            // 若原来这条之后还有内容，保留（接在新回复后面）
+                            const tail = msgs.slice(m.sender === 'me' ? idx + 2 : idx + 1);
+                            saveERChats(contactId, newMsgs.concat(tail));
+                            renderMessages();
+                        } catch(err) {
+                            loadingEl.remove();
+                            alert('重新生成失败：' + (err.message || '请检查 API 设置'));
+                        }
+                    }
+                }
                 renderMessages();
 
                 // 世界书选择
@@ -11998,6 +12123,12 @@
                                     <div id="er-bg-reset" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#775C56;cursor:pointer;background:#FFD3D4;">
                                         <span>恢复默认背景</span><span style="opacity:0.5;">›</span>
                                     </div>
+                                </div>
+                            </div>
+                            <!-- 导出 -->
+                            <div style="border-radius:12px;overflow:hidden;margin-bottom:18px;">
+                                <div id="er-export" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;color:#775C56;cursor:pointer;background:#D5EBE4;">
+                                    <span>导出聊天记录（txt）</span><span style="opacity:0.5;">›</span>
                                 </div>
                             </div>
                             <!-- 世界书 -->
@@ -12046,6 +12177,34 @@
                         erBg = ''; c.extraRoomBg = '';
                         if (typeof DB !== 'undefined' && DB.saveContact) DB.saveContact(c);
                         applyERBg();
+                    };
+
+                    // 导出聊天记录为 txt
+                    ov.querySelector('#er-export').onclick = () => {
+                        const msgs = getERChats(contactId);
+                        if (!msgs.length) { alert('还没有聊天记录可以导出～'); return; }
+                        const oppName = (c.notes || c.name || '先生');
+                        let txt = `【番外 · 与${oppName}的故事】\n导出时间：${new Date().toLocaleString('zh-CN')}\n\n`;
+                        let lastT = 0;
+                        const GAP = 10 * 60 * 1000;
+                        msgs.forEach(m => {
+                            const t = m.time ? new Date(m.time).getTime() : 0;
+                            if (t && (lastT === 0 || t - lastT > GAP)) {
+                                txt += `\n——— ${fmtERTime(m.time)} ———\n\n`;
+                            }
+                            if (t) lastT = t;
+                            const who = m.sender === 'me' ? '我' : oppName;
+                            txt += `${who}：${m.text || ''}\n\n`;
+                        });
+                        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `番外_${oppName}_${new Date().toISOString().slice(0,10)}.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
                     };
 
                     // 格式开关
