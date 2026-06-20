@@ -339,9 +339,10 @@
         
         /* 收藏功能 */
         .select-mode .message-bubble { cursor: pointer; }
-        .msg-checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #e8e0d0; background: white; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .msg-checkbox.checked { background: #D5EBE4; border-color: #775C56; }
-        .select-bar { position: absolute; bottom: 62px; left: 0; right: 0; background: #FBF9F4; border-top: 1px solid #e8e0d0; padding: 10px 16px; display: none; align-items: center; justify-content: space-between; z-index: 30; }
+        .msg-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #B89B95; background: rgba(255,255,255,0.95); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
+        .msg-checkbox.checked { background: #D5EBE4; border-color: #775C56; color: #775C56; font-size: 14px; font-weight: bold; line-height: 1; }
+        .select-bar { position: absolute; bottom: 62px; left: 0; right: 0; background-color: #FBF9F4; border-top: 1px solid #e8e0d0; padding: 10px 16px; display: none; align-items: center; justify-content: space-between; z-index: 30; }
+        #conversation-page.conv-themed .select-bar { background-color: rgba(251,249,244,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .select-bar.show { display: flex; }
         .fav-item { padding: 14px 16px; border-bottom: 1px solid #e8e0d0; cursor: pointer; }
         .fav-note-editor { display: flex; flex-direction: column; height: 100%; background: #FBF9F4; }
@@ -2824,8 +2825,10 @@
                                 // 顶栏和输入栏透明，让壁纸透上来
                                 const _hdr = p.querySelector('.app-header-520');
                                 const _footer = p.querySelector('.chat-footer');
+                                const _selbar = p.querySelector('#select-bar');
                                 if (_hdr) _hdr.style.background = 'transparent';
                                 if (_footer) _footer.style.background = 'transparent';
+                                if (_selbar) _selbar.style.background = 'transparent';
                             } else {
                                 box.style.background = 'transparent';
                             }
@@ -2834,8 +2837,10 @@
                             // 无聊天背景：恢复顶栏/输入栏默认背景（清掉之前壁纸模式留下的透明）
                             const _hdr = p.querySelector('.app-header-520');
                             const _footer = p.querySelector('.chat-footer');
+                            const _selbar = p.querySelector('#select-bar');
                             if (_hdr) _hdr.style.background = '';
                             if (_footer) _footer.style.background = '';
+                            if (_selbar) _selbar.style.background = '';
                         }
                     })();
                     const quotePreview = p.querySelector('#quote-preview');
@@ -2916,7 +2921,9 @@
                             .sort((a, b) => a.offsetTop - b.offsetTop);
                         if(!selectedRows.length) { cancelSelect(); return; }
 
-                        const chatBgImage = chatBox.style.backgroundImage || '';
+                        // 壁纸现在铺在页面根节点 p 上（chat-box 是透明的），所以从 p 读完整背景
+                        const pBg = p.style.background || '';
+                        const chatBgImage = p.style.backgroundImage || chatBox.style.backgroundImage || '';
                         const chatBgColor = getComputedStyle(chatBox).backgroundColor || '#ede5da';
                         const W = chatBox.offsetWidth;
 
@@ -2932,9 +2939,11 @@
                             `font-family:${getComputedStyle(chatBox).fontFamily}`,
                             'font-size:14px',
                             'box-sizing:border-box',
-                            chatBgImage
-                                ? `background-image:${chatBgImage};background-size:cover;background-position:center`
-                                : `background-color:${chatBgColor}`,
+                            pBg
+                                ? `background:${pBg}`
+                                : (chatBgImage
+                                    ? `background-image:${chatBgImage};background-size:cover;background-position:center`
+                                    : `background-color:${chatBgColor}`),
                         ].join(';');
                         document.body.appendChild(container);
 
@@ -3242,6 +3251,18 @@
                                     const idx = history.indexOf(m);
                                     const checked = selectedIdxs.has(idx);
                                     const isMe = group.sender === 'me';
+                                    // _imgTag 在此作用域重新定义（外层那个在另一个 map 回调里，这里取不到）
+                                    const _imgTag = (content, style, extraClass) => {
+                                        const isDb = typeof content === 'string' && content.startsWith('imgdb://');
+                                        let srcAttr;
+                                        if (isDb) {
+                                            const cached = window.ImageDB?.getCached?.(content);
+                                            srcAttr = cached ? `src="${cached}"` : `data-imgsrc="${content}"`;
+                                        } else {
+                                            srcAttr = `src="${content}"`;
+                                        }
+                                        return `<img ${srcAttr} style="${style}"${extraClass?` class="${extraClass}"`:''}>`;
+                                    };
                                     // Reuse full bubble rendering from main render path
                                     let sb = m.text||'';
                                     if(m.type==='image'||m.type==='photo') sb = _imgTag(m.content, 'max-width:150px;border-radius:12px;display:block;');
@@ -3261,8 +3282,8 @@
                                     const sbs=(m.type==='transfer'||m.type==='sticker'||m.type==='image'||m.type==='photo'||m.type==='gift'||m.type==='location'||m.type==='music'||m.type==='file')?'background:transparent;box-shadow:none;padding:0;':'';
                                     const snt=(m.type==='image'||m.type==='sticker'||m.type==='photo'||m.type==='location'||m.type==='transfer'||m.type==='gift'||m.type==='music'||m.type==='file')?'no-tail':'';
                                     const sBubble='<div class="message-bubble '+(isMe?'sent':'received')+' '+snt+'" style="'+sbs+'" data-idx="'+idx+'">'+sb+'</div>';
-                                    return '<div class="select-row" data-sidx="'+idx+'" style="display:flex;align-items:flex-start;padding:2px 8px;cursor:pointer;">'
-                                        +'<div class="msg-checkbox'+(checked?' checked':'')+'" style="flex-shrink:0;margin-right:8px;margin-top:10px;"></div>'
+                                    return '<div class="select-row" data-sidx="'+idx+'" style="display:flex;align-items:center;padding:2px 8px;cursor:pointer;">'
+                                        +'<div class="msg-checkbox'+(checked?' checked':'')+'" data-selidx="'+idx+'" style="flex-shrink:0;margin-right:8px;">'+(checked?'✓':'')+'</div>'
                                         +'<div class="message '+(isMe?'sent':'received')+'" style="flex:1;padding:0;margin:0;">'
                                         +avatarHtml
                                         +'<div class="bubble-group">'+sBubble+'</div>'
@@ -3274,7 +3295,10 @@
                             const bubbleEls = bubblesHtml.split('__SEP__');
                             return group.messages.map((m, mIdx) => {
                                 if(m.revoked) return `<div class="msg-nudge"><span>${me?'你':`"${c.name}"`}撤回了一条消息</span></div>`;
-                                return `<div class="message ${me?'sent':'received'}" style="margin-bottom:1px;">${avatarHtml}<div class="bubble-group">${bubbleEls[mIdx]||''}</div></div>`;
+                                const _oIdx = history.indexOf(m);
+                                const _checked = selectedIdxs.has(_oIdx);
+                                const _cb = selectMode ? `<div class="msg-checkbox${_checked?' checked':''}" data-selidx="${_oIdx}" style="align-self:center;margin:${me?'0 0 0 6px':'0 6px 0 0'};">${_checked?'✓':''}</div>` : '';
+                                return `<div class="message ${me?'sent':'received'}${selectMode?' select-mode':''}" style="margin-bottom:1px;">${_cb}${avatarHtml}<div class="bubble-group">${bubbleEls[mIdx]||''}</div></div>`;
                             }).join('');
                         }).join('');
 
@@ -3352,6 +3376,27 @@
                             bbl.addEventListener('touchend',()=>clearTimeout(tt));
                             bbl.addEventListener('touchmove',()=>clearTimeout(tt));
                         });
+                        // 多选模式：点勾选圆圈、或点整条消息都能勾选
+                        if (selectMode) {
+                            box.querySelectorAll('.msg-checkbox[data-selidx]').forEach(cb => {
+                                cb.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const i = parseInt(cb.dataset.selidx);
+                                    if(selectedIdxs.has(i)) selectedIdxs.delete(i); else selectedIdxs.add(i);
+                                    selectCount.textContent=`已选${selectedIdxs.size}条`;
+                                    render();
+                                });
+                            });
+                            box.querySelectorAll('.message.select-mode .message-bubble[data-idx]').forEach(bbl => {
+                                bbl.addEventListener('click', (e) => {
+                                    e.preventDefault(); e.stopPropagation();
+                                    const i = parseInt(bbl.dataset.idx);
+                                    if(selectedIdxs.has(i)) selectedIdxs.delete(i); else selectedIdxs.add(i);
+                                    selectCount.textContent=`已选${selectedIdxs.size}条`;
+                                    render();
+                                });
+                            });
+                        }
                         [
                             ...box.querySelectorAll('.transfer-card[data-tx]'),
                             ...box.querySelectorAll('.gift-card[data-gidx]'),
@@ -3444,7 +3489,7 @@
                                     };
                                 }}] : []),
                                 {label:'收藏', action:()=>{ const favs=JSON.parse(localStorage.getItem('favorites')||'[]'); favs.unshift({id:`fav_${Date.now()}`,type:'messages',messages:[{sender:msg.sender,text:msg.text||'',type:msg.type,time:msg.time}],contact:c.notes||c.name,time:new Date().toISOString()}); localStorage.setItem('favorites',JSON.stringify(favs)); }},
-                                {label:'多选', action:()=>{ selectMode=true; selectBar.classList.add('show'); selectedIdxs.add(msgIdx); render(); }},
+                                {label:'多选', action:()=>{ selectMode=true; selectBar.classList.add('show'); selectedIdxs.add(msgIdx); const _b=p.querySelector('#chat-box'); if(_b) _b._lastHTML=null; _renderImpl(); }},
                                 ...(msg.sender==='me' && !msg.revoked ? [{label:'撤回', action:()=>{
                                     history[msgIdx].revoked = true;
                                     history[msgIdx].originalContent = {
@@ -3678,8 +3723,7 @@
                                 if(selectedIdxs.has(idx)) selectedIdxs.delete(idx);
                                 else selectedIdxs.add(idx);
                                 selectCount.textContent = `已选${selectedIdxs.size}条`;
-                                const cb = row.querySelector('.msg-checkbox');
-                                if(cb) { cb.classList.toggle('checked', selectedIdxs.has(idx)); }
+                                render();
                             });
                         });
                         box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
