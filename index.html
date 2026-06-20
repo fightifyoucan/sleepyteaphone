@@ -603,6 +603,8 @@
         <div id="food-map-page" class="app-page"></div>
         <div id="extra-room-page" class="app-page"></div>
         <div id="game-hall-page" class="app-page"></div>
+        <div id="dream-journal-page" class="app-page"></div>
+        <div id="praise-machine-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1732,6 +1734,8 @@
                 { id: 'food-map', name: '美食地图', emoji: '🍱', container: '.app-grid-page2' },
                 { id: 'extra-room', name: '番外处', emoji: '✒️', container: '.app-grid-page2' },
                 { id: 'game-hall', name: '游戏厅', emoji: '🎮', container: '.app-grid-page2' },
+                { id: 'dream-journal', name: '梦境笔记', emoji: '☁️', container: '.app-grid-page2' },
+                { id: 'praise-machine', name: '夸夸机', emoji: '🌟', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -4495,6 +4499,7 @@
                                 <div class="chat-detail-item cursor-pointer" id="set-bg-clear"><span>清除聊天背景</span><span style="opacity:0.6;">›</span></div>
                                 <div class="chat-detail-item" style="display:flex;justify-content:space-between;align-items:center;"><span>时间/系统消息变白</span><div class="relative inline-block w-10 mr-2"><input type="checkbox" id="set-white-text" class="toggle-checkbox brown-toggle absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/><label for="set-white-text" class="toggle-label brown-toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label></div></div>
                             </div>
+                            <button id="set-export" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#fff; color:#775C56; border:1.5px solid #D5EBE4;">导出聊天记录（txt）</button>
                             <button id="set-clr" class="w-full mt-4 py-3 rounded-lg font-bold" style="background:#D5EBE4; color:#775C56;">清空聊天记录</button>
                         `;
                         // 异步加载 imgdb 头像
@@ -4573,6 +4578,32 @@
                         }
 
                         setsContent.querySelector('#set-clr').onclick=()=>{if(confirm('清空?')){DB.saveChats({...DB.getChats(),[id]:[]});history.length=0;render();p.querySelector('#chat-sets').classList.remove('active');}};
+                        // 导出聊天记录为 txt
+                        const exportBtn = setsContent.querySelector('#set-export');
+                        if (exportBtn) exportBtn.onclick = () => {
+                            const userNick = localStorage.getItem('user_nick') || '我';
+                            const oppName = c.notes || c.name || 'TA';
+                            const all = (DB.getChatById(id) || []).filter(m => !m.revoked && m.sender !== 'system' && m.type !== 'timestamp');
+                            if (!all.length) { alert('还没有聊天记录可以导出～'); return; }
+                            let txt = `【与${oppName}的聊天记录】\n导出时间：${new Date().toLocaleString('zh-CN')}\n\n`;
+                            all.forEach(m => {
+                                const who = m.sender === 'me' ? userNick : oppName;
+                                let content = m.text || '';
+                                if (m.type === 'image' || (!content && m.img)) content = '[图片]';
+                                if (m.type === 'call') content = `[${content}]`;
+                                if (!content) return;
+                                txt += `${who}：${content}\n\n`;
+                            });
+                            const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `聊天记录_${oppName}_${new Date().toISOString().slice(0,10)}.txt`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        };
                     };
                     p.querySelector('#set-back').onclick=()=>{p.querySelector('#chat-sets').classList.remove('active');};
                 };
@@ -9240,7 +9271,7 @@
                 const appNameMap = {
                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅',
+                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机',
                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                 };
                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -9322,6 +9353,8 @@
                         else if (appId === 'work-ai-club') setupAILoveClubApp(appPage, 'work');
                         else if (appId === 'food-map') setupFoodMapApp(appPage);
                         else if (appId === 'extra-room') setupExtraRoomApp(appPage);
+                        else if (appId === 'dream-journal') setupDreamJournalApp(appPage);
+                        else if (appId === 'praise-machine') setupPraiseMachineApp(appPage);
                         else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
@@ -9440,7 +9473,7 @@
                                 const appNameMap = {
                                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅',
+                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机',
                                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                                 };
                                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -11267,12 +11300,21 @@
                             </div>
                             <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
                         </div>
+                        <div class="gh-game-card" data-game="soup" style="background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);margin-top:12px;">
+                            <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#A8D8C8,#7FC4AD);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">🍵</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600;color:#775C56;font-size:16px;">温柔海龟汤</div>
+                                <div style="font-size:12px;color:#775C56;opacity:0.55;margin-top:2px;">暖心推理小谜题，不吓人</div>
+                            </div>
+                            <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                        </div>
                         <div style="text-align:center;color:#775C56;opacity:0.35;font-size:12px;margin-top:20px;">更多游戏，敬请期待～</div>
                     </div>
                 `;
                 appPage.querySelector('#gh-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
                 appPage.querySelector('.gh-game-card[data-game="uno"]').onclick = () => pickContactForUno();
                 appPage.querySelector('.gh-game-card[data-game="guessfood"]').onclick = () => pickContactForGuess();
+                appPage.querySelector('.gh-game-card[data-game="soup"]').onclick = () => pickContactForSoup();
             }
 
             // —— 选联系人 ——
@@ -11893,7 +11935,671 @@
                 return { text: text || '...', ended };
             }
 
+            // ============ 温柔海龟汤 ============
+            function pickContactForSoup() {
+                const contacts = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="sp-back">‹</span>
+                        <h2 class="title">选择对手</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="sp-list" style="background:#FBF9F4;padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#sp-back').onclick = () => renderHall();
+                const listEl = appPage.querySelector('#sp-list');
+                if (!contacts.length) {
+                    listEl.innerHTML = '<div style="text-align:center;padding:50px 20px;color:#775C56;opacity:0.5;">还没有联系人，先去 520 添加吧～</div>';
+                    return;
+                }
+                listEl.innerHTML = contacts.map(c => `
+                    <div class="chat-list-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(119,92,86,0.08);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${ghAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:500;color:#775C56;">${c.notes || c.name}</div>
+                            <div style="font-size:12px;color:#775C56;opacity:0.5;">一起玩温柔海龟汤</div>
+                        </div>
+                        <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                ghResolveAvatars(listEl);
+                listEl.querySelectorAll('.chat-list-item').forEach(item => {
+                    item.onclick = () => startSoup(item.dataset.id);
+                });
+            }
+
+            // —— 游戏主界面 ——
+            function startSoup(contactId) {
+                const c = (typeof DB !== 'undefined' && DB.getContact) ? DB.getContact(contactId) : null;
+                if (!c) { alert('联系人不存在'); return; }
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+                let history = []; // {sender:'me'|'ai'|'sys', text}
+                let gameEnded = false;
+                let started = false;
+
+                appPage.innerHTML = `
+                    <div class="app-header-520">
+                        <span class="close-btn-520" id="sp-game-back">‹</span>
+                        <h2 class="title">温柔海龟汤 · ${oppName}</h2>
+                        <span class="add-btn-520" id="sp-game-restart" style="font-size:17px;cursor:pointer;">↻</span>
+                    </div>
+                    <div id="sp-messages" style="flex:1;overflow-y:auto;padding:16px;background:#FBF9F4;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;"></div>
+                    <div style="flex-shrink:0;padding:6px 12px 10px;background:#FBF9F4;border-top:1.5px solid #e8e0d0;display:flex;gap:8px;align-items:flex-end;">
+                        <textarea id="sp-input" rows="1" placeholder="问一个是非题，或说出你的答案…" style="flex:1;resize:none;border:1.5px solid #e8e0d0;border-radius:18px;padding:9px 14px;font-size:15px;color:#775C56;background:#fff;max-height:100px;outline:none;font-family:inherit;line-height:1.4;"></textarea>
+                        <button id="sp-send" style="flex-shrink:0;background:#D5EBE4;color:#775C56;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:600;cursor:pointer;font-size:18px;padding:0;">➤</button>
+                    </div>
+                `;
+                appPage.querySelector('#sp-game-back').onclick = () => pickContactForSoup();
+                appPage.querySelector('#sp-game-restart').onclick = () => { if(confirm('换一道新的汤？')) startSoup(contactId); };
+
+                const msgsEl = appPage.querySelector('#sp-messages');
+                const inputEl = appPage.querySelector('#sp-input');
+                const sendBtn = appPage.querySelector('#sp-send');
+                inputEl.addEventListener('input', () => { inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,100)+'px'; });
+
+                function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+                function render() {
+                    msgsEl.innerHTML = history.map(m => {
+                        if (m.sender === 'me') {
+                            return `<div class="message sent"><div class="bubble-group"><div class="message-bubble sent" style="white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div></div></div>`;
+                        } else if (m.sender === 'sys') {
+                            return `<div style="align-self:center;color:#775C56;opacity:0.5;font-size:12px;padding:4px 10px;text-align:center;line-height:1.6;">${esc(m.text)}</div>`;
+                        } else if (m.sender === 'soup') {
+                            // 汤面（谜题）——醒目卡片
+                            return `<div style="align-self:stretch;background:linear-gradient(135deg,#EAF6F1,#D5EBE4);border-radius:14px;padding:14px 16px;color:#775C56;font-size:15px;line-height:1.7;white-space:pre-wrap;word-break:break-word;box-shadow:0 2px 8px rgba(127,196,173,0.25);">🍵 <b>汤面</b><br>${esc(m.text)}</div>`;
+                        } else {
+                            return `<div class="message received"><div class="bubble-group"><div class="message-bubble received" style="white-space:pre-wrap;word-break:break-word;">${esc(m.text)}</div></div></div>`;
+                        }
+                    }).join('');
+                    msgsEl.scrollTop = msgsEl.scrollHeight;
+                }
+                function addMsg(sender, text) { history.push({sender, text}); render(); }
+                function showLoading() {
+                    const el = document.createElement('div');
+                    el.id = 'sp-loading';
+                    el.style.cssText = 'align-self:flex-start;color:#775C56;opacity:0.5;font-size:14px;padding:4px 10px;';
+                    el.textContent = `${oppName}在想…`;
+                    msgsEl.appendChild(el); msgsEl.scrollTop = msgsEl.scrollHeight;
+                }
+                function hideLoading() { const e = appPage.querySelector('#sp-loading'); if(e) e.remove(); }
+
+                // 快捷按钮
+                function escapeHtmlERSoup(s){ return s; }
+
+                // 开场：先生出一道汤
+                async function startGame() {
+                    addMsg('sys', '先生来出一道温柔的小谜题，你来推理～\n你可以问任何"是非题"，先生会回答你；想到答案就直接说出来！');
+                    showLoading();
+                    try {
+                        const res = await callSoupAI(c, history, userNick, 'start');
+                        hideLoading();
+                        if (res.soup) addMsg('soup', res.soup);
+                        else addMsg('soup', res.text);
+                        started = true;
+                    } catch(err) {
+                        hideLoading();
+                        addMsg('sys', '出题失败：' + (err.message || '请检查 API 设置'));
+                    }
+                }
+
+                async function doSend() {
+                    if (gameEnded || !started) return;
+                    const text = inputEl.value.trim();
+                    if (!text) return;
+                    addMsg('me', text);
+                    inputEl.value=''; inputEl.style.height='auto';
+                    showLoading();
+                    try {
+                        const res = await callSoupAI(c, history, userNick, 'answer');
+                        hideLoading();
+                        addMsg('ai', res.text);
+                        if (res.ended) {
+                            gameEnded = true;
+                            addMsg('sys', '🎉 这道汤喝完啦～点右上角 ↻ 换一道新的');
+                        }
+                    } catch(err) {
+                        hideLoading();
+                        addMsg('sys', '回复失败：' + (err.message || '请检查 API 设置'));
+                    }
+                }
+                sendBtn.onclick = doSend;
+                inputEl.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); doSend(); } });
+
+                startGame();
+            }
+
+            // —— 海龟汤 AI 调用 ——
+            async function callSoupAI(c, history, userNick, phase) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const oppName = c.notes || c.name;
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}你正在和「${userNick}」玩"海龟汤"推理游戏，你是出题人和主持人。请始终用你的人设口吻，温柔、有人物感。\n\n`;
+                sys += `【最重要的规则·温柔版】：你出的谜题必须是温馨、有趣、生活化、暖心反转的，绝对不能包含任何：死亡、血腥、惊悚、灵异、暴力、犯罪、自残、恐怖元素。${userNick}很胆小，谜题要让人解开后感到温暖、会心一笑（比如关于善意、思念、小惊喜、小误会、可爱的小动物、温暖的人际关系）。\n`;
+                sys += `\n【海龟汤玩法】：\n`;
+                sys += `1. 你先给出一个"汤面"——一个看起来有点奇怪、但其实有温暖解释的简短情境（2-3句话）。\n`;
+                sys += `2. ${userNick}会问你是非题，你只能回答"是"、"不是"、"不重要"、"接近了哦"这类简短判断（可以带一点点你的人设语气，但不要泄露太多）。\n`;
+                sys += `3. 当${userNick}说出接近真相的答案时，肯定TA并揭晓完整的"汤底"（真相），让谜题温暖收尾。\n`;
+                sys += `4. 如果${userNick}请求提示，给一个温柔的小提示，但不要直接说答案。\n`;
+                sys += `\n【逻辑严密·最关键】：海龟汤好不好玩，全看汤面和汤底的逻辑是否扣得紧！\n`;
+                sys += `- 汤面里出现的每一个"奇怪的点"，最后的汤底都必须能合情合理地解释清楚，不能有解释不通、硬凑、答非所问的地方。\n`;
+                sys += `- 汤底不是一个松散的温馨小故事，而是一个"意料之外、情理之中"的真相——揭晓时要让${userNick}有"啊！原来如此，前面的细节全都对上了"的恍然大悟感。\n`;
+                sys += `- 出汤面之前，你要先在心里把完整的汤底想清楚想严密（谁、做了什么、为什么），确保汤面的每个细节都是汤底的线索，而不是随便写的。\n`;
+                sys += `- 温馨是底色，但逻辑的巧妙和关联性才是核心，不要为了温馨而牺牲推理的合理性。\n`;
+                sys += `\n【格式要求·重要】：\n`;
+                if (phase === 'start') {
+                    sys += `现在是开场，请只输出"汤面"本身（那个温馨的情境谜题），不要加"汤面："前缀，不要解释玩法。\n`;
+                    sys += `【汤面的关键·必须做到】：汤面只描述一个"看起来奇怪、矛盾、或令人疑惑的现象/场景"，绝对不能在汤面里暗示或透露原因和答案！要让${userNick}看完产生"咦？这是为什么呢？"的强烈好奇，忍不住想提问。\n`;
+                    sys += `- 反例（不好）：汤面里就说了"床头多了牛奶和便签"——这等于把温暖的答案说出来了，没有悬念。\n`;
+                    sys += `- 正例（好）：只描述谜一样的现象，比如"每天清晨，公园长椅上都会出现一颗新鲜的草莓，没有人知道是谁放的。"——藏住了原因，让人想问。\n`;
+                    sys += `谜面要温柔、生活化、2-3句话，只摆出"谜"，把温暖的真相藏在你心里。\n`;
+                    sys += `同时，请在你心里想好完整的"汤底"（真相），整局游戏中保持一致，不能中途改变。`;
+                } else {
+                    sys += `现在${userNick}在问问题或猜答案。请简短回应（不超过40字），保持人设口吻。\n`;
+                    sys += `如果${userNick}已经猜中或非常接近真相，揭晓完整汤底，并在你回复的最后另起一行单独加上标记 [END]（用户看不到）。否则不要加 [END]。\n`;
+                    sys += `记住：汤底在整局中必须前后一致。`;
+                }
+
+                const msgs = history.filter(m => m.sender !== 'sys').map(m => ({
+                    role: m.sender === 'me' ? 'user' : 'assistant',
+                    content: m.sender === 'soup' ? ('（汤面）' + m.text) : m.text
+                }));
+                let messages;
+                if (pPlat === 'gemini') {
+                    const merged = sys + '\n\n' + msgs.map(h => (h.role==='user'?userNick:oppName)+'：'+h.content).join('\n');
+                    messages = [{ role:'user', parts:[{ text: merged }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, ...msgs];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                let ended = false;
+                if (text.includes('[END]')) { ended = true; text = text.replace(/\[END\]/g,'').trim(); }
+                if (phase === 'start') {
+                    return { soup: text || '（先生想了想，慢慢开口…）' };
+                }
+                return { text: text || '...', ended };
+            }
+
             renderHall();
+        }
+
+
+
+        function setupPraiseMachineApp(appPage) {
+            // ============ 夸夸机：汇报完成的事，先生给你真诚的夸夸 ============
+            const PM_KEY = 'praise-machine-entries';
+            const getPraises = () => { try { return JSON.parse(localStorage.getItem(PM_KEY) || '[]'); } catch(e){ return []; } };
+            const savePraises = (arr) => { localStorage.setItem(PM_KEY, JSON.stringify(arr)); };
+
+            // 暖色系
+            const WARM = '#FFC2C9';       // 奶粉（主色）
+            const WARM_SOFT = '#FFEEF0';  // 奶雾粉（浅底）
+            const BROWN = '#775C56';      // 系统棕色（文字）
+            const PAPER = '#FFFBFC';      // 暖奶白底（带一点点粉）
+            const GLOW = '#F3D9A0';       // 奶黄（点缀，保留黄色呼应）
+
+            function fmtPraiseDate(iso) {
+                const d = iso ? new Date(iso) : new Date();
+                const w = ['日','一','二','三','四','五','六'][d.getDay()];
+                return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 周${w} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            }
+            function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            const pmAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) {
+                    return `<img data-pmimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                }
+                return av;
+            };
+            const pmResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-pmimg]').forEach(async img => {
+                    const src = img.getAttribute('data-pmimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { img.src = await window.ImageDB.resolve(src); } catch(e) {}
+                    } else { img.src = src; }
+                });
+            };
+
+            let selectedPraiseContact = null;
+            function getPraiseContact() { return selectedPraiseContact; }
+
+            function pickContactThen(onPicked) {
+                const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                if (!cs.length) { onPicked(null); return; }
+                if (cs.length === 1) { selectedPraiseContact = cs[0]; onPicked(cs[0]); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${WARM_SOFT};">
+                        <span class="close-btn-520" id="pm-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">让谁来夸你？</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="pm-pick-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#pm-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#pm-pick-list');
+                listEl.innerHTML = cs.map(c => `
+                    <div class="pm-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(243,200,140,0.22);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${pmAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;font-weight:500;color:${BROWN};">${c.notes || c.name}</div>
+                        <span style="color:${BROWN};opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                pmResolveAvatars(listEl);
+                listEl.querySelectorAll('.pm-pick-item').forEach(item => {
+                    item.onclick = () => {
+                        selectedPraiseContact = cs.find(x => x.id === item.dataset.id) || cs[0];
+                        onPicked(selectedPraiseContact);
+                    };
+                });
+            }
+
+            // ===== 列表页 =====
+            function renderList() {
+                const praises = getPraises();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${WARM_SOFT};">
+                        <span class="close-btn-520" id="pm-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">夸夸机</h2>
+                        <span class="add-btn-520" id="pm-new" style="font-size:24px;cursor:pointer;color:${BROWN};">＋</span>
+                    </div>
+                    <div class="app-content" id="pm-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#pm-back').onclick = () => {
+                    const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                    if (cs.length > 1) { pickContactThen(() => renderList()); }
+                    else { appPage.classList.remove('active'); appPage.innerHTML=''; }
+                };
+                appPage.querySelector('#pm-new').onclick = () => renderWrite();
+                const listEl = appPage.querySelector('#pm-list');
+                if (!praises.length) {
+                    listEl.innerHTML = `<div style="text-align:center;padding:60px 30px;color:${BROWN};opacity:0.45;line-height:2;">还没有收到夸夸哦～<br>点右上角 ＋ 告诉先生你做到了什么<br>哪怕是很小的事，都值得被夸 🌟</div>`;
+                    return;
+                }
+                listEl.innerHTML = praises.map((p, i) => `
+                    <div class="pm-item" data-idx="${i}" style="padding:16px 18px;border-bottom:1px solid rgba(243,200,140,0.3);cursor:pointer;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.5;margin-bottom:6px;">🌟 ${fmtPraiseDate(p.time)}</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:1.6;font-weight:500;margin-bottom:4px;">${esc((p.deed||'').slice(0,40))}${(p.deed||'').length>40?'…':''}</div>
+                        <div style="font-size:12.5px;color:${BROWN};opacity:0.6;line-height:1.6;"><span style="color:#F5879A;">♡</span> ${esc((p.praise||'').slice(0,30))}${(p.praise||'').length>30?'…':''}</div>
+                    </div>
+                `).join('') + `<div style="padding:20px 18px 30px;"><button id="pm-export" style="width:100%;background:${WARM_SOFT};color:${BROWN};border:1.5px solid ${WARM};border-radius:14px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;">导出全部夸夸（txt）🌟</button></div>`;
+                listEl.querySelectorAll('.pm-item').forEach(el => {
+                    el.onclick = () => renderDetail(parseInt(el.dataset.idx));
+                });
+                const exportBtn = appPage.querySelector('#pm-export');
+                if (exportBtn) exportBtn.onclick = () => exportPraises();
+            }
+
+            // ===== 导出 =====
+            function exportPraises() {
+                const praises = getPraises();
+                if (!praises.length) { alert('还没有夸夸可以导出～'); return; }
+                let txt = `【我的夸夸本】\n导出时间：${new Date().toLocaleString('zh-CN')}\n共收到 ${praises.length} 句夸夸\n\n${'='.repeat(20)}\n\n`;
+                const ordered = praises.slice().reverse();
+                ordered.forEach(p => {
+                    txt += `🌟 ${fmtPraiseDate(p.time)}\n\n`;
+                    txt += `【我做到了】\n${p.deed || ''}\n\n`;
+                    txt += `【${p.oppName || '先生'}的夸夸】\n${p.praise || ''}\n\n`;
+                    txt += `${'-'.repeat(20)}\n\n`;
+                });
+                const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `夸夸本_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // ===== 写新汇报页 =====
+            function renderWrite() {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${WARM_SOFT};">
+                        <span class="close-btn-520" id="pm-w-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">我做到了…</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:20px;overflow-y:auto;display:flex;flex-direction:column;">
+                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">告诉先生你今天完成了什么吧～不管多小的事，早起、喝够水、写完作业、好好吃饭，都值得被夸 🌟</div>
+                        <textarea id="pm-deed-input" placeholder="今天我……" style="flex:1;min-height:220px;resize:none;border:1.5px solid ${WARM};border-radius:14px;padding:14px 16px;font-size:15px;color:${BROWN};background:#fff;outline:none;font-family:inherit;line-height:2;"></textarea>
+                        <button id="pm-submit" style="margin-top:16px;background:${WARM};color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请先生夸夸我 🌟</button>
+                    </div>
+                `;
+                appPage.querySelector('#pm-w-back').onclick = () => renderList();
+                const inputEl = appPage.querySelector('#pm-deed-input');
+                inputEl.focus();
+                appPage.querySelector('#pm-submit').onclick = async () => {
+                    const deedText = inputEl.value.trim();
+                    if (!deedText) { alert('先告诉先生你做到了什么吧～'); return; }
+                    const c = getPraiseContact();
+                    if (!c) { alert('还没有联系人，先去 520 添加一个先生吧～'); return; }
+                    const btn = appPage.querySelector('#pm-submit');
+                    btn.disabled = true; btn.textContent = '先生正在为你骄傲…🌟';
+                    try {
+                        const praise = await callPraiseAI(c, deedText);
+                        const praises = getPraises();
+                        praises.unshift({ time: new Date().toISOString(), deed: deedText, praise, oppName: (c.notes||c.name) });
+                        savePraises(praises);
+                        renderDetail(0);
+                    } catch(err) {
+                        btn.disabled = false; btn.textContent = '请先生夸夸我 🌟';
+                        alert('夸夸失败：' + (err.message || '请检查 API 设置'));
+                    }
+                };
+            }
+
+            // ===== 详情页 =====
+            function renderDetail(idx) {
+                const praises = getPraises();
+                const p = praises[idx];
+                if (!p) { renderList(); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${WARM_SOFT};">
+                        <span class="close-btn-520" id="pm-d-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">夸夸</h2>
+                        <span class="add-btn-520" id="pm-del" style="font-size:18px;cursor:pointer;color:${BROWN};opacity:0.6;">🗑</span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:22px 20px 40px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.5;text-align:center;margin-bottom:22px;">🌟 ${fmtPraiseDate(p.time)}</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${WARM};padding-left:10px;">我做到了</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;margin-bottom:30px;">${esc(p.deed)}</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${GLOW};padding-left:10px;">${esc(p.oppName||'先生')}的夸夸</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;background:${WARM_SOFT};border-radius:14px;padding:16px 18px;">${esc(p.praise)}</div>
+                    </div>
+                `;
+                appPage.querySelector('#pm-d-back').onclick = () => renderList();
+                appPage.querySelector('#pm-del').onclick = () => {
+                    if (confirm('删除这条夸夸？')) {
+                        const arr = getPraises();
+                        arr.splice(idx, 1);
+                        savePraises(arr);
+                        renderList();
+                    }
+                };
+            }
+
+            // ===== 调 AI 夸夸 =====
+            async function callPraiseAI(c, deedText) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}「${userNick}」刚刚向你汇报了TA完成的一件事，你要真诚地夸奖、肯定、鼓励TA。请始终用你的人设口吻，温暖、有人物感地回应。\n\n`;
+                sys += `【夸夸要求】：\n`;
+                sys += `1. 真诚、具体地夸${userNick}——针对TA做的这件事本身，说出为什么值得肯定（付出的努力、坚持、勇气、用心等），不要空泛地说"你真棒"。\n`;
+                sys += `2. 哪怕是很小的事（早起、喝水、吃饭、完成一点小任务），也要认真对待，让${userNick}感到被看见、被认可。\n`;
+                sys += `3. 语气温暖、有爱、有感染力，像一个真心为TA骄傲的人。可以结合你对${userNick}的了解和你们的关系，自然地表达。\n`;
+                sys += `4. 适度有感情，可以表达"我为你骄傲""我看到了你的努力"这类真挚的话，但不要肉麻或过度浮夸。\n`;
+                sys += `5. 长度适中（80-200字），自然成段，不要用列表或编号。\n`;
+                sys += `6. 不要说"作为AI"之类的话，就以${oppName}的身份自然地夸。`;
+
+                const userMsg = `${oppName}，我完成了一件事，想跟你汇报：\n\n${deedText}`;
+                let messages;
+                if (pPlat === 'gemini') {
+                    messages = [{ role:'user', parts:[{ text: sys + '\n\n' + userMsg }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, { role:'user', content: userMsg }];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                return text || '（先生眼里满是骄傲地看着你…）';
+            }
+
+            pickContactThen(() => renderList());
+        }
+
+        function setupDreamJournalApp(appPage) {
+            // ============ 梦境笔记：写下梦，先生解梦，存成梦境日记 ============
+            const DJ_KEY = 'dream-journal-entries'; // 独立存储
+            const getDreams = () => { try { return JSON.parse(localStorage.getItem(DJ_KEY) || '[]'); } catch(e){ return []; } };
+            const saveDreams = (arr) => { localStorage.setItem(DJ_KEY, JSON.stringify(arr)); };
+
+            const PINK = '#C5D8E8';       // 奶蓝（主色）——提亮、降饱和、掺一点暖灰
+            const PINK_SOFT = '#EEF4F8';  // 奶雾蓝（浅底）——几乎接近白的柔蓝
+            const BROWN = '#775C56';      // 系统棕色（文字，保持全app一致）
+            const PAPER = '#FBFCFD';      // 奶白底——带极淡蓝调的暖白
+            const YELLOW = '#F5DFA0';     // 奶黄（点缀）——降饱和提亮的暖黄
+            const YELLOW_SOFT = '#FBF3DC';// 奶雾黄（浅底）——很淡的奶油黄
+
+            function fmtDreamDate(iso) {
+                const d = iso ? new Date(iso) : new Date();
+                const w = ['日','一','二','三','四','五','六'][d.getDay()];
+                return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 周${w} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            }
+            function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+            // 头像渲染（处理 emoji/html/imgdb/base64）
+            const djAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) {
+                    return `<img data-djimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                }
+                return av;
+            };
+            const djResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-djimg]').forEach(async img => {
+                    const src = img.getAttribute('data-djimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { img.src = await window.ImageDB.resolve(src); } catch(e) {}
+                    } else { img.src = src; }
+                });
+            };
+
+            // 选先生（解梦人）
+            let selectedDreamContact = null;
+            function getDreamContact() { return selectedDreamContact; }
+
+            // 选联系人页（多个时显示，单个直接用）
+            function pickContactThen(onPicked) {
+                const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                if (!cs.length) { onPicked(null); return; }
+                if (cs.length === 1) { selectedDreamContact = cs[0]; onPicked(cs[0]); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${PINK_SOFT};">
+                        <span class="close-btn-520" id="dj-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">让谁来解梦？</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="dj-pick-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#dj-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#dj-pick-list');
+                listEl.innerHTML = cs.map(c => `
+                    <div class="dj-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(150,180,210,0.18);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${djAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;font-weight:500;color:${BROWN};">${c.notes || c.name}</div>
+                        <span style="color:${BROWN};opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                djResolveAvatars(listEl);
+                listEl.querySelectorAll('.dj-pick-item').forEach(item => {
+                    item.onclick = () => {
+                        selectedDreamContact = cs.find(x => x.id === item.dataset.id) || cs[0];
+                        onPicked(selectedDreamContact);
+                    };
+                });
+            }
+
+            // ===== 列表页 =====
+            function renderList() {
+                const dreams = getDreams();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${PINK_SOFT};">
+                        <span class="close-btn-520" id="dj-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">梦境笔记</h2>
+                        <span class="add-btn-520" id="dj-new" style="font-size:24px;cursor:pointer;color:${BROWN};">＋</span>
+                    </div>
+                    <div class="app-content" id="dj-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#dj-back').onclick = () => {
+                    const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                    if (cs.length > 1) { pickContactThen(() => renderList()); }
+                    else { appPage.classList.remove('active'); appPage.innerHTML=''; }
+                };
+                appPage.querySelector('#dj-new').onclick = () => renderWrite();
+                const listEl = appPage.querySelector('#dj-list');
+                if (!dreams.length) {
+                    listEl.innerHTML = `<div style="text-align:center;padding:60px 30px;color:${BROWN};opacity:0.45;line-height:2;">还没有记录梦境哦～<br>点右上角 ＋ 写下你的第一个梦<br><span style="font-size:30px;">🌙</span></div>`;
+                    return;
+                }
+                listEl.innerHTML = dreams.map((d, i) => `
+                    <div class="dj-item" data-idx="${i}" style="padding:16px 18px;border-bottom:1px solid rgba(220,200,150,0.28);cursor:pointer;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.5;margin-bottom:6px;">☁️ ${fmtDreamDate(d.time)}</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:1.6;font-weight:500;margin-bottom:4px;">${esc((d.dream||'').slice(0,40))}${(d.dream||'').length>40?'…':''}</div>
+                        <div style="font-size:12.5px;color:${BROWN};opacity:0.6;line-height:1.6;"><span style="color:#D4A843;">☀</span> 先生解读：${esc((d.interpretation||'').slice(0,30))}${(d.interpretation||'').length>30?'…':''}</div>
+                    </div>
+                `).join('') + `<div style="padding:20px 18px 30px;"><button id="dj-export" style="width:100%;background:${YELLOW_SOFT};color:${BROWN};border:1.5px solid ${YELLOW};border-radius:14px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;">导出全部梦境（txt）☁️</button></div>`;
+                listEl.querySelectorAll('.dj-item').forEach(el => {
+                    el.onclick = () => renderDetail(parseInt(el.dataset.idx));
+                });
+                const exportBtn = appPage.querySelector('#dj-export');
+                if (exportBtn) exportBtn.onclick = () => exportDreams();
+            }
+
+            // ===== 导出全部梦境为 txt =====
+            function exportDreams() {
+                const dreams = getDreams();
+                if (!dreams.length) { alert('还没有梦境可以导出～'); return; }
+                let txt = `【我的梦境笔记】\n导出时间：${new Date().toLocaleString('zh-CN')}\n共 ${dreams.length} 个梦\n\n${'='.repeat(20)}\n\n`;
+                // 旧的在前（按时间正序更像日记）
+                const ordered = dreams.slice().reverse();
+                ordered.forEach((d, i) => {
+                    txt += `🌙 ${fmtDreamDate(d.time)}\n\n`;
+                    txt += `【我的梦】\n${d.dream || ''}\n\n`;
+                    txt += `【${d.oppName || '先生'}的解读】\n${d.interpretation || ''}\n\n`;
+                    txt += `${'-'.repeat(20)}\n\n`;
+                });
+                const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `梦境笔记_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // ===== 写新梦页 =====
+            function renderWrite() {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${PINK_SOFT};">
+                        <span class="close-btn-520" id="dj-w-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">记录这个梦</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:20px;overflow-y:auto;display:flex;flex-direction:column;">
+                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">把梦里记得的画面、感受、片段都写下来吧，越详细先生越能读懂它～</div>
+                        <textarea id="dj-dream-input" placeholder="昨晚我梦见……" style="flex:1;min-height:260px;resize:none;border:1.5px solid ${PINK};border-radius:14px;padding:14px 16px;font-size:15px;color:${BROWN};background:#fff;outline:none;font-family:inherit;line-height:2;"></textarea>
+                        <button id="dj-submit" style="margin-top:16px;background:${PINK};color:${BROWN};border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请先生解梦 🌙</button>
+                    </div>
+                `;
+                appPage.querySelector('#dj-w-back').onclick = () => renderList();
+                const inputEl = appPage.querySelector('#dj-dream-input');
+                inputEl.focus();
+                appPage.querySelector('#dj-submit').onclick = async () => {
+                    const dreamText = inputEl.value.trim();
+                    if (!dreamText) { alert('先写下你的梦吧～'); return; }
+                    const c = getDreamContact();
+                    if (!c) { alert('还没有联系人，先去 520 添加一个先生吧～'); return; }
+                    const btn = appPage.querySelector('#dj-submit');
+                    btn.disabled = true; btn.textContent = '先生正在读你的梦…🌙';
+                    try {
+                        const interpretation = await callDreamAI(c, dreamText);
+                        const dreams = getDreams();
+                        dreams.unshift({ time: new Date().toISOString(), dream: dreamText, interpretation, oppName: (c.notes||c.name) });
+                        saveDreams(dreams);
+                        renderDetail(0);
+                    } catch(err) {
+                        btn.disabled = false; btn.textContent = '请先生解梦 🌙';
+                        alert('解梦失败：' + (err.message || '请检查 API 设置'));
+                    }
+                };
+            }
+
+            // ===== 详情页（梦 + 解梦）=====
+            function renderDetail(idx) {
+                const dreams = getDreams();
+                const d = dreams[idx];
+                if (!d) { renderList(); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${PINK_SOFT};">
+                        <span class="close-btn-520" id="dj-d-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">梦境</h2>
+                        <span class="add-btn-520" id="dj-del" style="font-size:18px;cursor:pointer;color:${BROWN};opacity:0.6;">🗑</span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:22px 20px 40px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.5;text-align:center;margin-bottom:22px;">🌙 ${fmtDreamDate(d.time)}</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${PINK};padding-left:10px;">我的梦</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;margin-bottom:30px;">${esc(d.dream)}</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${YELLOW};padding-left:10px;">${esc(d.oppName||'先生')}的解读</div>
+                        <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;background:${YELLOW_SOFT};border-radius:14px;padding:16px 18px;">${esc(d.interpretation)}</div>
+                    </div>
+                `;
+                appPage.querySelector('#dj-d-back').onclick = () => renderList();
+                appPage.querySelector('#dj-del').onclick = () => {
+                    if (confirm('删除这个梦？')) {
+                        const arr = getDreams();
+                        arr.splice(idx, 1);
+                        saveDreams(arr);
+                        renderList();
+                    }
+                };
+            }
+
+            // ===== 调 AI 解梦 =====
+            async function callDreamAI(c, dreamText) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}你正在为「${userNick}」解梦。请始终用你的人设口吻，温柔、有人物感地回应。\n\n`;
+                sys += `【解梦要求】：\n`;
+                sys += `1. 用心读${userNick}描述的这个梦，温柔地解读它可能的寓意、反映的心理状态或情绪。\n`;
+                sys += `2. 结合梦里的意象（出现的人、物、场景、情绪）来分析，不要泛泛而谈。\n`;
+                sys += `3. 语气温暖、有抚慰感，像在轻声陪${userNick}聊她的梦。可以适当结合你对${userNick}的了解和你们的关系。\n`;
+                sys += `4. 如果梦里有不安或负面的情绪，温柔地安抚，给一点积极的视角，但不要强行说教。\n`;
+                sys += `5. 长度适中（150-300字），分段自然，像一段温柔的解读文字，不要用列表或编号。\n`;
+                sys += `6. 不要说"作为AI"之类的话，就以${oppName}的身份自然地解读。\n`;
+
+                const userMsg = `这是我的梦：\n\n${dreamText}\n\n先生，帮我解读一下这个梦吧。`;
+                let messages;
+                if (pPlat === 'gemini') {
+                    messages = [{ role:'user', parts:[{ text: sys + '\n\n' + userMsg }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, { role:'user', content: userMsg }];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                return text || '（先生静静看着你的梦，似乎在想些什么…）';
+            }
+
+            pickContactThen(() => renderList());
         }
 
         function setupExtraRoomApp(appPage) {
