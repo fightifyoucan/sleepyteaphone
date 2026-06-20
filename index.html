@@ -2921,11 +2921,39 @@
                             .sort((a, b) => a.offsetTop - b.offsetTop);
                         if(!selectedRows.length) { cancelSelect(); return; }
 
-                        // 壁纸现在铺在页面根节点 p 上（chat-box 是透明的），所以从 p 读完整背景
-                        const pBg = p.style.background || '';
-                        const chatBgImage = p.style.backgroundImage || chatBox.style.backgroundImage || '';
                         const chatBgColor = getComputedStyle(chatBox).backgroundColor || '#ede5da';
                         const W = chatBox.offsetWidth;
+
+                        // 决定截图背景：不再直接读 p.style.background（主题图和聊天壁纸异步加载会互相覆盖，
+                        // 导致截到错误背景）。改为按优先级重新判断：联系人专属壁纸 > 全局自定义主题 > 纯色。
+                        let bgCss = `background-color:${chatBgColor}`;
+                        try {
+                            // 1) 联系人专属聊天壁纸（和 openChat 里读法保持一致）
+                            let cbgRef = c.chatBackground;
+                            if (!cbgRef) {
+                                try {
+                                    const bgMap = JSON.parse(localStorage.getItem('m-tea-chat-bg') || '{}');
+                                    if (bgMap[c.id]) cbgRef = bgMap[c.id];
+                                } catch(e) {}
+                            }
+                            if (cbgRef) {
+                                let cbg = cbgRef;
+                                if (cbg.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                    try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
+                                }
+                                if (cbg) bgCss = `background:url("${cbg}") center/cover no-repeat, #FBF9F4`;
+                            } else {
+                                // 2) 全局自定义主题（带半透明白色遮罩，和对话页 applyBg 一致）
+                                const rawRef = localStorage.getItem('app_theme_bg') || '';
+                                if (rawRef) {
+                                    let themeBg = rawRef;
+                                    if (rawRef.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                                        try { themeBg = await window.ImageDB.resolve(rawRef); } catch(e) { themeBg = ''; }
+                                    }
+                                    if (themeBg) bgCss = `background:linear-gradient(rgba(255,253,250,0.5),rgba(255,253,250,0.5)), url("${themeBg}") center/cover no-repeat, #FBF9F4`;
+                                }
+                            }
+                        } catch(e) {}
 
                         const container = document.createElement('div');
                         container.style.cssText = [
@@ -2939,11 +2967,7 @@
                             `font-family:${getComputedStyle(chatBox).fontFamily}`,
                             'font-size:14px',
                             'box-sizing:border-box',
-                            pBg
-                                ? `background:${pBg}`
-                                : (chatBgImage
-                                    ? `background-image:${chatBgImage};background-size:cover;background-position:center`
-                                    : `background-color:${chatBgColor}`),
+                            bgCss,
                         ].join(';');
                         document.body.appendChild(container);
 
@@ -4611,6 +4635,33 @@
                                     delete bgMap[c.id];
                                     localStorage.setItem('m-tea-chat-bg', JSON.stringify(bgMap));
                                 } catch(e) {}
+                                // 壁纸铺在页面根节点 p 上，要清 p 而不是只清 box
+                                const _convP = document.getElementById('conversation-page');
+                                if (_convP) {
+                                    // 清除聊天壁纸后：若有全局主题背景就恢复它，否则恢复默认米白
+                                    const _rawTheme = localStorage.getItem('app_theme_bg') || '';
+                                    if (_rawTheme && window._convThemeCache && window._convThemeCache.url) {
+                                        _convP.classList.add('conv-themed');
+                                        _convP.style.background = `linear-gradient(rgba(255,253,250,0.5),rgba(255,253,250,0.5)), url(${window._convThemeCache.url}) center/cover no-repeat, #FBF9F4`;
+                                        // 有主题背景：顶栏/输入栏/操作条保持透明（靠 conv-themed 的 CSS）
+                                        const _hdr = _convP.querySelector('.app-header-520');
+                                        const _footer = _convP.querySelector('.chat-footer');
+                                        const _selbar = _convP.querySelector('#select-bar');
+                                        if (_hdr) _hdr.style.background = '';
+                                        if (_footer) _footer.style.background = '';
+                                        if (_selbar) _selbar.style.background = '';
+                                    } else {
+                                        _convP.classList.remove('conv-themed');
+                                        _convP.style.background = '#FBF9F4';
+                                        // 无背景：恢复顶栏/输入栏/操作条默认背景
+                                        const _hdr = _convP.querySelector('.app-header-520');
+                                        const _footer = _convP.querySelector('.chat-footer');
+                                        const _selbar = _convP.querySelector('#select-bar');
+                                        if (_hdr) _hdr.style.background = '';
+                                        if (_footer) _footer.style.background = '';
+                                        if (_selbar) _selbar.style.background = '';
+                                    }
+                                }
                                 box.style.background = 'transparent';
                                 alert('已清除聊天背景');
                             }
