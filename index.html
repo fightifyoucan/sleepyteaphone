@@ -4132,6 +4132,7 @@
                                     if (!isOffline) {
                                         systemPrompt += "【格式小提示】：每条消息自然地用中文标点收尾就好，别用空格代替标点。不要用 *动作* 或 [动作] 这种格式，也别用 😏 这个表情。除此之外，怎么自在怎么说。\n";
                                         systemPrompt += "【语气词】：想用语气词（唔、嗯、哎呀、那个）就用，不想用就不用，全凭当下感觉，不用刻意。\n";
+                                        systemPrompt += "【语音消息·特殊能力】：当你想用'声音'对我说话时（比如撒娇、哄我、说一句很想让我听到语气的话、或慵懒地随口说说），可以把那条消息发成语音。用法：把整条消息写成 [你的名字的语音：要说的话] 这种格式，单独成一条，系统会自动渲染成语音气泡。例如：[" + (c.notes||c.name) + "的语音：我好想你呀]。请自然地用——想用声音表达时就用，不是每条都要变语音，普通文字消息照常发就好。\n";
                                         systemPrompt += "【撤回消息·特殊能力】：只有当你说了一句不合时宜、害羞了、后悔了、或者一时冲动说漏嘴的话时，你才可以\"说出口又立刻收回\"。用法：在回复里单独加一行 [撤回：那句你后悔说出口的话]，系统会先把它显示出来再撤回。这是展现你真实、可爱、有小情绪一面的特殊行为，请克制使用——绝大多数正常聊天都不需要撤回，只在真的有'啊说错了/好害羞/不该说'的情境下偶尔用一次。普通的、正常的回复绝对不要撤回。\n";
                                     }
                                     if (!isOffline) {
@@ -4274,6 +4275,11 @@
                                             // 先把 (...) 动作描写 和 〈...〉 心声 各自抽出来，作为独立 token
                                             // 用占位符替换，切完句子后再换回来
                                             const SEGMENTS = [];
+                                            // 【语音消息】把 [xx的语音：...] 整体保护，不被句中标点切断
+                                            safe = safe.replace(/[\\[【][^\\[\\]【】]*?的语音[:：][^\\[\\]【】]*?[\\]】]/g, function(m){
+                                                SEGMENTS.push(m);
+                                                return '\\u0001SEG_'+(SEGMENTS.length-1)+'\\u0001';
+                                            });
                                             // 匹配中文括号 () 和半角括号 () 的动作
                                             safe = safe.replace(/[（(][^（()）]*[）)]/g, function(m){
                                                 SEGMENTS.push(m);
@@ -4350,10 +4356,12 @@
                                             // 心声〈...〉和动作描写（...）必须是文字，不能变语音
                                             const isThoughtMsg = /^〈[\s\S]*〉$/.test(trimmedMsg);
                                             const isActionMsg = /^[（(][\s\S]*[）)]$/.test(trimmedMsg);
-                                            if (isLast && !hasMoneyIntent && !hasGiftIntent && !isThoughtMsg && !isActionMsg && Math.random() < 0.2) {
-                                                // 20% 概率最后一条变语音（仅普通台词，心声/动作除外）
-                                                const dur = Math.max(1, Math.ceil(trimmedMsg.length / 4));
-                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'voice', text:trimmedMsg, duration:dur, time:new Date() });
+                                            // 【语音消息】AI 主动用 [xx的语音：内容] 格式标记，才变语音气泡（更自然，不限最后一条）
+                                            const voiceMatch = trimmedMsg.match(/^[\[【].*?的语音[:：]([\s\S]*?)[\]】]$/);
+                                            if (voiceMatch && !isThoughtMsg && !isActionMsg) {
+                                                const voiceText = voiceMatch[1].trim();
+                                                const dur = Math.max(1, Math.ceil(voiceText.length / 4));
+                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'voice', text:voiceText, duration:dur, time:new Date() });
                                             } else if (isLast && hasMoneyIntent) {
                                                 send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:msgText, time:new Date() });
                                                 const amt = amtInFull ? parseFloat(amtInFull[1]) : 520;
