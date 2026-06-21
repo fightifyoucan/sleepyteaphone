@@ -9205,11 +9205,16 @@
                 offlineToggle.checked = false; thoughtsToggle.checked = false;
                 avatarPreview.classList.add('hidden'); avatarEmoji.classList.remove('hidden');
 
-                if (!contactId) {
+                const isNew = !contactId;
+                if (isNew) {
+                    // 新建联系人：一个「保存并聊天」按钮，保存后直接进聊天列表
+                    saveBtn.textContent = '保存并聊天';
                     chatBtn.style.display = 'none';
                     deleteBtn.style.display = 'none';
                 } else {
-                    chatBtn.style.display = 'block';
+                    // 编辑联系人：只保留「保存」和「删除」，不再显示单独的「聊天」按钮
+                    saveBtn.textContent = '保存';
+                    chatBtn.style.display = 'none';
                     deleteBtn.style.display = 'block';
                     const contact = DB.getContact(contactId);
                     if (contact) {
@@ -9251,13 +9256,28 @@
                     }
                 }
 
+                // 跳到聊天app的联系人列表(200页)，用户可点该联系人开始对话
+                const gotoChat = (id) => {
+                    const chats = DB.getChats();
+                    if (!chats[id]) {
+                        DB.addMessage(id, {
+                            id: `msg_init_${Date.now()}`, sender: 'system', text: '你们已成为好友，开始聊天吧', time: new Date().toISOString()
+                        });
+                    }
+                    appPage.classList.remove('active');
+                    const chatApp = document.getElementById('chat-page');
+                    const nav200 = chatApp && chatApp.querySelector('.nav-item-520[data-page="200"]');
+                    if (nav200) nav200.click();  // 触发 go('200')，会从数据库重新渲染列表，新联系人自然出现
+                };
+
                 saveBtn.onclick = () => {
                     saveBtn.style.transform = 'scale(0.95)';
                     setTimeout(() => saveBtn.style.transform = '', 150);
                     if (!nameInput.value.trim()) return alert('请输入姓名');
                     if (typeof DB === 'undefined') return alert('请确保 database.js 已正确加载（与 index.html 放在同一文件夹）');
+                    const newId = idInput.value || `contact_${Date.now()}`;
                     const contactData = {
-                        id: idInput.value || `contact_${Date.now()}`,
+                        id: newId,
                         name: nameInput.value,
                         notes: notesInput.value,
                         avatar: currentAvatar,
@@ -9274,23 +9294,17 @@
                         }
                     };
                     DB.saveContact(contactData);
-                    alert('保存成功');
-                    if(onSaveCallback) onSaveCallback();
-                };
-                
-                chatBtn.onclick = () => {
-                    const currentId = idInput.value;
-                    const chats = DB.getChats();
-                    if (!chats[currentId]) {
-                        DB.addMessage(currentId, {
-                            id: `msg_init_${Date.now()}`, sender: 'system', text: '你们已成为好友，开始聊天吧', time: new Date().toISOString()
-                        });
+                    idInput.value = newId; // 回填新id，避免重复点击又新建一个
+                    if (isNew) {
+                        // 保存并聊天：保存后直接进入聊天列表
+                        gotoChat(newId);
+                    } else {
+                        alert('保存成功');
+                        if(onSaveCallback) onSaveCallback();
                     }
-                    appPage.classList.remove('active');
-                    const chatApp = document.getElementById('chat-page');
-                    const nav200 = chatApp.querySelector('.nav-item-520[data-page="200"]');
-                    if(nav200) nav200.click();
                 };
+
+                chatBtn.onclick = () => gotoChat(idInput.value);
 
                 deleteBtn.onclick = () => {
                     if (confirm('确定删除吗？')) {
