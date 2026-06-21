@@ -4247,8 +4247,11 @@
                                     let messages = [];
                                     // 过滤掉已撤回的消息，AI不应看到它们
                                     const visibleHistory = history.filter(m => !m.revoked);
+                                    // 读取该联系人在「记忆数」里设的上下文条数（UI 存的是字符串，做容错）；缺省/非法时默认 10，与 UI 默认值一致
+                                    let ctxLimit = parseInt(c.memory?.contextLimit, 10);
+                                    if (!Number.isFinite(ctxLimit) || ctxLimit < 1) ctxLimit = 10;
                                     if (pPlat === 'gemini') {
-                                        messages = visibleHistory.slice(-30).map(msg => ({
+                                        messages = visibleHistory.slice(-ctxLimit).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'model',
                                             parts: [{ text: getMsgText(msg) }]
                                         }));
@@ -4261,7 +4264,7 @@
                                         }
                                     } else {
                                         messages = [];
-                                        for (const msg of visibleHistory.slice(-30)) {
+                                        for (const msg of visibleHistory.slice(-ctxLimit)) {
                                             const role = msg.sender === 'me' ? 'user' : 'assistant';
                                             // 图片消息：尝试取出真实图片，按 vision 格式发给 AI，让它真的"看到"
                                             if (msg.type === 'image' && msg.sender === 'me') {
