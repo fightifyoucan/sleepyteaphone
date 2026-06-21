@@ -611,6 +611,9 @@
 
     <script>
 
+        // 记忆/上下文默认条数：唯一来源，想改默认值只动这一处（UI默认值、新建、读取兜底、发送截取都引用它）
+        const DEFAULT_CONTEXT_LIMIT = 20;
+
         // 全局卡片渲染：用户手机和AI手机复用，保证一致
         window.buildCardBody = function(m, originalIndex) {
             if (originalIndex === undefined) originalIndex = (m && m._idx != null) ? m._idx : -1;
@@ -2195,7 +2198,7 @@
                         </div>
                         <div class="rounded-xl p-4 mb-4" style="background:#FBF9F4; box-shadow: 0 2px 8px rgba(119,92,86,0.15);">
                             <h3 class="font-bold mb-3 border-l-4 pl-2" style="color:#775C56; border-color:#D5EBE4;">记忆</h3>
-                            <div class="mb-3"><label class="text-sm font-medium" style="color:#775C56;">记忆数</label><input type="number" id="ai-context-limit" value="10" class="float-right w-16 text-center rounded" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"></div>
+                            <div class="mb-3"><label class="text-sm font-medium" style="color:#775C56;">记忆数</label><input type="number" id="ai-context-limit" value="${DEFAULT_CONTEXT_LIMIT}" class="float-right w-16 text-center rounded" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56;"></div>
                             <div class="mb-3"><label class="text-sm font-medium block mb-1" style="color:#775C56;">世界书（可多选，聊到关键词时自动激活）</label><div id="ai-world-book-list" class="w-full p-2 rounded text-sm" style="background:#FBF9F4; color:#775C56; border:1px solid #775C56; max-height:140px; overflow-y:auto;"><div style="color:#b0a090;font-size:12px;">暂无世界书，先去「世界书」app 创建</div></div></div>
                             <div><label class="text-sm font-medium block mb-1" style="color:#775C56;">手动记忆</label><textarea id="ai-manual-memory" rows="2" class="w-full p-2 rounded-lg text-sm resize-none" style="background:white; color:#775C56; border:none;"></textarea></div>
                         </div>
@@ -4249,7 +4252,7 @@
                                     const visibleHistory = history.filter(m => !m.revoked);
                                     // 读取该联系人在「记忆数」里设的上下文条数（UI 存的是字符串，做容错）；缺省/非法时默认 10，与 UI 默认值一致
                                     let ctxLimit = parseInt(c.memory?.contextLimit, 10);
-                                    if (!Number.isFinite(ctxLimit) || ctxLimit < 1) ctxLimit = 10;
+                                    if (!Number.isFinite(ctxLimit) || ctxLimit < 1) ctxLimit = DEFAULT_CONTEXT_LIMIT;
                                     if (pPlat === 'gemini') {
                                         messages = visibleHistory.slice(-ctxLimit).map(msg => ({
                                             role: msg.sender === 'me' ? 'user' : 'model',
@@ -9198,7 +9201,7 @@
 
                 idInput.value = contactId || '';
                 nameInput.value = ''; notesInput.value = ''; personaInput.value = '';
-                contextLimitInput.value = 10; renderWorldBookChecklist([]); manualMemoryInput.value = '';
+                contextLimitInput.value = DEFAULT_CONTEXT_LIMIT; renderWorldBookChecklist([]); manualMemoryInput.value = '';
                 offlineToggle.checked = false; thoughtsToggle.checked = false;
                 avatarPreview.classList.add('hidden'); avatarEmoji.classList.remove('hidden');
 
@@ -9214,7 +9217,7 @@
                         notesInput.value = contact.notes || '';
                         personaInput.value = contact.persona || '';
                         if(contact.memory) {
-                            contextLimitInput.value = contact.memory.contextLimit || 10;
+                            contextLimitInput.value = contact.memory.contextLimit || DEFAULT_CONTEXT_LIMIT;
                             renderWorldBookChecklist(contact.memory.worldBookIds || (contact.memory.worldBookId ? [contact.memory.worldBookId] : []));
                             manualMemoryInput.value = contact.memory.manual || '';
                         }
