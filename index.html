@@ -123,7 +123,8 @@
         .app-page-520.themed-520 .chat-details-page .app-content { background-color: transparent !important; }
         .app-page-520.themed-520 .chat-details-page .app-header-520 { background-color: rgba(251,249,244,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         #conversation-page.conv-themed .app-header-520,
-        #conversation-page.conv-themed .chat-footer { background-color: rgba(251,249,244,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        #conversation-page.conv-themed .chat-footer,
+        #conversation-page.conv-themed .select-bar { background-color: rgba(251,249,244,0.3) !important; backdrop-filter: blur(8px) !important; -webkit-backdrop-filter: blur(8px) !important; }
         /* "我"页面各色块半透明，露出主题照片 */
         .app-page-520.themed-520 #page-me > div[style*="background:#D5EBE4"],
         .app-page-520.themed-520 #page-me > div[style*="background: #D5EBE4"] { background: rgba(213,235,228,0.55) !important; }
@@ -2821,29 +2822,26 @@
                                 try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
                             }
                             if (cbg) {
-                                // 聊天背景铺满整个对话页（顶栏+消息区+输入栏都透出壁纸）
+                                // 聊天壁纸：消息区透出壁纸；顶栏/输入栏/操作栏做成毛玻璃（半透明+模糊），柔和透出壁纸又保证可读
                                 p.style.background = `url(${cbg}) center/cover no-repeat, #FBF9F4`;
                                 p.classList.remove('conv-themed');
                                 box.style.background = 'transparent';
-                                // 顶栏和输入栏透明，让壁纸透上来
                                 const _hdr = p.querySelector('.app-header-520');
                                 const _footer = p.querySelector('.chat-footer');
                                 const _selbar = p.querySelector('#select-bar');
-                                if (_hdr) _hdr.style.background = 'transparent';
-                                if (_footer) _footer.style.background = 'transparent';
-                                if (_selbar) _selbar.style.background = 'transparent';
+                                const _frost = (el) => { if(!el) return; el.style.background = 'rgba(251,249,244,0.3)'; el.style.backdropFilter = 'blur(8px)'; el.style.webkitBackdropFilter = 'blur(8px)'; };
+                                _frost(_hdr); _frost(_footer); _frost(_selbar);
                             } else {
                                 box.style.background = 'transparent';
                             }
                         } else {
                             box.style.background = 'transparent';
-                            // 无聊天背景：恢复顶栏/输入栏默认背景（清掉之前壁纸模式留下的透明）
+                            // 无聊天壁纸：清掉壁纸模式可能残留的毛玻璃内联样式，交还给 CSS（开主题则走 conv-themed 毛玻璃，纯默认则不透明米色）
                             const _hdr = p.querySelector('.app-header-520');
                             const _footer = p.querySelector('.chat-footer');
                             const _selbar = p.querySelector('#select-bar');
-                            if (_hdr) _hdr.style.background = '';
-                            if (_footer) _footer.style.background = '';
-                            if (_selbar) _selbar.style.background = '';
+                            const _reset = (el) => { if(!el) return; el.style.background = ''; el.style.backdropFilter = ''; el.style.webkitBackdropFilter = ''; };
+                            _reset(_hdr); _reset(_footer); _reset(_selbar);
                         }
                     })();
                     const quotePreview = p.querySelector('#quote-preview');
@@ -4128,7 +4126,9 @@
                                     try {
                                         const loveStart = localStorage.getItem('loveStartDate');
                                         if (loveStart) {
-                                            const annDate = new Date(loveStart);
+                                            // 按本地时间解析 YYYY-MM-DD，避免被当成 UTC 0点导致时区差一天（提前/延后触发）
+                                            const _am = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(loveStart);
+                                            const annDate = _am ? new Date(+_am[1], +_am[2]-1, +_am[3]) : new Date(loveStart);
                                             const todayD = new Date();
                                             if (!isNaN(annDate.getTime()) && todayD.getMonth() === annDate.getMonth() && todayD.getDate() === annDate.getDate()) {
                                                 const annYears = todayD.getFullYear() - annDate.getFullYear();
@@ -6421,7 +6421,9 @@
                     try {
                         const loveStart = localStorage.getItem('loveStartDate');
                         if (loveStart) {
-                            const annDate = new Date(loveStart);
+                            // 按本地时间解析 YYYY-MM-DD，避免被当成 UTC 0点导致时区差一天
+                            const _am = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(loveStart);
+                            const annDate = _am ? new Date(+_am[1], +_am[2]-1, +_am[3]) : new Date(loveStart);
                             const todayD = new Date();
                             if (!isNaN(annDate.getTime()) && todayD.getMonth() === annDate.getMonth() && todayD.getDate() === annDate.getDate()) {
                                 const annYears = todayD.getFullYear() - annDate.getFullYear();
