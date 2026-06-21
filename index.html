@@ -7256,7 +7256,23 @@
                 if (weather.feelsLike !== weather.temp) s += `（体感 ${weather.feelsLike}°C）`;
                 if (weather.tempMin !== weather.tempMax) s += `，今日 ${weather.tempMin}~${weather.tempMax}°C`;
                 if (weather.humidity) s += `，湿度 ${weather.humidity}%`;
-                s += `。你知道用户那边的天气，可以在合适的时候自然地关心 TA（比如降温提醒添衣、下雨提醒带伞、天热提醒防暑等），但不要每句话都提天气，要自然，不要刻意。\n`;
+                s += `。`;
+
+                // 判断是否属于"值得主动关心"的天气：恶劣/极端时明确鼓励 AI 主动提一句
+                const desc = weather.desc || '';
+                const bad = /雨|雪|雷|雾|霾|沙尘|冰雹|大风|台风|暴/.test(desc);
+                const cold = typeof weather.temp === 'number' && weather.temp <= 5;
+                const hot = typeof weather.temp === 'number' && weather.temp >= 32;
+                const bigSwing = (typeof weather.tempMin === 'number' && typeof weather.tempMax === 'number') && (weather.tempMax - weather.tempMin) >= 10;
+                const windy = typeof weather.windSpeed === 'number' && weather.windSpeed >= 8;
+                const notable = bad || cold || hot || bigSwing || windy;
+
+                if (notable) {
+                    s += `\n现在 TA 那边的天气有值得在意的地方，请你在这次回复里**主动、自然地**关心 TA 一句（下雨提醒带伞、降温/天冷提醒添衣保暖、高温提醒防暑多喝水、温差大提醒别着凉、大风提醒注意安全）。像真心记挂 TA 的人那样顺口提一下，融进你正常要说的话里，别长篇大论、别像天气预报那样播报。`;
+                } else {
+                    s += `\n天气没什么特别的话不必硬提；但在打招呼、或聊到出门/穿衣/行程时，可以自然地带一句天气，体现你心里装着 TA。`;
+                }
+                s += `\n注意：你天然就知道 TA 那边的天气，不用反问"你那边天气怎么样"，直接关心就好；如果这段对话里你刚才已经关心过这个天气了，就别反复唠叨。\n`;
                 return s;
             }
 
