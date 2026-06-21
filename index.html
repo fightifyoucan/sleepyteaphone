@@ -4318,6 +4318,8 @@
                                         const titleEl2 = p.querySelector('.title');
                                         const savedTitle = titleEl2 ? titleEl2.textContent : '';
                                         let cleanedReply = rawReply.replace(/😏/g, '').replace(/[\r\n]+/g, "\n").trim();
+                                        // 去掉「？」「！」后面紧跟的多余句号（模型有时画蛇添足写成"是不是？。"）
+                                        cleanedReply = cleanedReply.replace(/([？！?!])。+/g, '$1');
 
                                         // 【线下剧情文拦截】检测 [剧情:...]，整段作为一条 plot 消息发出，跳过普通气泡拆分
                                         const plotMatch = cleanedReply.match(/\[剧情[:：]([\s\S]*?)\]/);
