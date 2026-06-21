@@ -2846,6 +2846,14 @@
                     const quotePreview = p.querySelector('#quote-preview');
                     const selectBar = p.querySelector('#select-bar');
                     const selectCount = p.querySelector('#select-count');
+                    // 显示操作栏：实时量输入栏(.chat-footer)真实高度，把操作栏严丝合缝贴在它正上方
+                    // （比写死 62px 靠谱——不受手机型号/安全区/键盘影响，既不留缝也不盖住输入框）
+                    const showSelectBar = () => {
+                        const footer = p.querySelector('.chat-footer');
+                        const h = footer ? footer.offsetHeight : 62;
+                        selectBar.style.bottom = h + 'px';
+                        selectBar.classList.add('show');
+                    };
                     let currentQuote = null;
                     let turnCount = 0;
                     let selectMode = false;
@@ -3513,7 +3521,7 @@
                                     };
                                 }}] : []),
                                 {label:'收藏', action:()=>{ const favs=JSON.parse(localStorage.getItem('favorites')||'[]'); favs.unshift({id:`fav_${Date.now()}`,type:'messages',messages:[{sender:msg.sender,text:msg.text||'',type:msg.type,time:msg.time}],contact:c.notes||c.name,time:new Date().toISOString()}); localStorage.setItem('favorites',JSON.stringify(favs)); }},
-                                {label:'多选', action:()=>{ selectMode=true; selectBar.classList.add('show'); selectedIdxs.add(msgIdx); const _b=p.querySelector('#chat-box'); if(_b) _b._lastHTML=null; _renderImpl(); }},
+                                {label:'多选', action:()=>{ selectMode=true; showSelectBar(); selectedIdxs.add(msgIdx); const _b=p.querySelector('#chat-box'); if(_b) _b._lastHTML=null; _renderImpl(); }},
                                 ...(msg.sender==='me' && !msg.revoked ? [{label:'撤回', action:()=>{
                                     history[msgIdx].revoked = true;
                                     history[msgIdx].originalContent = {
