@@ -341,7 +341,7 @@
         .select-mode .message-bubble { cursor: pointer; }
         .msg-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #B89B95; background: rgba(255,255,255,0.95); flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.18); }
         .msg-checkbox.checked { background: #D5EBE4; border-color: #775C56; color: #775C56; font-size: 14px; font-weight: bold; line-height: 1; }
-        .select-bar { position: absolute; bottom: 62px; left: 0; right: 0; background-color: #FBF9F4; border-top: 1px solid #e8e0d0; padding: 10px 16px; display: none; align-items: center; justify-content: space-between; z-index: 30; }
+        .select-bar { position: absolute; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; background-color: #FBF9F4; border-top: 1px solid #e8e0d0; padding: 10px 16px; display: none; align-items: center; justify-content: space-between; z-index: 30; }
         #conversation-page.conv-themed .select-bar { background-color: rgba(251,249,244,0.3); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
         .select-bar.show { display: flex; }
         .fav-item { padding: 14px 16px; border-bottom: 1px solid #e8e0d0; cursor: pointer; }
