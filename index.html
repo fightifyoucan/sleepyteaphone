@@ -11477,12 +11477,12 @@
                         <span style="width:40px;"></span>
                     </div>
                     <div class="app-content" id="gh-content" style="background:#FBF9F4;padding:16px;overflow-y:auto;">
-                        <div style="color:#775C56;opacity:0.6;font-size:13px;margin-bottom:14px;text-align:center;">和先生一对一玩游戏吧～</div>
+                        <div style="color:#775C56;opacity:0.6;font-size:13px;margin-bottom:14px;text-align:center;">和 TA 一对一玩游戏吧～</div>
                         <div class="gh-game-card" data-game="uno" style="background:#fff;border-radius:16px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 12px rgba(119,92,86,0.12);">
                             <div style="width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;">🃏</div>
                             <div style="flex:1;">
                                 <div style="font-weight:600;color:#775C56;font-size:16px;">UNO</div>
-                                <div style="font-size:12px;color:#775C56;opacity:0.55;margin-top:2px;">经典纸牌，和先生一较高下</div>
+                                <div style="font-size:12px;color:#775C56;opacity:0.55;margin-top:2px;">经典纸牌，和 TA 一较高下</div>
                             </div>
                             <span style="color:#775C56;opacity:0.3;font-size:20px;">›</span>
                         </div>
@@ -11789,7 +11789,7 @@
                     if (who === 'me') {
                         renderGame();
                         if (skipNext) {
-                            setStatus('先生被跳过，又轮到你～');
+                            setStatus(oppName + '被跳过，又轮到你～');
                             // 玩家再出一次
                         } else {
                             current = 'ai';
@@ -11799,7 +11799,7 @@
                     } else {
                         renderGame();
                         if (skipNext) {
-                            setStatus('你被跳过了，先生继续');
+                            setStatus('你被跳过了，' + oppName + '继续');
                             current = 'ai';
                             setTimeout(aiTurn, 800);
                         } else {
@@ -11827,7 +11827,7 @@
                             await aiSpeak('draw_pass');
                             current = 'me';
                             renderGame();
-                            setStatus('先生摸了一张牌，轮到你');
+                            setStatus(oppName + '摸了一张牌，轮到你');
                         }
                         return;
                     }
@@ -11861,7 +11861,7 @@
                         const line = await callUnoAI(c, action, card, aiHand.length, myHand.length);
                         if (line) {
                             const s = appPage.querySelector('#uno-status');
-                            if (s) s.textContent = '先生：' + line;
+                            if (s) s.textContent = oppName + '：' + line;
                             await new Promise(r => setTimeout(r, 2500));
                         }
                     } catch(e) { /* 说话失败不影响游戏 */ }
@@ -11875,8 +11875,8 @@
                     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:30px;';
                     ov.innerHTML = `<div style="background:#FBF9F4;border-radius:18px;padding:28px 24px;text-align:center;max-width:280px;">
                         <div style="font-size:40px;margin-bottom:10px;">${iWin?'🎉':'🥺'}</div>
-                        <div style="font-weight:bold;color:#775C56;font-size:18px;margin-bottom:8px;">${iWin?'你赢啦！':'先生赢了～'}</div>
-                        <div id="uno-end-line" style="color:#775C56;opacity:0.7;font-size:14px;margin-bottom:18px;line-height:1.6;">${iWin?'先生输得心服口服～':'先生赢了，要不要再来一局？'}</div>
+                        <div style="font-weight:bold;color:#775C56;font-size:18px;margin-bottom:8px;">${iWin?'你赢啦！':oppName+'赢了～'}</div>
+                        <div id="uno-end-line" style="color:#775C56;opacity:0.7;font-size:14px;margin-bottom:18px;line-height:1.6;">${iWin?oppName+'输得心服口服～':oppName+'赢了，要不要再来一局？'}</div>
                         <div style="display:flex;gap:10px;">
                             <button id="uno-again" style="flex:1;background:#D5EBE4;color:#775C56;border:none;border-radius:12px;padding:11px;font-weight:600;cursor:pointer;">再来一局</button>
                             <button id="uno-quit" style="flex:1;background:#FFD3D4;color:#775C56;border:none;border-radius:12px;padding:11px;font-weight:600;cursor:pointer;">结束</button>
@@ -11887,7 +11887,7 @@
                     // 让先生说句结束的话
                     callUnoAI(c, iWin?'lose':'win', null, aiHand.length, myHand.length).then(line => {
                         const el = ov.querySelector('#uno-end-line');
-                        if (line && el) el.textContent = '先生：' + line;
+                        if (line && el) el.textContent = oppName + '：' + line;
                     }).catch(()=>{});
                 }
             }
@@ -12012,7 +12012,7 @@
                     </div>
                     <div id="gf-messages" style="flex:1;overflow-y:auto;padding:16px;background:#FBF9F4;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;"></div>
                     <div style="flex-shrink:0;padding:10px 12px;background:#FBF9F4;border-top:1.5px solid #e8e0d0;display:flex;gap:8px;align-items:flex-end;">
-                        <textarea id="gf-input" rows="1" placeholder="${mode==='ai_guess'?'回答先生的提问…':'问点什么…'}" style="flex:1;resize:none;border:1.5px solid #e8e0d0;border-radius:18px;padding:9px 14px;font-size:15px;color:#775C56;background:#fff;max-height:100px;outline:none;font-family:inherit;line-height:1.4;"></textarea>
+                        <textarea id="gf-input" rows="1" placeholder="${mode==='ai_guess'?'回答'+oppName+'的提问…':'问点什么…'}" style="flex:1;resize:none;border:1.5px solid #e8e0d0;border-radius:18px;padding:9px 14px;font-size:15px;color:#775C56;background:#fff;max-height:100px;outline:none;font-family:inherit;line-height:1.4;"></textarea>
                         <button id="gf-send" style="flex-shrink:0;background:#D5EBE4;color:#775C56;border:none;border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-weight:600;cursor:pointer;font-size:18px;padding:0;">➤</button>
                     </div>
                 `;
@@ -12050,7 +12050,7 @@
 
                 // 开场
                 if (mode === 'ai_guess') {
-                    addMsg('sys', '你心里想一个吃的（自己记住别说出来），准备好就回复先生～');
+                    addMsg('sys', '你心里想一个吃的（自己记住别说出来），准备好就回复' + oppName + '～');
                     addMsg('ai', `好呀，那我来猜！你想好一个吃的了吗？想好就告诉我，我开始提问咯～`);
                 } else {
                     addMsg('sys', `${oppName}已经想好一个吃的了，开始提问吧～`);
@@ -12223,7 +12223,7 @@
 
                 // 开场：先生出一道汤
                 async function startGame() {
-                    addMsg('sys', '先生来出一道温柔的小谜题，你来推理～\n你可以问任何"是非题"，先生会回答你；想到答案就直接说出来！');
+                    addMsg('sys', oppName + '来出一道温柔的小谜题，你来推理～\n你可以问任何"是非题"，' + oppName + '会回答你；想到答案就直接说出来！');
                     showLoading();
                     try {
                         const res = await callSoupAI(c, history, userNick, 'start');
@@ -12317,7 +12317,7 @@
                 let ended = false;
                 if (text.includes('[END]')) { ended = true; text = text.replace(/\[END\]/g,'').trim(); }
                 if (phase === 'start') {
-                    return { soup: text || '（先生想了想，慢慢开口…）' };
+                    return { soup: text || ('（' + oppName + '想了想，慢慢开口…）') };
                 }
                 return { text: text || '...', ended };
             }
@@ -12415,7 +12415,7 @@
                 appPage.querySelector('#pm-new').onclick = () => renderWrite();
                 const listEl = appPage.querySelector('#pm-list');
                 if (!praises.length) {
-                    listEl.innerHTML = `<div style="text-align:center;padding:60px 30px;color:${BROWN};opacity:0.45;line-height:2;">还没有收到夸夸哦～<br>点右上角 ＋ 告诉先生你做到了什么<br>哪怕是很小的事，都值得被夸 🌟</div>`;
+                    listEl.innerHTML = `<div style="text-align:center;padding:60px 30px;color:${BROWN};opacity:0.45;line-height:2;">还没有收到夸夸哦～<br>点右上角 ＋ 告诉 TA 你做到了什么<br>哪怕是很小的事，都值得被夸 🌟</div>`;
                     return;
                 }
                 listEl.innerHTML = praises.map((p, i) => `
@@ -12441,7 +12441,7 @@
                 ordered.forEach(p => {
                     txt += `🌟 ${fmtPraiseDate(p.time)}\n\n`;
                     txt += `【我做到了】\n${p.deed || ''}\n\n`;
-                    txt += `【${p.oppName || '先生'}的夸夸】\n${p.praise || ''}\n\n`;
+                    txt += `【${p.oppName || 'TA'}的夸夸】\n${p.praise || ''}\n\n`;
                     txt += `${'-'.repeat(20)}\n\n`;
                 });
                 const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
@@ -12457,6 +12457,7 @@
 
             // ===== 写新汇报页 =====
             function renderWrite() {
+                const nm = (() => { const c = getPraiseContact(); return c ? (c.notes||c.name) : 'TA'; })();
                 appPage.innerHTML = `
                     <div class="app-header-520" style="background:${WARM_SOFT};">
                         <span class="close-btn-520" id="pm-w-back" style="color:${BROWN};">‹</span>
@@ -12464,9 +12465,9 @@
                         <span style="width:40px;"></span>
                     </div>
                     <div class="app-content" style="background:${PAPER};padding:20px;overflow-y:auto;display:flex;flex-direction:column;">
-                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">告诉先生你今天完成了什么吧～不管多小的事，早起、喝够水、写完作业、好好吃饭，都值得被夸 🌟</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">告诉 ${nm} 你今天完成了什么吧～不管多小的事，早起、喝够水、写完作业、好好吃饭，都值得被夸 🌟</div>
                         <textarea id="pm-deed-input" placeholder="今天我……" style="flex:1;min-height:220px;resize:none;border:1.5px solid ${WARM};border-radius:14px;padding:14px 16px;font-size:15px;color:${BROWN};background:#fff;outline:none;font-family:inherit;line-height:2;"></textarea>
-                        <button id="pm-submit" style="margin-top:16px;background:${WARM};color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请先生夸夸我 🌟</button>
+                        <button id="pm-submit" style="margin-top:16px;background:${WARM};color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请 ${nm} 夸夸我 🌟</button>
                     </div>
                 `;
                 appPage.querySelector('#pm-w-back').onclick = () => renderList();
@@ -12474,11 +12475,11 @@
                 inputEl.focus();
                 appPage.querySelector('#pm-submit').onclick = async () => {
                     const deedText = inputEl.value.trim();
-                    if (!deedText) { alert('先告诉先生你做到了什么吧～'); return; }
+                    if (!deedText) { alert('先告诉 ' + nm + ' 你做到了什么吧～'); return; }
                     const c = getPraiseContact();
-                    if (!c) { alert('还没有联系人，先去 520 添加一个先生吧～'); return; }
+                    if (!c) { alert('还没有联系人，先去 520 添加一个联系人吧～'); return; }
                     const btn = appPage.querySelector('#pm-submit');
-                    btn.disabled = true; btn.textContent = '先生正在为你骄傲…🌟';
+                    btn.disabled = true; btn.textContent = (c.notes||c.name) + '正在为你骄傲…🌟';
                     try {
                         const praise = await callPraiseAI(c, deedText);
                         const praises = getPraises();
@@ -12486,7 +12487,7 @@
                         savePraises(praises);
                         renderDetail(0);
                     } catch(err) {
-                        btn.disabled = false; btn.textContent = '请先生夸夸我 🌟';
+                        btn.disabled = false; btn.textContent = '请 ' + nm + ' 夸夸我 🌟';
                         alert('夸夸失败：' + (err.message || '请检查 API 设置'));
                     }
                 };
@@ -12507,7 +12508,7 @@
                         <div style="font-size:12px;color:${BROWN};opacity:0.5;text-align:center;margin-bottom:22px;">🌟 ${fmtPraiseDate(p.time)}</div>
                         <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${WARM};padding-left:10px;">我做到了</div>
                         <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;margin-bottom:30px;">${esc(p.deed)}</div>
-                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${GLOW};padding-left:10px;">${esc(p.oppName||'先生')}的夸夸</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${GLOW};padding-left:10px;">${esc(p.oppName||'TA')}的夸夸</div>
                         <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;background:${WARM_SOFT};border-radius:14px;padding:16px 18px;">${esc(p.praise)}</div>
                     </div>
                 `;
@@ -12553,7 +12554,7 @@
                 if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
                 const data = await resp.json();
                 let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
-                return text || '（先生眼里满是骄傲地看着你…）';
+                return text || ('（' + oppName + '眼里满是骄傲地看着你…）');
             }
 
             pickContactThen(() => renderList());
@@ -12658,7 +12659,7 @@
                     <div class="dj-item" data-idx="${i}" style="padding:16px 18px;border-bottom:1px solid rgba(220,200,150,0.28);cursor:pointer;">
                         <div style="font-size:12px;color:${BROWN};opacity:0.5;margin-bottom:6px;">☁️ ${fmtDreamDate(d.time)}</div>
                         <div style="font-size:15px;color:${BROWN};line-height:1.6;font-weight:500;margin-bottom:4px;">${esc((d.dream||'').slice(0,40))}${(d.dream||'').length>40?'…':''}</div>
-                        <div style="font-size:12.5px;color:${BROWN};opacity:0.6;line-height:1.6;"><span style="color:#D4A843;">☀</span> 先生解读：${esc((d.interpretation||'').slice(0,30))}${(d.interpretation||'').length>30?'…':''}</div>
+                        <div style="font-size:12.5px;color:${BROWN};opacity:0.6;line-height:1.6;"><span style="color:#D4A843;">☀</span> ${esc(d.oppName||'TA')}解读：${esc((d.interpretation||'').slice(0,30))}${(d.interpretation||'').length>30?'…':''}</div>
                     </div>
                 `).join('') + `<div style="padding:20px 18px 30px;"><button id="dj-export" style="width:100%;background:${YELLOW_SOFT};color:${BROWN};border:1.5px solid ${YELLOW};border-radius:14px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;">导出全部梦境（txt）☁️</button></div>`;
                 listEl.querySelectorAll('.dj-item').forEach(el => {
@@ -12678,7 +12679,7 @@
                 ordered.forEach((d, i) => {
                     txt += `🌙 ${fmtDreamDate(d.time)}\n\n`;
                     txt += `【我的梦】\n${d.dream || ''}\n\n`;
-                    txt += `【${d.oppName || '先生'}的解读】\n${d.interpretation || ''}\n\n`;
+                    txt += `【${d.oppName || 'TA'}的解读】\n${d.interpretation || ''}\n\n`;
                     txt += `${'-'.repeat(20)}\n\n`;
                 });
                 const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
@@ -12694,6 +12695,7 @@
 
             // ===== 写新梦页 =====
             function renderWrite() {
+                const nm = (() => { const c = getDreamContact(); return c ? (c.notes||c.name) : 'TA'; })();
                 appPage.innerHTML = `
                     <div class="app-header-520" style="background:${PINK_SOFT};">
                         <span class="close-btn-520" id="dj-w-back" style="color:${BROWN};">‹</span>
@@ -12701,9 +12703,9 @@
                         <span style="width:40px;"></span>
                     </div>
                     <div class="app-content" style="background:${PAPER};padding:20px;overflow-y:auto;display:flex;flex-direction:column;">
-                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">把梦里记得的画面、感受、片段都写下来吧，越详细先生越能读懂它～</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.6;margin-bottom:12px;line-height:1.7;">把梦里记得的画面、感受、片段都写下来吧，越详细 ${nm} 越能读懂它～</div>
                         <textarea id="dj-dream-input" placeholder="昨晚我梦见……" style="flex:1;min-height:260px;resize:none;border:1.5px solid ${PINK};border-radius:14px;padding:14px 16px;font-size:15px;color:${BROWN};background:#fff;outline:none;font-family:inherit;line-height:2;"></textarea>
-                        <button id="dj-submit" style="margin-top:16px;background:${PINK};color:${BROWN};border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请先生解梦 🌙</button>
+                        <button id="dj-submit" style="margin-top:16px;background:${PINK};color:${BROWN};border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">请 ${nm} 解梦 🌙</button>
                     </div>
                 `;
                 appPage.querySelector('#dj-w-back').onclick = () => renderList();
@@ -12713,9 +12715,9 @@
                     const dreamText = inputEl.value.trim();
                     if (!dreamText) { alert('先写下你的梦吧～'); return; }
                     const c = getDreamContact();
-                    if (!c) { alert('还没有联系人，先去 520 添加一个先生吧～'); return; }
+                    if (!c) { alert('还没有联系人，先去 520 添加一个联系人吧～'); return; }
                     const btn = appPage.querySelector('#dj-submit');
-                    btn.disabled = true; btn.textContent = '先生正在读你的梦…🌙';
+                    btn.disabled = true; btn.textContent = (c.notes||c.name) + '正在读你的梦…🌙';
                     try {
                         const interpretation = await callDreamAI(c, dreamText);
                         const dreams = getDreams();
@@ -12723,7 +12725,7 @@
                         saveDreams(dreams);
                         renderDetail(0);
                     } catch(err) {
-                        btn.disabled = false; btn.textContent = '请先生解梦 🌙';
+                        btn.disabled = false; btn.textContent = '请 ' + nm + ' 解梦 🌙';
                         alert('解梦失败：' + (err.message || '请检查 API 设置'));
                     }
                 };
@@ -12744,7 +12746,7 @@
                         <div style="font-size:12px;color:${BROWN};opacity:0.5;text-align:center;margin-bottom:22px;">🌙 ${fmtDreamDate(d.time)}</div>
                         <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${PINK};padding-left:10px;">我的梦</div>
                         <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;margin-bottom:30px;">${esc(d.dream)}</div>
-                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${YELLOW};padding-left:10px;">${esc(d.oppName||'先生')}的解读</div>
+                        <div style="font-size:13px;color:${BROWN};opacity:0.55;letter-spacing:2px;margin-bottom:8px;border-left:3px solid ${YELLOW};padding-left:10px;">${esc(d.oppName||'TA')}的解读</div>
                         <div style="font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;background:${YELLOW_SOFT};border-radius:14px;padding:16px 18px;">${esc(d.interpretation)}</div>
                     </div>
                 `;
@@ -12778,7 +12780,7 @@
                 sys += `5. 长度适中（150-300字），分段自然，像一段温柔的解读文字，不要用列表或编号。\n`;
                 sys += `6. 不要说"作为AI"之类的话，就以${oppName}的身份自然地解读。\n`;
 
-                const userMsg = `这是我的梦：\n\n${dreamText}\n\n先生，帮我解读一下这个梦吧。`;
+                const userMsg = `这是我的梦：\n\n${dreamText}\n\n${oppName}，帮我解读一下这个梦吧。`;
                 let messages;
                 if (pPlat === 'gemini') {
                     messages = [{ role:'user', parts:[{ text: sys + '\n\n' + userMsg }] }];
@@ -12790,7 +12792,7 @@
                 if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
                 const data = await resp.json();
                 let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
-                return text || '（先生静静看着你的梦，似乎在想些什么…）';
+                return text || ('（' + oppName + '静静看着你的梦，似乎在想些什么…）');
             }
 
             pickContactThen(() => renderList());
@@ -12972,7 +12974,7 @@
                         }
                     } else if (act === 'regen') {
                         // 重新生成：用这条之前的对话历史，重新生成一条AI回复，替换/插入到此处
-                        if (!confirm('重新生成这条之后的回复？（会用前面的对话重新让先生回复）')) return;
+                        if (!confirm('重新生成这条之后的回复？（会用前面的对话重新让' + (c.notes||c.name) + '回复）')) return;
                         // 截取到这条之前（含这条若是me；若是ai则到它前一条）
                         let cutIdx;
                         if (m.sender === 'me') {
@@ -13083,7 +13085,7 @@
                     ov.querySelector('#er-export').onclick = () => {
                         const msgs = getERChats(contactId);
                         if (!msgs.length) { alert('还没有聊天记录可以导出～'); return; }
-                        const oppName = (c.notes || c.name || '先生');
+                        const oppName = (c.notes || c.name || 'TA');
                         let txt = `【番外 · 与${oppName}的故事】\n导出时间：${new Date().toLocaleString('zh-CN')}\n\n`;
                         let lastT = 0;
                         const GAP = 10 * 60 * 1000;
