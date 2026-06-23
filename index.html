@@ -462,6 +462,11 @@
             color: #ffffff !important;
             background: rgba(0,0,0,0.18) !important;
         }
+        /* 变白开关：引用文字也跟着变白（深色/壁纸背景下原本的浅棕看不清）*/
+        #conversation-page.conv-white-text .quote-content {
+            color: #ffffff !important;
+            background: rgba(0,0,0,0.22) !important;
+        }
         /* 展开撤回内容时的竖向容器：不要被套气泡背景 */
         .plot-card em { font-style: italic; color: #A08578; opacity: 0.95; }
         .plot-card p { margin: 0 0 10px 0; text-indent: 0; }
@@ -5404,6 +5409,8 @@
                 };
 
                 navs.forEach(n => n.onclick=()=>go(n.dataset.page));
+                // 暴露"回到消息页"，重开 520 时调用，避免停在上次的"我"页被幽灵点击误触（改拍一拍/恢复默认主题）
+                appPage._resetToHome = () => go('200');
                 addBtn.onclick=()=>{
                     const setup=document.getElementById('ai-character-setup-page');
                     if(!setup.innerHTML) setup.innerHTML=appContents['ai-character-setup'];
@@ -9977,6 +9984,9 @@
 
                         initSettingsContent();
                     }
+
+                    // 重开 520 时回到消息页（内容没被清空时不会重跑 setup，需在此显式重置），避免停在上次的"我"页被幽灵点击误触
+                    if (appId === 'chat' && appPage._resetToHome) appPage._resetToHome();
                     
                     const closeApp = () => {
                         if (appPage.classList.contains('closing')) return;
