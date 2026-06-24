@@ -2827,15 +2827,21 @@
                                 try { cbg = await window.ImageDB.resolve(cbg); } catch(e) { cbg = ''; }
                             }
                             if (cbg) {
-                                // 聊天壁纸：消息区透出壁纸；顶栏/输入栏/操作栏做成毛玻璃（半透明+模糊），柔和透出壁纸又保证可读
+                                // 聊天壁纸：消息区透出壁纸。顶栏/输入栏/操作栏的样式只看"有没有开自定义主题"：
+                                // 开了主题 → 毛玻璃；默认主题（没开）→ 系统米白实色（壁纸只在消息区透出，不透到栏上）
                                 p.style.background = `url(${cbg}) center/cover no-repeat, #FBF9F4`;
                                 p.classList.remove('conv-themed');
                                 box.style.background = 'transparent';
+                                const hasTheme = !!localStorage.getItem('app_theme_bg');
                                 const _hdr = p.querySelector('.app-header-520');
                                 const _footer = p.querySelector('.chat-footer');
                                 const _selbar = p.querySelector('#select-bar');
-                                const _frost = (el) => { if(!el) return; el.style.background = 'rgba(251,249,244,0.3)'; el.style.backdropFilter = 'blur(8px)'; el.style.webkitBackdropFilter = 'blur(8px)'; };
-                                _frost(_hdr); _frost(_footer); _frost(_selbar);
+                                const _applyChrome = (el) => {
+                                    if (!el) return;
+                                    if (hasTheme) { el.style.background = 'rgba(251,249,244,0.3)'; el.style.backdropFilter = 'blur(8px)'; el.style.webkitBackdropFilter = 'blur(8px)'; }
+                                    else { el.style.background = ''; el.style.backdropFilter = ''; el.style.webkitBackdropFilter = ''; } // 还原系统米白
+                                };
+                                _applyChrome(_hdr); _applyChrome(_footer); _applyChrome(_selbar);
                             } else {
                                 box.style.background = 'transparent';
                             }
