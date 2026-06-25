@@ -8,6 +8,7 @@ const DB = (function() {
     let _contacts = [];
     let _chats = {};
     let _moments = [];
+    let _coreads = {};  // 共读记录：{ id: record }
     let _me = null;
     let _ready = false;
     
@@ -55,6 +56,7 @@ const DB = (function() {
             _contacts = JSON.parse(localStorage.getItem('m-tea-contacts-v2') || '[]');
             _chats = JSON.parse(localStorage.getItem('m-tea-chats-v2') || '{}');
             _moments = JSON.parse(localStorage.getItem('m-tea-moments-v2') || '[]');
+            _coreads = JSON.parse(localStorage.getItem('m-tea-coreads-v2') || '{}');
             _me = JSON.parse(localStorage.getItem('m-tea-me-v2') || 'null');
             _ready = true;
             return;
@@ -62,11 +64,12 @@ const DB = (function() {
         
         // 从 IndexedDB 加载
         try {
-            const [c, ch, m, me] = await Promise.all([
+            const [c, ch, m, me, cr] = await Promise.all([
                 db.kv.get('contacts').catch(() => null),
                 db.kv.get('chats').catch(() => null),
                 db.kv.get('moments').catch(() => null),
-                db.kv.get('me').catch(() => null)
+                db.kv.get('me').catch(() => null),
+                db.kv.get('coreads').catch(() => null)
             ]);
             
             // 如果 IndexedDB 里没数据，尝试从 localStorage 迁移
@@ -82,6 +85,7 @@ const DB = (function() {
                 _chats = JSON.parse(lsChats || '{}');
                 _moments = JSON.parse(lsMoments || '[]');
                 _me = JSON.parse(lsMe || 'null');
+                _coreads = JSON.parse(localStorage.getItem('m-tea-coreads-v2') || '{}');
                 // 立即写入 IndexedDB
                 await db.kv.bulkPut([
                     { key: 'contacts', value: _contacts },
@@ -93,6 +97,7 @@ const DB = (function() {
                 localStorage.removeItem('m-tea-contacts-v2');
                 localStorage.removeItem('m-tea-chats-v2');
                 localStorage.removeItem('m-tea-moments-v2');
+                localStorage.removeItem('m-tea-coreads-v2');
                 localStorage.removeItem('m-tea-me-v2');
                 localStorage.setItem('_db_to_indexeddb_done', '1');
                 console.log('[DB] ✅ 迁移完成');
@@ -100,11 +105,12 @@ const DB = (function() {
                 _contacts = (c && c.value) || [];
                 _chats = (ch && ch.value) || {};
                 _moments = (m && m.value) || [];
+                _coreads = (cr && cr.value) || {};
                 _me = (me && me.value) || null;
             }
         } catch(e) {
             console.error('[DB] 初始化失败，使用空数据', e);
-            _contacts = []; _chats = {}; _moments = []; _me = null;
+            _contacts = []; _chats = {}; _moments = []; _coreads = {}; _me = null;
         }
         
         if (!_me) {
@@ -182,6 +188,13 @@ const DB = (function() {
             _moments = moments || [];
             _scheduleSave('moments', _moments);
         },
+
+        // --- CoReads 共读记录（map: id -> record）---
+        getCoReads: function() { return _coreads; },
+        saveCoReads: function(coreads) { _coreads = coreads || {}; _scheduleSave('coreads', _coreads); },
+        getCoRead: function(id) { return _coreads[id] || null; },
+        saveCoRead: function(record) { if (!record || !record.id) return; _coreads[record.id] = record; _scheduleSave('coreads', _coreads); },
+        deleteCoRead: function(id) { delete _coreads[id]; _scheduleSave('coreads', _coreads); },
         
         // --- Me ---
         getMe: function() {
@@ -202,7 +215,7 @@ const DB = (function() {
         },
         // 清空所有数据（重置用）
         clearAll: async function() {
-            _contacts = []; _chats = {}; _moments = []; _me = null;
+            _contacts = []; _chats = {}; _moments = []; _coreads = {}; _me = null;
             if (_db) await _db.kv.clear();
         }
     };
