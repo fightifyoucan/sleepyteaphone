@@ -615,6 +615,7 @@
         <div id="dream-journal-page" class="app-page"></div>
         <div id="praise-machine-page" class="app-page"></div>
         <div id="coread-page" class="app-page"></div>
+        <div id="eat-well-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1750,6 +1751,7 @@
                 { id: 'dream-journal', name: '梦境笔记', emoji: '☁️', container: '.app-grid-page2' },
                 { id: 'praise-machine', name: '夸夸机', emoji: '🌟', container: '.app-grid-page2' },
                 { id: 'coread', name: '共读', emoji: '📕', container: '.app-grid-page2' },
+                { id: 'eat-well', name: '好好吃饭', emoji: '🍚', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -9495,7 +9497,7 @@
                 const appNameMap = {
                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读',
+                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭',
                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                 };
                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -9580,6 +9582,7 @@
                         else if (appId === 'dream-journal') setupDreamJournalApp(appPage);
                         else if (appId === 'praise-machine') setupPraiseMachineApp(appPage);
                         else if (appId === 'coread') setupCoReadApp(appPage);
+                        else if (appId === 'eat-well') setupEatWellApp(appPage);
                         else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
@@ -9715,7 +9718,7 @@
                                 const appNameMap = {
                                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读',
+                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭',
                                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                                 };
                                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -13550,7 +13553,365 @@
             renderShelf();
         }
 
+        function setupEatWellApp(appPage) {
+            // ============ 好好吃饭：随时记一口，平时静静打「对胃★」，想听了点分析 ============
+            const EW_KEY = 'eat-well-stream';
+            const getStream = () => { try { return JSON.parse(localStorage.getItem(EW_KEY) || '[]'); } catch(e){ return []; } };
+            const saveStream = (arr) => { localStorage.setItem(EW_KEY, JSON.stringify(arr)); };
+
+            // 奶茶焦糖色系（按钮用奶灰粉 #e0bcb2，比背景深一点点）
+            const MAIN = '#E0BCB2';       // 奶灰粉（按钮/主点缀）
+            const SOFT = '#F3E9DD';       // 奶茶浅底
+            const BROWN = '#6E5240';      // 奶茶咖啡棕（文字）
+            const PAPER = '#FBF6EF';      // 暖奶茶白底
+            const LEAF = '#A8C99B';       // 一点点嫩绿（养胃点缀/不舒服按钮）
+            const STAR = '#F5B301';       // 星星金
+            const MED = '#CEB9A6';        // 药物奶咖燕麦色
+
+            function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function fmtTime(iso){
+                const d = iso ? new Date(iso) : new Date();
+                return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            }
+            function fmtDay(iso){
+                const d = iso ? new Date(iso) : new Date();
+                const w = ['日','一','二','三','四','五','六'][d.getDay()];
+                return `${d.getMonth()+1}月${d.getDate()}日 周${w}`;
+            }
+            function dayKey(iso){ const d=new Date(iso); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+
+            // 半颗星显示
+            function starsHtml(n, size){
+                size = size || 14;
+                const pct = Math.max(0, Math.min(100, (n/5)*100));
+                return `<span style="position:relative;display:inline-block;font-size:${size}px;line-height:1;letter-spacing:1px;vertical-align:middle;">
+                    <span style="color:#E8E0DD;">★★★★★</span>
+                    <span style="position:absolute;left:0;top:0;color:${STAR};overflow:hidden;white-space:nowrap;width:${pct}%;">★★★★★</span>
+                </span>`;
+            }
+
+            // —— 本地「对胃友好度」轻量打分（即时、安静，不打扰）——
+            // 这不是评判你，只是悄悄看这口对胃温不温柔。底线★★。
+            function stomachStars(text){
+                const t = (text||'');
+                let s = 3.5;
+                const gentle = ['粥','小米','面条','面线','汤','蒸','牛奶','豆浆','馒头','花卷','鸡蛋','蛋羹','软','温','山药','南瓜','燕麦','米饭','面包','香蕉','苹果','土豆','胡萝卜','瘦肉','鱼','豆腐','热','暖','银耳','红枣','小米粥'];
+                const harsh = ['辣','麻辣','麻','冰','凉','冷饮','冷','咖啡','酒','啤酒','油炸','炸','烧烤','烤','火锅','浓茶','碳酸','可乐','汽水','酸辣','螺蛳粉','薯片','辣条','腌','生冷','空腹','糯米','年糕','粽子'];
+                gentle.forEach(k=>{ if(t.includes(k)) s += 0.5; });
+                harsh.forEach(k=>{ if(t.includes(k)) s -= 1; });
+                s = Math.round(s*2)/2;
+                return Math.max(2, Math.min(5, s));
+            }
+
+            const ewAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) {
+                    return `<img data-ewimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                }
+                return av;
+            };
+            const ewResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-ewimg]').forEach(async img => {
+                    const src = img.getAttribute('data-ewimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { img.src = await window.ImageDB.resolve(src); } catch(e) {}
+                    } else { img.src = src; }
+                });
+            };
+
+            let selectedContact = null;
+            function getContact(){ return selectedContact; }
+
+            function pickContactThen(onPicked) {
+                const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                if (!cs.length) { onPicked(null); return; }
+                if (cs.length === 1) { selectedContact = cs[0]; onPicked(cs[0]); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${SOFT};">
+                        <span class="close-btn-520" id="ew-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">让谁来陪你吃饭？</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="ew-pick-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#ew-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#ew-pick-list');
+                listEl.innerHTML = cs.map(c => `
+                    <div class="ew-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(214,184,150,0.22);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${ewAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;font-weight:500;color:${BROWN};">${c.notes || c.name}</div>
+                        <span style="color:${BROWN};opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                ewResolveAvatars(listEl);
+                listEl.querySelectorAll('.ew-pick-item').forEach(item => {
+                    item.onclick = () => {
+                        selectedContact = cs.find(x => x.id === item.dataset.id) || cs[0];
+                        onPicked(selectedContact);
+                    };
+                });
+            }
+
+            // ===== 主页：流水记录 =====
+            function renderMain() {
+                const nm = (() => { const c = getContact(); return c ? (c.notes||c.name) : 'TA'; })();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${SOFT};">
+                        <span class="close-btn-520" id="ew-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">好好吃饭</h2>
+                        <span class="add-btn-520" id="ew-export" style="font-size:17px;cursor:pointer;color:${BROWN};opacity:0.6;">⬇</span>
+                    </div>
+                    <div class="app-content" id="ew-stream" style="background:${PAPER};padding:14px 14px 6px;overflow-y:auto;flex:1;"></div>
+                    <div style="background:${SOFT};padding:8px 12px;display:flex;gap:8px;border-top:1px solid rgba(214,184,150,0.3);">
+                        <button id="ew-analyze" style="flex:1;background:#fff;color:${BROWN};border:1.5px solid ${MAIN};border-radius:12px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">🔍 健康检测</button>
+                        <button id="ew-sick" style="flex:1;background:#fff;color:${BROWN};border:1.5px solid ${LEAF};border-radius:12px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;">🤍 我不太舒服</button>
+                    </div>
+                    <div style="background:${SOFT};padding:6px 12px 12px;">
+                        <textarea id="ew-input" rows="1" placeholder="吃了什么就记一句～如「一碗小米粥」" style="width:100%;box-sizing:border-box;resize:none;border:1.5px solid ${MAIN};border-radius:12px;padding:10px 12px;font-size:14px;color:${BROWN};background:#fff;outline:none;font-family:inherit;line-height:1.5;"></textarea>
+                        <div style="display:flex;gap:8px;margin-top:7px;">
+                            <button id="ew-log-food" style="flex:2;background:${MAIN};color:${BROWN};border:none;border-radius:12px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">🍚 记下吃的</button>
+                            <button id="ew-log-med" style="flex:1;background:${MED};color:${BROWN};border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;">💊 记药</button>
+                        </div>
+                        <div style="font-size:10.5px;color:${BROWN};opacity:0.4;text-align:center;margin-top:6px;line-height:1.5;">吃了药可以打上药名记一下～<br>${nm} 能陪你、给点小建议，但拿不准的还是问问药师或医生哦</div>
+                    </div>
+                `;
+                appPage.querySelector('#ew-back').onclick = () => {
+                    const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                    if (cs.length > 1) { pickContactThen(() => renderMain()); }
+                    else { appPage.classList.remove('active'); appPage.innerHTML=''; }
+                };
+                appPage.querySelector('#ew-export').onclick = () => exportStream();
+                renderStream();
+
+                const input = appPage.querySelector('#ew-input');
+                const doLog = (kind) => {
+                    const v = input.value.trim();
+                    if (!v) { input.focus(); return; }
+                    const stream = getStream();
+                    const entry = { id:'e_'+Date.now(), time:new Date().toISOString(), kind, text:v };
+                    if (kind === 'food') entry.stars = stomachStars(v);
+                    stream.push(entry);
+                    saveStream(stream);
+                    input.value = '';
+                    renderStream(true);
+                };
+                appPage.querySelector('#ew-log-food').onclick = () => doLog('food');
+                appPage.querySelector('#ew-log-med').onclick = () => doLog('med');
+                appPage.querySelector('#ew-analyze').onclick = () => runAI('analyze');
+                appPage.querySelector('#ew-sick').onclick = () => runAI('sick');
+            }
+
+            function renderStream(scrollBottom) {
+                const box = appPage.querySelector('#ew-stream');
+                if (!box) return;
+                const stream = getStream();
+                if (!stream.length) {
+                    box.innerHTML = `<div style="text-align:center;padding:50px 26px;color:${BROWN};opacity:0.5;line-height:2;">还没有记录哦～<br>吃一口、喝一杯、吃了药，都可以随手记一句<br>哪怕一小口，也是在好好照顾自己 🍚</div>`;
+                    return;
+                }
+                // 按日期分组（保留先后顺序）
+                const groups = []; const map = {};
+                stream.forEach((e, i) => {
+                    const dk = dayKey(e.time);
+                    if (!map[dk]) { map[dk] = { key:dk, time:e.time, items:[] }; groups.push(map[dk]); }
+                    map[dk].items.push({ e, idx:i });
+                });
+                const todayK = dayKey(new Date().toISOString());
+                const yd = new Date(); yd.setDate(yd.getDate()-1);
+                const ydK = dayKey(yd.toISOString());
+
+                const entryRow = (e, idx, isLast) => {
+                    const sep = isLast ? '' : 'border-bottom:1px solid rgba(214,184,150,0.18);';
+                    if (e.kind === 'reply') {
+                        const isSick = e.mode === 'sick';
+                        const label = isSick ? ((e.oppName||'TA') + ' 心疼你') : ((e.oppName||'TA') + ' 的健康检测');
+                        return `<div class="ew-entry" data-idx="${idx}" style="padding:11px;${sep}background:#EDD4CD;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                                <div style="font-size:11.5px;font-weight:600;color:${BROWN};">${isSick ? '🤍' : '🔍'} ${esc(label)}</div>
+                                <div style="font-size:10px;color:${BROWN};opacity:0.4;flex-shrink:0;margin-left:8px;">${fmtTime(e.time)}</div>
+                            </div>
+                            <div style="font-size:13px;color:${BROWN};line-height:1.85;white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div>
+                        </div>`;
+                    }
+                    if (e.kind === 'med') {
+                        return `<div class="ew-entry" data-idx="${idx}" style="padding:9px 11px;${sep}">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div style="font-size:14px;color:${BROWN};line-height:1.6;word-break:break-word;">💊 ${esc(e.text)}</div>
+                                <div style="font-size:10px;color:${MED};opacity:0.8;flex-shrink:0;margin-left:8px;">${fmtTime(e.time)}</div>
+                            </div>
+                            <div style="font-size:10.5px;color:${MED};opacity:0.85;margin-top:2px;">不舒服记一下，乖 ♡</div>
+                        </div>`;
+                    }
+                    return `<div class="ew-entry" data-idx="${idx}" style="padding:9px 11px;${sep}">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <div style="font-size:14px;color:${BROWN};line-height:1.6;word-break:break-word;">${esc(e.text)}</div>
+                            <div style="font-size:10px;color:${BROWN};opacity:0.4;flex-shrink:0;margin-left:8px;">${fmtTime(e.time)}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">
+                            <span style="font-size:10px;color:${BROWN};opacity:0.5;">🤍 对胃</span>${starsHtml(e.stars||3, 12)}
+                        </div>
+                    </div>`;
+                };
+
+                let html = '';
+                groups.forEach(g => {
+                    let rel = '';
+                    if (g.key === todayK) rel = '今天';
+                    else if (g.key === ydK) rel = '昨天';
+                    const foodCount = g.items.filter(x => x.e.kind === 'food').length;
+                    const rows = g.items.map((it, k) => entryRow(it.e, it.idx, k === g.items.length-1)).join('');
+                    html += `<div style="margin-bottom:18px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;padding:0 2px;">
+                            <span style="font-size:14px;font-weight:700;color:${BROWN};">📅 ${fmtDay(g.time)}</span>
+                            ${rel ? `<span style="font-size:10px;color:${BROWN};background:${MAIN};border-radius:8px;padding:1.5px 8px;">${rel}</span>` : ''}
+                            <span style="flex:1;height:1px;background:rgba(214,184,150,0.3);"></span>
+                            ${foodCount ? `<span style="font-size:10px;color:${BROWN};opacity:0.4;">${foodCount} 口</span>` : ''}
+                        </div>
+                        <div style="background:#fff;border:1px solid rgba(214,184,150,0.4);border-radius:14px;overflow:hidden;">${rows}</div>
+                    </div>`;
+                });
+                box.innerHTML = html;
+                // 长按一条删除
+                box.querySelectorAll('.ew-entry').forEach(el => {
+                    let pt;
+                    const idx = parseInt(el.dataset.idx);
+                    const ask = () => {
+                        if (confirm('删掉这一条记录？')) {
+                            const arr = getStream(); arr.splice(idx,1); saveStream(arr); renderStream();
+                        }
+                    };
+                    el.addEventListener('contextmenu',(ev)=>{ev.preventDefault();ask();});
+                    el.addEventListener('touchstart',()=>{pt=setTimeout(ask,600);},{passive:true});
+                    el.addEventListener('touchend',()=>clearTimeout(pt));
+                    el.addEventListener('touchmove',()=>clearTimeout(pt));
+                });
+                if (scrollBottom) box.scrollTop = box.scrollHeight;
+            }
+
+            // ===== 分析 / 不舒服：弹出 TA 的暖暖回应 =====
+            async function runAI(mode) {
+                const c = getContact();
+                if (!c) { alert('还没有联系人，先去 520 添加一个联系人吧～'); return; }
+                const stream = getStream();
+                if (!stream.length) { alert('先记一两口吃的，' + (c.notes||c.name) + '才好帮你看呀～'); return; }
+                showSheet(mode, '正在认真看你最近吃的…🍚', true);
+                try {
+                    const text = await callEatWellAI(c, stream, mode);
+                    const arr = getStream();
+                    arr.push({ id:'rep_'+Date.now(), time:new Date().toISOString(), kind:'reply', mode, text, oppName:(c.notes||c.name) });
+                    saveStream(arr);
+                    renderStream(true);
+                    showSheet(mode, text, false);
+                } catch(err) {
+                    showSheet(mode, '暂时看不了：' + (err.message || '请检查 API 设置'), false);
+                }
+            }
+
+            function showSheet(mode, content, loading) {
+                document.querySelectorAll('.ew-sheet').forEach(d=>d.remove());
+                const nm = (() => { const c = getContact(); return c ? (c.notes||c.name) : 'TA'; })();
+                const title = mode === 'sick' ? '🤍 ' + nm + '心疼地看看你' : '🔍 ' + nm + '的健康检测';
+                const dlg = document.createElement('div');
+                dlg.className = 'ew-sheet';
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+                dlg.innerHTML = `<div style="background:${PAPER};border-radius:20px 20px 0 0;width:100%;max-height:78%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="padding:15px 18px 10px;text-align:center;border-bottom:1px solid rgba(214,184,150,0.3);position:relative;">
+                        <div style="font-size:15px;font-weight:700;color:${BROWN};">${title}</div>
+                        <span id="ew-sheet-close" style="position:absolute;right:16px;top:13px;font-size:18px;color:${BROWN};opacity:0.5;cursor:pointer;">✕</span>
+                    </div>
+                    <div style="padding:18px 20px 26px;overflow-y:auto;font-size:15px;color:${BROWN};line-height:2;white-space:pre-wrap;word-break:break-word;">${loading ? '<div style="text-align:center;opacity:0.55;padding:20px 0;">'+esc(content)+'</div>' : esc(content)}</div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#ew-sheet-close').onclick = () => dlg.remove();
+                dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
+            }
+
+            // ===== 导出 =====
+            function exportStream() {
+                const stream = getStream();
+                if (!stream.length) { alert('还没有记录可以导出～'); return; }
+                let txt = `【我的好好吃饭流水】\n导出时间：${new Date().toLocaleString('zh-CN')}\n共 ${stream.length} 条\n\n${'='.repeat(20)}\n\n`;
+                let lastDay = '';
+                stream.forEach(e => {
+                    const dk = dayKey(e.time);
+                    if (dk !== lastDay) { txt += `\n— ${fmtDay(e.time)} —\n`; lastDay = dk; }
+                    if (e.kind === 'reply') txt += `${fmtTime(e.time)} ${e.mode==='sick'?'🤍':'🔍'} ${e.oppName||'TA'}：${e.text}\n`;
+                    else if (e.kind === 'med') txt += `${fmtTime(e.time)} 💊 ${e.text}\n`;
+                    else txt += `${fmtTime(e.time)} 🍚 ${e.text}（对胃 ${e.stars||3}★）\n`;
+                });
+                const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `好好吃饭_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // ===== 调 AI =====
+            async function callEatWellAI(c, stream, mode) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+
+                // 取最近 24 小时（最多 30 条）
+                const now = Date.now();
+                const recent = stream.filter(e => e.kind !== 'reply' && now - new Date(e.time).getTime() < 24*3600*1000).slice(-30);
+                const useList = recent.length ? recent : stream.filter(e => e.kind !== 'reply').slice(-30);
+                let foodLines = '', medLines = '';
+                useList.forEach(e => {
+                    if (e.kind === 'reply') return;
+                    if (e.kind === 'med') medLines += `· ${fmtTime(e.time)} ${e.text}\n`;
+                    else foodLines += `· ${fmtTime(e.time)} ${e.text}\n`;
+                });
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}「${userNick}」在用一个叫"好好吃饭"的app随手记录TA吃的东西和吃的药，现在请你温柔地帮TA看看。\n\n`;
+                sys += `【关于${userNick}·要记住】：TA的胃偶尔会不太舒服；TA有时候会吃点药（可能是胃药，也可能是别的），但平时不一定吃，所以不要主动念叨吃药这件事。TA是一个敏感、容易自我否定的人。你的存在是为了让TA觉得被惦记、被照顾，绝不是被考核或挑错，更不是一个盯着TA吃药的护士。所有反馈「只往上托，不往下压」，对事不对人，永远不用"批评""不健康""又"这类让人自我否定的词。语气要像一个真心疼TA的人在轻声说话，自然、口语、有温度，别像分析报告。\n`;
+                if (mode === 'sick') {
+                    sys += `【现在TA说自己不太舒服】，请你：\n`;
+                    sys += `1. 先心疼地关心TA这个人——问问是哪里不舒服、胃胀还是胃痛还是反酸、要不要先躺一下喝点温水。语气是抱抱式的，不是诊断式的。\n`;
+                    sys += `2. 结合TA最近吃的东西，温柔地、试探性地猜一猜可能哪一口让胃不太舒服（比如凉的、辣的、空腹、太晚、太撑等），用"会不会是…呀"的口吻，不要笃定、不要吓TA。\n`;
+                    sys += `3. 给几个具体可做的养胃小安慰：喝点温水、温热的小米粥、揉揉肚子、先别吃凉和辣、少量多次等。\n`;
+                    sys += `4. 关于药：只有当TA自己提到、或记录里有吃药时，你才顺着轻轻关心一句（比如难受的话记得吃药、配点温水）；不要主动催TA吃药。绝对不要替TA判断某个具体药物"该不该吃/能不能一起吃/剂量"——真要拿不准，就软软地说一句"要不问问药师呀"。\n`;
+                    sys += `5. 只有当TA听起来痛得比较厉害、或者老不见好时，才温柔地提一句"要不要去看看医生呀"，别硬扛——用关心的口吻，轻轻带过，不要吓TA，也不要每次都说。\n`;
+                } else {
+                    sys += `【现在TA想让你帮TA做个"健康检测"——看看最近吃得健不健康、对身体和胃好不好】，请你：\n`;
+                    sys += `1. 先把TA做到的、对胃友好的部分实实在在地夸出来（吃了温的软的、有好好吃饭、记得照顾自己等），让TA感到被看见。\n`;
+                    sys += `2. 再轻轻地、朝前看地给一两个养胃小建议（下一口/接下来可以加点什么会更舒服），永远给方向，不揪着缺点说。\n`;
+                    sys += `3. 如果看到有凉的、辣的、空腹、太晚等可能伤胃的，用"下次要不要…呀"的温柔口吻提一句就好，不指责。\n`;
+                    sys += `4. 不要主动提吃药的事——平时TA不一定吃药。只有当记录里确实有吃药时，才顺口轻轻关心一下，别说教、别催。\n`;
+                    sys += `5. 如果TA最近吃得很少或几乎没吃，不要扣分式地说教，而是先心疼地关心TA是不是没胃口、太累，邀请TA吃一小口暖的。\n`;
+                }
+                sys += `【语气与长度】：用${oppName}的口吻自然成段，像在跟TA说体己话，温暖、有人物感、口语化，100~220字，不要用列表或编号，不要说"作为AI"，不要写得像报告。`;
+
+                let userMsg = `${oppName}，这是我最近吃的：\n\n【吃的喝的】\n${foodLines || '（最近还没记吃的）'}\n`;
+                if (medLines) userMsg += `【今天吃的药】\n${medLines}`;
+                if (mode === 'sick') userMsg += `\n我现在胃有点不舒服…`;
+                else userMsg += `\n帮我做个健康检测吧，看看我最近吃得健不健康、对身体和胃好不好呀？`;
+
+                let messages;
+                if (pPlat === 'gemini') {
+                    messages = [{ role:'user', parts:[{ text: sys + '\n\n' + userMsg }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, { role:'user', content: userMsg }];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                return text || ('（'+oppName+'温柔地看着你，眼里都是心疼…）');
+            }
+
+            pickContactThen(() => renderMain());
+        }
+
         function setupDreamJournalApp(appPage) {
+
             // ============ 梦境笔记：写下梦，先生解梦，存成梦境日记 ============
             const DJ_KEY = 'dream-journal-entries'; // 独立存储
             const getDreams = () => { try { return JSON.parse(localStorage.getItem(DJ_KEY) || '[]'); } catch(e){ return []; } };
