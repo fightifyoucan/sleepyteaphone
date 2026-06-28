@@ -616,6 +616,7 @@
         <div id="praise-machine-page" class="app-page"></div>
         <div id="coread-page" class="app-page"></div>
         <div id="eat-well-page" class="app-page"></div>
+        <div id="fridge-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1752,6 +1753,7 @@
                 { id: 'praise-machine', name: '夸夸机', emoji: '🌟', container: '.app-grid-page2' },
                 { id: 'coread', name: '共读', emoji: '📕', container: '.app-grid-page2' },
                 { id: 'eat-well', name: '好好吃饭', emoji: '🍚', container: '.app-grid-page2' },
+                { id: 'fridge', name: '冰箱', emoji: '🧊', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -9497,7 +9499,7 @@
                 const appNameMap = {
                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭',
+                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭', 'fridge': '冰箱',
                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                 };
                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -9583,6 +9585,7 @@
                         else if (appId === 'praise-machine') setupPraiseMachineApp(appPage);
                         else if (appId === 'coread') setupCoReadApp(appPage);
                         else if (appId === 'eat-well') setupEatWellApp(appPage);
+                        else if (appId === 'fridge') setupFridgeApp(appPage);
                         else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
@@ -9718,7 +9721,7 @@
                                 const appNameMap = {
                                     'chat': '520', 'couple-space': '心跳同频中', 'world-book': '世界书', 'check-phone': '查手机',
                                     'lullaby': '哄睡', 'ai-love-club': 'AI互助会', 'g-love-club': 'G互助会', 'virtual-hug': '虚拟抱抱',
-                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭',
+                                    'beauty-cabinet': '香言护语', 'ai-friend-camp': 'AI友谊训练营', 'work-ai-club': '社畜AI论坛', 'food-map': '美食地图', 'extra-room': '番外处', 'game-hall': '游戏厅', 'dream-journal': '梦境笔记', 'praise-machine': '夸夸机', 'coread': '共读', 'eat-well': '好好吃饭', 'fridge': '冰箱',
                                     'api-settings': 'API', 'phone': '通话', 'album': '相册', 'settings': '设置'
                                 };
                                 const appsToChange = Object.keys(appNameMap).map(id => ({ id, name: appNameMap[id] }));
@@ -13660,7 +13663,7 @@
                     <div class="app-header-520" style="background:${SOFT};">
                         <span class="close-btn-520" id="ew-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">好好吃饭</h2>
-                        <span class="add-btn-520" id="ew-export" style="font-size:17px;cursor:pointer;color:${BROWN};opacity:0.6;">⬇</span>
+                        <span class="add-btn-520" id="ew-export" style="cursor:pointer;color:${BROWN};opacity:0.55;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg></span>
                     </div>
                     <div class="app-content" id="ew-stream" style="background:${PAPER};padding:14px 14px 6px;overflow-y:auto;flex:1;"></div>
                     <div style="background:${SOFT};padding:8px 12px;display:flex;gap:8px;border-top:1px solid rgba(214,184,150,0.3);">
@@ -13910,7 +13913,341 @@
             pickContactThen(() => renderMain());
         }
 
+        function setupFridgeApp(appPage) {
+            // ============ 冰箱：上冷冻下冷藏，存食材、统计、营养提醒、按现有食材出菜谱 ============
+            const FR_KEY = 'fridge-items';
+            const getItems = () => { try { return JSON.parse(localStorage.getItem(FR_KEY) || '[]'); } catch(e){ return []; } };
+            const saveItems = (arr) => { localStorage.setItem(FR_KEY, JSON.stringify(arr)); };
+
+            // 暖色系
+            const PAPER = '#FBF6EF';      // 页面底
+            const FRAME = '#E5DCCE';      // 冰箱外壳
+            const FREEZE = '#E6EEF3';     // 冷冻区（凉调）
+            const FREEZE_HD = '#D5E2EA';  // 冷冻区标题
+            const COOL = '#FFFAE0';       // 冷藏区（暖调）
+            const COOL_HD = '#F9EECC';    // 冷藏区标题
+            const MAIN = '#F2D1C8';       // 主按钮（奶灰粉）
+            const COOK = '#CDD5AE';       // 想吃什么（嫩绿）
+            const BROWN = '#6E5240';      // 文字
+            const LINE = 'rgba(180,160,135,0.35)';
+
+            const CATS = [
+                { key:'蔬菜', emoji:'🥬' },
+                { key:'肉',   emoji:'🍖' },
+                { key:'水果', emoji:'🍓' },
+                { key:'主食', emoji:'🍚' },
+                { key:'蛋奶', emoji:'🥚' },
+                { key:'其他', emoji:'🧂' },
+            ];
+            const catEmoji = (k) => { const c = CATS.find(x=>x.key===k); return c?c.emoji:'🧂'; };
+            function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+            const frAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) {
+                    return `<img data-frimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                }
+                return av;
+            };
+            const frResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-frimg]').forEach(async img => {
+                    const src = img.getAttribute('data-frimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                        try { img.src = await window.ImageDB.resolve(src); } catch(e) {}
+                    } else { img.src = src; }
+                });
+            };
+
+            let selectedContact = null;
+            function getContact(){ return selectedContact; }
+
+            function pickContactThen(onPicked) {
+                const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                if (!cs.length) { onPicked(null); return; }
+                if (cs.length === 1) { selectedContact = cs[0]; onPicked(cs[0]); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${COOL_HD};">
+                        <span class="close-btn-520" id="fr-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">谁来陪你管冰箱？</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="fr-pick-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>
+                `;
+                appPage.querySelector('#fr-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#fr-pick-list');
+                listEl.innerHTML = cs.map(c => `
+                    <div class="fr-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid ${LINE};">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${frAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;font-weight:500;color:${BROWN};">${c.notes || c.name}</div>
+                        <span style="color:${BROWN};opacity:0.3;font-size:20px;">›</span>
+                    </div>
+                `).join('');
+                frResolveAvatars(listEl);
+                listEl.querySelectorAll('.fr-pick-item').forEach(item => {
+                    item.onclick = () => {
+                        selectedContact = cs.find(x => x.id === item.dataset.id) || cs[0];
+                        onPicked(selectedContact);
+                    };
+                });
+            }
+
+            // 营养提醒（本地、即时、温柔）
+            function nutritionNote() {
+                const items = getItems();
+                const cnt = (k) => items.filter(i => i.cat === k).reduce((s,i)=>s+(i.qty||1),0);
+                const veg = cnt('蔬菜'), meat = cnt('肉'), fruit = cnt('水果'), egg = cnt('蛋奶');
+                const nm = (() => { const c=getContact(); return c?(c.notes||c.name):'TA'; })();
+                if (!items.length) return { text:'冰箱空空的～点下面把食材存进来吧🧺', tone:'empty' };
+                const lacks = [];
+                if (veg === 0) lacks.push('蔬菜');
+                if (fruit === 0) lacks.push('水果');
+                if (meat === 0 && egg === 0) lacks.push('蛋白质（肉/蛋奶）');
+                if (!lacks.length) return { text:`蔬菜🥬${veg} · 肉🍖${meat} · 水果🍓${fruit} ——搭配挺均衡的，${nm}给你比个心 ♡`, tone:'ok' };
+                return { text:`冰箱里好像还缺${lacks.join('、')}呢～下次买菜要不要补点呀，${nm}惦记着你的小肚子`, tone:'lack' };
+            }
+
+            // ===== 主页：冰箱造型 =====
+            function renderMain() {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${COOL_HD};">
+                        <span class="close-btn-520" id="fr-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">冰箱</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:14px;overflow-y:auto;">
+                        <div style="border:2.5px solid ${FRAME};border-radius:18px;overflow:hidden;background:#fff;">
+                            <div style="background:${FREEZE_HD};padding:7px 12px;font-size:12px;font-weight:600;color:${BROWN};display:flex;justify-content:space-between;align-items:center;">
+                                <span>❄️ 冷冻区</span><span id="fr-cnt-freeze" style="font-size:11px;opacity:0.6;"></span>
+                            </div>
+                            <div id="fr-zone-freeze" style="background:${FREEZE};padding:10px;min-height:80px;"></div>
+                            <div style="height:5px;background:${FRAME};"></div>
+                            <div style="background:${COOL_HD};padding:7px 12px;font-size:12px;font-weight:600;color:${BROWN};display:flex;justify-content:space-between;align-items:center;">
+                                <span>🧊 冷藏区</span><span id="fr-cnt-fridge" style="font-size:11px;opacity:0.6;"></span>
+                            </div>
+                            <div id="fr-zone-fridge" style="background:${COOL};padding:10px;min-height:80px;"></div>
+                        </div>
+
+                        <div id="fr-nutri" style="margin-top:12px;border-radius:14px;padding:11px 14px;font-size:12.5px;line-height:1.7;"></div>
+
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button id="fr-add" style="flex:1;background:${MAIN};color:${BROWN};border:none;border-radius:13px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;">＋ 添加食材</button>
+                            <button id="fr-cook" style="flex:1;background:${COOK};color:#3f5232;border:none;border-radius:13px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;">🍳 想吃什么</button>
+                        </div>
+                        <div style="font-size:10.5px;color:${BROWN};opacity:0.4;text-align:center;margin-top:8px;line-height:1.5;">按冰箱里现有的食材，让 TA 给你出几道家常菜～</div>
+                    </div>
+                `;
+                appPage.querySelector('#fr-back').onclick = () => {
+                    const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts() : [];
+                    if (cs.length > 1) { pickContactThen(() => renderMain()); }
+                    else { appPage.classList.remove('active'); appPage.innerHTML=''; }
+                };
+                appPage.querySelector('#fr-add').onclick = () => openAddSheet();
+                appPage.querySelector('#fr-cook').onclick = () => runRecipe();
+                renderZones();
+            }
+
+            function renderZones() {
+                const items = getItems();
+                const fill = (zone, elId, cntId) => {
+                    const el = appPage.querySelector(elId);
+                    const cntEl = appPage.querySelector(cntId);
+                    if (!el) return;
+                    const list = items.filter(i => i.zone === zone);
+                    if (cntEl) cntEl.textContent = list.length ? `${list.length} 样` : '';
+                    if (!list.length) {
+                        el.innerHTML = `<div style="text-align:center;color:${BROWN};opacity:0.35;font-size:12px;padding:18px 0;">空空的～</div>`;
+                        return;
+                    }
+                    el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;">` + list.map(it => `
+                        <div class="fr-chip" data-id="${it.id}" style="background:#fff;border:1px solid ${LINE};border-radius:12px;padding:7px 9px;display:flex;align-items:center;gap:7px;">
+                            <span style="font-size:14px;">${catEmoji(it.cat)}</span>
+                            <span style="font-size:13px;color:${BROWN};font-weight:500;">${esc(it.name)}</span>
+                            <span class="fr-minus" data-id="${it.id}" style="cursor:pointer;width:20px;height:20px;border-radius:50%;background:${PAPER};display:flex;align-items:center;justify-content:center;color:${BROWN};font-size:14px;user-select:none;">−</span>
+                            <span style="font-size:12px;color:${BROWN};min-width:14px;text-align:center;">${it.qty||1}</span>
+                            <span class="fr-plus" data-id="${it.id}" style="cursor:pointer;width:20px;height:20px;border-radius:50%;background:${PAPER};display:flex;align-items:center;justify-content:center;color:${BROWN};font-size:14px;user-select:none;">＋</span>
+                        </div>
+                    `).join('') + `</div>`;
+                };
+                fill('freeze', '#fr-zone-freeze', '#fr-cnt-freeze');
+                fill('fridge', '#fr-zone-fridge', '#fr-cnt-fridge');
+
+                appPage.querySelectorAll('.fr-plus').forEach(b => b.onclick = (e) => { e.stopPropagation(); changeQty(b.dataset.id, 1); });
+                appPage.querySelectorAll('.fr-minus').forEach(b => b.onclick = (e) => { e.stopPropagation(); changeQty(b.dataset.id, -1); });
+                appPage.querySelectorAll('.fr-chip').forEach(chip => {
+                    let pt;
+                    const ask = () => { if (confirm('从冰箱拿出这个食材？')) { delItem(chip.dataset.id); } };
+                    chip.addEventListener('contextmenu',(ev)=>{ev.preventDefault();ask();});
+                    chip.addEventListener('touchstart',()=>{pt=setTimeout(ask,600);},{passive:true});
+                    chip.addEventListener('touchend',()=>clearTimeout(pt));
+                    chip.addEventListener('touchmove',()=>clearTimeout(pt));
+                });
+
+                const nu = nutritionNote();
+                const nuEl = appPage.querySelector('#fr-nutri');
+                if (nuEl) {
+                    const bg = nu.tone==='lack' ? '#FBEEDF' : (nu.tone==='ok' ? '#EDF2E4' : '#F3E9DD');
+                    nuEl.style.background = bg;
+                    nuEl.style.color = BROWN;
+                    nuEl.innerHTML = `<span style="font-weight:600;">🥗 营养小看板　</span>${esc(nu.text)}`;
+                }
+            }
+
+            function changeQty(id, delta) {
+                const arr = getItems();
+                const it = arr.find(x => x.id === id);
+                if (!it) return;
+                it.qty = (it.qty||1) + delta;
+                let next = arr;
+                if (it.qty <= 0) next = arr.filter(x => x.id !== id);
+                saveItems(next);
+                renderZones();
+            }
+            function delItem(id) {
+                saveItems(getItems().filter(x => x.id !== id));
+                renderZones();
+            }
+
+            // ===== 添加食材弹窗 =====
+            function openAddSheet() {
+                document.querySelectorAll('.fr-sheet').forEach(d=>d.remove());
+                let curCat = '蔬菜', curZone = 'fridge', curQty = 1;
+                const dlg = document.createElement('div');
+                dlg.className = 'fr-sheet';
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+                dlg.innerHTML = `<div style="background:${PAPER};border-radius:20px 20px 0 0;width:100%;padding:16px 18px 24px;">
+                    <div style="text-align:center;font-size:15px;font-weight:700;color:${BROWN};margin-bottom:14px;">放进冰箱 🧺</div>
+                    <input id="fr-name" placeholder="食材名字～如「西兰花」" style="width:100%;box-sizing:border-box;border:1.5px solid ${MAIN};border-radius:12px;padding:11px 13px;font-size:14px;color:${BROWN};background:#fff;outline:none;font-family:inherit;margin-bottom:12px;">
+                    <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">分类</div>
+                    <div id="fr-cat-row" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+                        ${CATS.map(c=>`<span class="fr-cat-opt" data-k="${c.key}" style="cursor:pointer;border:1.5px solid ${LINE};border-radius:10px;padding:6px 11px;font-size:13px;color:${BROWN};">${c.emoji} ${c.key}</span>`).join('')}
+                    </div>
+                    <div style="display:flex;gap:14px;margin-bottom:14px;">
+                        <div style="flex:1;">
+                            <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">数量</div>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span id="fr-q-minus" style="cursor:pointer;width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid ${LINE};display:flex;align-items:center;justify-content:center;color:${BROWN};font-size:18px;">−</span>
+                                <span id="fr-q-val" style="font-size:15px;color:${BROWN};min-width:18px;text-align:center;">1</span>
+                                <span id="fr-q-plus" style="cursor:pointer;width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid ${LINE};display:flex;align-items:center;justify-content:center;color:${BROWN};font-size:18px;">＋</span>
+                            </div>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">放哪格</div>
+                            <div style="display:flex;gap:7px;">
+                                <span class="fr-zone-opt" data-z="freeze" style="cursor:pointer;flex:1;text-align:center;border:1.5px solid ${LINE};border-radius:10px;padding:6px;font-size:13px;color:${BROWN};">❄️ 冷冻</span>
+                                <span class="fr-zone-opt" data-z="fridge" style="cursor:pointer;flex:1;text-align:center;border:1.5px solid ${LINE};border-radius:10px;padding:6px;font-size:13px;color:${BROWN};">🧊 冷藏</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button id="fr-cancel" style="flex:1;background:#fff;color:${BROWN};border:1.5px solid ${LINE};border-radius:12px;padding:12px;font-size:14px;cursor:pointer;">再想想</button>
+                        <button id="fr-save" style="flex:2;background:${MAIN};color:${BROWN};border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">放进去</button>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+
+                const paintCat = () => dlg.querySelectorAll('.fr-cat-opt').forEach(o => {
+                    const on = o.dataset.k === curCat;
+                    o.style.background = on ? MAIN : '#fff';
+                    o.style.borderColor = on ? MAIN : LINE;
+                });
+                const paintZone = () => dlg.querySelectorAll('.fr-zone-opt').forEach(o => {
+                    const on = o.dataset.z === curZone;
+                    o.style.background = on ? MAIN : '#fff';
+                    o.style.borderColor = on ? MAIN : LINE;
+                });
+                paintCat(); paintZone();
+                dlg.querySelectorAll('.fr-cat-opt').forEach(o => o.onclick = () => { curCat = o.dataset.k; paintCat(); });
+                dlg.querySelectorAll('.fr-zone-opt').forEach(o => o.onclick = () => { curZone = o.dataset.z; paintZone(); });
+                dlg.querySelector('#fr-q-minus').onclick = () => { if(curQty>1){curQty--; dlg.querySelector('#fr-q-val').textContent=curQty;} };
+                dlg.querySelector('#fr-q-plus').onclick = () => { curQty++; dlg.querySelector('#fr-q-val').textContent=curQty; };
+                dlg.querySelector('#fr-cancel').onclick = () => dlg.remove();
+                dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
+                const nameEl = dlg.querySelector('#fr-name'); nameEl.focus();
+                dlg.querySelector('#fr-save').onclick = () => {
+                    const name = nameEl.value.trim();
+                    if (!name) { nameEl.focus(); return; }
+                    const arr = getItems();
+                    arr.push({ id:'f_'+Date.now(), name, qty:curQty, cat:curCat, zone:curZone });
+                    saveItems(arr);
+                    dlg.remove();
+                    renderZones();
+                };
+            }
+
+            // ===== 想吃什么：按食材生成菜谱 =====
+            async function runRecipe() {
+                const c = getContact();
+                if (!c) { alert('还没有联系人，先去 520 添加一个联系人吧～'); return; }
+                const items = getItems();
+                if (!items.length) { alert('冰箱还空着呢，先放点食材进去呀～🧺'); return; }
+                showSheet('🍳 ' + (c.notes||c.name) + ' 给你想了几道菜', '正在翻你的冰箱、想菜谱…🍳', true);
+                try {
+                    const text = await callFridgeAI(c, items);
+                    showSheet('🍳 ' + (c.notes||c.name) + ' 给你想了几道菜', text, false);
+                } catch(err) {
+                    showSheet('🍳 想吃什么', '暂时想不了：' + (err.message || '请检查 API 设置'), false);
+                }
+            }
+
+            function showSheet(title, content, loading) {
+                document.querySelectorAll('.fr-sheet2').forEach(d=>d.remove());
+                const dlg = document.createElement('div');
+                dlg.className = 'fr-sheet2';
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+                dlg.innerHTML = `<div style="background:${PAPER};border-radius:20px 20px 0 0;width:100%;max-height:80%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="padding:15px 18px 10px;text-align:center;border-bottom:1px solid ${LINE};position:relative;">
+                        <div style="font-size:15px;font-weight:700;color:${BROWN};">${esc(title)}</div>
+                        <span id="fr-sheet-close" style="position:absolute;right:16px;top:13px;font-size:18px;color:${BROWN};opacity:0.5;cursor:pointer;">✕</span>
+                    </div>
+                    <div style="padding:18px 20px 26px;overflow-y:auto;font-size:14.5px;color:${BROWN};line-height:1.95;white-space:pre-wrap;word-break:break-word;">${loading ? '<div style="text-align:center;opacity:0.55;padding:20px 0;">'+esc(content)+'</div>' : esc(content)}</div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#fr-sheet-close').onclick = () => dlg.remove();
+                dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
+            }
+
+            // ===== 调 AI 出菜谱 =====
+            async function callFridgeAI(c, items) {
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('请先填好 API 密钥');
+                const userNick = localStorage.getItem('user_nick') || '我';
+                const oppName = c.notes || c.name;
+
+                let list = items.map(i => `${i.name}×${i.qty||1}（${i.cat}）`).join('、');
+
+                let sys = `你是「${oppName}」。${c.persona?('人设：'+c.persona+'\n'):''}「${userNick}」做饭时很纠结想不出菜，现在请你根据TA冰箱里现有的食材，推荐几道市面上常见、好做的家常菜。\n\n`;
+                sys += `【要求】：\n`;
+                sys += `1. 推荐 2~3 道家常菜，尽量用上TA冰箱里已有的食材（可以补充油盐酱醋葱姜蒜这类常见调料，但别要求TA买太多没有的东西）。\n`;
+                sys += `2. 每道菜的格式：先写【菜名】，换行后写简明的做法步骤（用1.2.3.编号，步骤具体、能照着做，别太啰嗦）。\n`;
+                sys += `3. 如果食材偏少或搭配不太够，可以温柔地提一句"要不要再添点什么会更好吃/更均衡"，但别说教。\n`;
+                sys += `4. 用${oppName}的口吻，温暖、口语、有人物感，开头可以先暖暖地说一句（像"看了看你的冰箱呀～"），别像菜谱网站那样冷冰冰。\n`;
+                sys += `5. 不要说"作为AI"。`;
+
+                let userMsg = `${oppName}，我冰箱里现在有这些：\n${list}\n\n我不知道做什么菜好，帮我想几道吧～`;
+
+                let messages;
+                if (pPlat === 'gemini') {
+                    messages = [{ role:'user', parts:[{ text: sys + '\n\n' + userMsg }] }];
+                } else {
+                    messages = [{ role:'system', content: sys }, { role:'user', content: userMsg }];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('API 请求失败 ('+resp.status+')');
+                const data = await resp.json();
+                let text = (ApiHandler.parseChatResponse(pPlat, data) || '').trim();
+                return text || ('（'+oppName+'翻了翻你的冰箱，正在认真帮你想菜…）');
+            }
+
+            pickContactThen(() => renderMain());
+        }
+
         function setupDreamJournalApp(appPage) {
+
 
             // ============ 梦境笔记：写下梦，先生解梦，存成梦境日记 ============
             const DJ_KEY = 'dream-journal-entries'; // 独立存储
