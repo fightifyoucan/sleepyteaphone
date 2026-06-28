@@ -3697,8 +3697,8 @@
                             // 只有AI发来的转账才能点击接收/退还
                             if(!msg || msg.sender === 'me' || msg.claimed || msg.status==='returned') return;
                             card.style.cursor = 'pointer';
-                            card.onclick = (e) => {
-                                e.stopPropagation();
+                            const openSheet = (e) => {
+                                if(e&&e.stopPropagation)e.stopPropagation();
                                 document.querySelectorAll('.transfer-dlg').forEach(d=>d.remove());
                                 const dlg = document.createElement('div');
                                 dlg.className = 'transfer-dlg';
@@ -3728,6 +3728,11 @@
                                 };
                                 dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
                             };
+                            card.onclick = openSheet;
+                            let _tsx,_tsy,_tmoved,_tstart;
+                            card.addEventListener('touchstart',(e)=>{const t=e.touches[0];_tsx=t.clientX;_tsy=t.clientY;_tmoved=false;_tstart=Date.now();},{passive:true});
+                            card.addEventListener('touchmove',(e)=>{const t=e.touches[0];if(Math.abs(t.clientX-_tsx)>10||Math.abs(t.clientY-_tsy)>10)_tmoved=true;},{passive:true});
+                            card.addEventListener('touchend',(e)=>{if(!_tmoved&&Date.now()-_tstart<500){e.preventDefault();e.stopPropagation();openSheet(e);}});
                         });
 
                         // Gift card click → bottom sheet
@@ -3737,8 +3742,8 @@
                             // 只有AI发来的礼物才能点击接收/退还
                             if(!gmsg || gmsg.sender === 'me' || gmsg.claimed || gmsg.status==='returned') return;
                             card.style.cursor = 'pointer';
-                            card.onclick = (e) => {
-                                e.stopPropagation();
+                            const openGift = (e) => {
+                                if(e&&e.stopPropagation)e.stopPropagation();
                                 document.querySelectorAll('.gift-dlg').forEach(d=>d.remove());
                                 const dlg = document.createElement('div');
                                 dlg.className = 'gift-dlg';
@@ -3766,6 +3771,11 @@
                                 };
                                 dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
                             };
+                            card.onclick = openGift;
+                            let _gsx,_gsy,_gmoved,_gstart;
+                            card.addEventListener('touchstart',(e)=>{const t=e.touches[0];_gsx=t.clientX;_gsy=t.clientY;_gmoved=false;_gstart=Date.now();},{passive:true});
+                            card.addEventListener('touchmove',(e)=>{const t=e.touches[0];if(Math.abs(t.clientX-_gsx)>10||Math.abs(t.clientY-_gsy)>10)_gmoved=true;},{passive:true});
+                            card.addEventListener('touchend',(e)=>{if(!_gmoved&&Date.now()-_gstart<500){e.preventDefault();e.stopPropagation();openGift(e);}});
                         });
 
                         // Click on select-row to toggle
