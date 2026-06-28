@@ -3446,17 +3446,7 @@
                                 });
                             });
                         }
-                        [
-                            ...box.querySelectorAll('.transfer-card[data-tx]'),
-                            ...box.querySelectorAll('.gift-card[data-gidx]'),
-                        ].forEach(card => {
-                            const getIdx = card.classList.contains('transfer-card') ? ()=>parseInt(card.dataset.tx) : ()=>parseInt(card.dataset.gidx);
-                            card.addEventListener('contextmenu',(e)=>{e.preventDefault();const i=getIdx();if(i<0)return;if(selectMode){if(selectedIdxs.has(i))selectedIdxs.delete(i);else selectedIdxs.add(i);selectCount.textContent=`已选${selectedIdxs.size}条`;render();}else showCtxMenu(e.clientX,e.clientY,i);});
-                            let ct;
-                            card.addEventListener('touchstart',(e)=>{const t=e.touches[0];ct=setTimeout(()=>showCtxMenu(t.clientX,t.clientY,getIdx()),600);},{passive:true});
-                            card.addEventListener('touchend',()=>clearTimeout(ct));
-                            card.addEventListener('touchmove',()=>clearTimeout(ct));
-                        });
+                        // 转账卡 / 礼物卡不挂长按菜单（只用轻点领取），避免手机上没长按也弹操作框
 
                         // 파일/음악 카드 클릭 팝업
                         box.querySelectorAll('.file-card[data-fidx], .music-card[data-midx]').forEach(card => {
@@ -3682,12 +3672,7 @@
                             card.addEventListener('touchend', ()=>clearTimeout(ct));
                             card.addEventListener('touchmove', ()=>clearTimeout(ct));
                         };
-                        box.querySelectorAll('.transfer-card[data-tx]').forEach(card => {
-                            attachCardLongPress(card, c => parseInt(c.dataset.tx));
-                        });
-                        box.querySelectorAll('.gift-card[data-gidx]').forEach(card => {
-                            attachCardLongPress(card, c => parseInt(c.dataset.gidx));
-                        });
+                        // 转账卡 / 礼物卡只需要「轻点领取」，不挂长按菜单（避免手机上没长按也弹操作框）
 
                         // Transfer card click → dialog
                         // Transfer card click → bottom sheet
