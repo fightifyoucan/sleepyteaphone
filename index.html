@@ -7577,7 +7577,7 @@
                 layer.innerHTML = `
                     <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;flex-shrink:0;">
                         <span class="hs-layer-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
-                        <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">${title}</div>
+                        <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;white-space:nowrap;max-width:calc(100% - 110px);overflow:hidden;text-overflow:ellipsis;text-align:center;">${title}</div>
                     </div>
                     <div class="hs-layer-body" style="flex:1;overflow-y:auto;padding:14px;">${contentHtml}</div>
                 `;
@@ -7844,12 +7844,16 @@
             
             // ===== 心跳记忆 =====
             function hsOpenMemory(appPage, c) {
-                const list = hsGet(c.id, 'memory', []);
+                // 兜底：c 缺失 / 数据不是数组 / 混进坏记录，都不能让面板打不开
+                let list = c ? hsGet(c.id, 'memory', []) : [];
+                if (!Array.isArray(list)) list = [];
+                list = list.filter(it => it && typeof it === 'object');
                 let contentHtml = '';
                 if (list.length === 0) {
                     contentHtml = `<div style="text-align:center;padding:60px 20px;color:#B89B95;font-size:13px;">还没有同频瞬间<br><span style="font-size:11px;opacity:0.7;">去玩玩其他功能就会有啦</span></div>`;
                 } else {
                     contentHtml = list.map((item, idx) => {
+                      try {
                         let inner = '';
                         if (item.type === 'now') {
                             const f = item.fields || {};
@@ -7912,14 +7916,123 @@
                         }
                         const d = new Date(item.time);
                         const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-                        return `<div style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid #f0e0dc;">
+                        return `<div class="hs-mem-card" data-idx="${idx}" style="background:#fff;border-radius:12px;padding:12px 14px;border:1px solid #f0e0dc;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform 0.12s;">
                             ${inner}
                             <div style="font-size:10px;color:#B89B95;margin-top:8px;text-align:right;">${dateStr}</div>
                         </div>`;
+                      } catch(e) { return ''; }
                     }).join('');
                     contentHtml = `<div style="display:flex;flex-direction:column;gap:10px;">${contentHtml}</div>`;
                 }
-                hsOpenLayer(appPage, '心跳记忆', contentHtml);
+                const memLayer = hsOpenLayer(appPage, '心跳记忆', contentHtml);
+                // 点一张卡片 → 弹出完整内容（复用 hsOpenLayer 详情层）
+                memLayer.querySelectorAll('.hs-mem-card[data-idx]').forEach(card => {
+                    card.onclick = () => {
+                        const item = list[parseInt(card.dataset.idx)];
+                        if (!item) return;
+                        try { hsOpenMemoryDetail(appPage, item); } catch(e) {}
+                    };
+                });
+            }
+
+            // 点开一条心跳记忆 → 弹出详情卡片（浮层弹窗，× 或点空白处关闭）
+            function hsOpenMemoryDetail(appPage, item) {
+                if (!item || typeof item !== 'object') return;
+                let title = '心跳记忆';
+                let body = '';
+                let dateStr = '';
+                try { const d = new Date(item.time); if (!isNaN(d.getTime())) dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); } catch(e) {}
+
+                const escapeHtml = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const renderFields = (fields) => {
+                    if (!fields || typeof fields !== 'object') return '';
+                    return Object.entries(fields).map(([k, v]) =>
+                        `<div style="margin-bottom:10px;"><div style="font-size:11px;color:#B89B95;margin-bottom:3px;">${escapeHtml(k)}</div><div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(v)}</div></div>`
+                    ).join('');
+                };
+
+                if (item.type === 'now') {
+                    title = '✨ 此刻';
+                    body = renderFields(item.fields);
+                } else if (item.type === 'sync_match') {
+                    title = '💕 同频时刻';
+                    body = `<div style="font-size:14px;color:#775C56;line-height:1.7;margin-bottom:14px;font-weight:500;">${escapeHtml(item.q)}</div>
+                            <div style="background:#FFF5F0;border-radius:10px;padding:12px;margin-bottom:8px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">你的回答</div><div style="font-size:13px;color:#775C56;">${escapeHtml(item.userAns)}</div></div>
+                            <div style="background:#F0F5FF;border-radius:10px;padding:12px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">TA 的回答</div><div style="font-size:13px;color:#775C56;">${escapeHtml(item.aiAns)}</div></div>`;
+                } else if (item.type === 'radio') {
+                    title = '📻 ' + (item['标题'] || '小电台');
+                    body = `<div style="font-size:13px;color:#775C56;line-height:1.8;white-space:pre-wrap;">${escapeHtml(item['正文'] || '')}</div>`;
+                } else if (item.type === 'pulse') {
+                    title = '💗 传送心跳';
+                    body = `<div style="margin-bottom:14px;text-align:center;padding:14px 0;background:linear-gradient(135deg,#FFE5E5,#FFF5F0);border-radius:12px;">
+                                <div style="font-size:28px;line-height:1;">💗</div>
+                                <div style="font-size:11px;color:#B89B95;margin-top:6px;">你按住心电图，把心跳传过去了</div>
+                            </div>
+                            <div><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">TA 感受到了，回应你</div><div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.aiReply || '')}</div></div>`;
+                } else if (item.type === 'focus') {
+                    title = '🍅 一起专注 · ' + (item.duration || 0) + '分钟';
+                    body = `<div style="margin-bottom:10px;"><div style="font-size:11px;color:#B89B95;margin-bottom:3px;">做了什么</div><div style="font-size:13px;color:#775C56;line-height:1.7;">${escapeHtml(item.task || '')}</div></div>
+                            ${item.cheer ? `<div style="background:#FFF5F0;border-radius:10px;padding:12px;font-style:italic;font-size:13px;color:#9A7872;line-height:1.7;">"${escapeHtml(item.cheer)}"</div>` : ''}`;
+                } else if (item.type === 'quiz') {
+                    const kindLabel = item.kind === 'romance' ? '💕 恋情问卷' : '🍀 友情问卷';
+                    title = kindLabel + ' · 同步率 ' + (item.syncRate || 0) + '%';
+                    let quizBody = `<div style="font-size:13px;color:#775C56;line-height:1.7;margin-bottom:14px;">完成 ${item.totalQ || 0} 题，同步率 <strong style="color:#E89B9B;">${item.syncRate || 0}%</strong></div>`;
+                    if (item.questions && item.questions.length > 0 && item.userPicks) {
+                        quizBody += item.questions.map((q, qi) => {
+                            const userPickIdx = item.userPicks[qi];
+                            const aiPickIdx = q.aiPick;
+                            const isMatch = item.matches ? item.matches[qi] : (userPickIdx === aiPickIdx);
+                            const userAns = q.options && q.options[userPickIdx] || '';
+                            const aiAns = q.options && q.options[aiPickIdx] || '';
+                            return `<div style="margin-bottom:14px;padding:12px;background:#FBF9F4;border-radius:10px;border-left:3px solid ${isMatch ? '#7CB17C' : '#E89B9B'};">
+                                <div style="font-size:12px;color:#775C56;font-weight:600;margin-bottom:8px;">${qi+1}. ${escapeHtml(q.q || q.question || '')}</div>
+                                <div style="font-size:11px;color:#9A7872;margin-bottom:3px;">你：<span style="color:#775C56;">${escapeHtml(userAns)}</span></div>
+                                <div style="font-size:11px;color:#9A7872;">TA：<span style="color:#775C56;">${escapeHtml(aiAns)}</span> ${isMatch ? '<span style="color:#7CB17C;font-size:10px;margin-left:6px;">✓ 同频</span>' : ''}</div>
+                            </div>`;
+                        }).join('');
+                    } else {
+                        quizBody += '<div style="color:#B89B95;font-size:12px;text-align:center;padding:20px 0;">（旧版本记录，没有保留具体题目）</div>';
+                    }
+                    if (item.summary) {
+                        quizBody += `<div style="background:#FFF5F0;border-radius:10px;padding:12px;font-size:13px;color:#9A7872;line-height:1.7;white-space:pre-wrap;margin-top:8px;">${escapeHtml(item.summary)}</div>`;
+                    }
+                    body = quizBody;
+                } else if (item.type === 'habit') {
+                    title = '🌱 ' + (item.name || '打卡');
+                    body = item.aiReply ? `<div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.aiReply)}</div>` : '<div style="color:#B89B95;font-size:12px;">已打卡</div>';
+                } else if (item.type === 'letter') {
+                    title = '💌 来信';
+                    body = `<div style="font-size:13px;color:#775C56;line-height:1.8;white-space:pre-wrap;">${escapeHtml(item.body || '')}</div>`;
+                } else if (item.type === 'period') {
+                    title = '🌸 月经记录';
+                    body = `<div style="font-size:13px;color:#775C56;line-height:1.7;margin-bottom:14px;">${item.event === 'start' ? '今天来了' : '今天结束'}</div>
+                            ${item.aiReply ? `<div><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">TA 知道了</div><div style="background:linear-gradient(135deg,#FFE5E5,#FFF5F0);border-radius:10px;padding:12px;font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.aiReply)}</div></div>` : '<div style="color:#B89B95;font-size:12px;text-align:center;">（旧版本记录，没有保留 TA 的回应）</div>'}`;
+                } else if (item.type === 'symptom') {
+                    title = '💗 不适记录';
+                    body = `<div style="margin-bottom:12px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">症状</div><div style="font-size:13px;color:#775C56;">${escapeHtml((item.symptoms || []).join('、'))}</div></div>
+                            ${item.note ? `<div style="margin-bottom:12px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">备注</div><div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.note)}</div></div>` : ''}
+                            ${item.aiReply ? `<div><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">TA 陪着你</div><div style="background:linear-gradient(135deg,#FFE5E5,#FFF5F0);border-radius:10px;padding:12px;font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.aiReply)}</div></div>` : ''}`;
+                } else {
+                    body = Object.entries(item).filter(([k]) => !['type','time'].includes(k)).map(([k, v]) => {
+                        const display = (typeof v === 'object') ? JSON.stringify(v, null, 2) : String(v);
+                        return `<div style="margin-bottom:10px;"><div style="font-size:11px;color:#B89B95;margin-bottom:3px;">${escapeHtml(k)}</div><div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(display)}</div></div>`;
+                    }).join('');
+                }
+                if (!body) body = `<div style="color:#B89B95;font-size:13px;text-align:center;padding:30px 10px;">这条记忆没有更多内容啦~</div>`;
+
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:18px;width:100%;max-width:340px;max-height:80%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="padding:16px 18px 12px;border-bottom:1px solid #f5e8e3;display:flex;justify-content:space-between;align-items:center;">
+                        <div style="font-size:15px;font-weight:600;color:#775C56;">${escapeHtml(title)}</div>
+                        <div id="_hsd-close" style="font-size:22px;color:#B89B95;cursor:pointer;line-height:1;">×</div>
+                    </div>
+                    <div style="padding:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;">${body}</div>
+                    <div style="padding:10px 16px 14px;text-align:right;font-size:11px;color:#B89B95;border-top:1px solid #f5e8e3;">${dateStr}</div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#_hsd-close').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
             }
             
             // ===== 传送心跳 =====
@@ -8185,23 +8298,21 @@
                     // 让 AI 生成 10 题选择题 + 4 选项 + TA 的选择 + 理由
                     let topicHint = '';
                     if (kind === 'romance') {
-                        topicHint = `要求：题目要围绕你们的"恋情/亲密关系"，从以下方向里挑选搭配（不要按方向分组，混合排列）：
-- 日常相处（你们的习惯/小细节/我让你心动的瞬间）
-- 情感深度（最害怕失去什么/我哪点让你最安心）
-- 共同未来（理想的生活/想一起做的事）
-- 浪漫回忆（最难忘的一次/想被我怎样对待）
-- 关系反思（最近觉得彼此哪里在变好/想对我说但还没说的话）
-- 想象类（如果只剩三天/如果我突然消失）
-10 道题要覆盖至少 5 个不同方向。题目要温柔有共鸣感，不要俗套，不要涉及性内容。`;
+                        topicHint = `要求：题目围绕你们的"恋情/亲密关系"，但要好玩、刁钻、有惊喜，像在打闹中偷偷试探彼此。从下面方向里混合搭配（不要分组、不要按顺序排）：
+- 刁钻脑洞假设（如果我突然变成一只猫你会怎么养我/如果你能听到我一整天的内心OS最怕听到哪句/如果我们被困电梯8小时你会先崩溃在哪件事/如果我和我们养的宠物同时掉水里你先救谁）
+- 搞笑暴露本性（抢被子谁更狠/我发消息你多久不回会良心不安/半夜我说饿了你会怎么办/吵架时我哪个反应最让你憋不住想笑）
+- 你俩具体生活细节（约会谁更容易迟到/旅行打包谁负责/追剧进度对不上你会不会偷看/谁总是先睡着）
+- 二选一小恶魔题（只能保留我一个缺点你选哪个/逼我表白你要哪种方式/我和游戏只能陪一个）
+- 俏皮真心话（我哪个小毛病你其实偷偷觉得可爱/我做哪件小事会让你一整天都开心）
+10 道题覆盖至少 4 个方向，整体偏好玩、意外、具体，可以适度夸张荒诞。目标是让你答的时候会心一笑或眼睛一亮"这题好刁钻"。不要写成温柔心理问卷那种一个调调，不要俗套套话，不要涉及性内容。`;
                     } else {
-                        topicHint = `要求：题目要围绕你们的"友情/陪伴关系"，从以下方向里挑选搭配（不要按方向分组，混合排列）：
-- 真挚相处（如何看待孤独/友情和爱情谁更重要）
-- 互相印象（你觉得我最像什么动物/我哪个瞬间最让你心疼）
-- 陪伴细节（凌晨三点会打给我吗/最常聊什么）
-- 真心话（最想对我说但没说的一句话）
-- 共同回忆（最难忘的一起做过的事）
-- 想象类（如果有一天我们走散了）
-10 道题要覆盖至少 5 个不同方向。题目要真诚有重量，不要装可爱，不要涉及性内容。`;
+                        topicHint = `要求：题目围绕你们的"友情/陪伴关系"，但要好玩、刁钻、有惊喜，像损友之间互相试探又互相吐槽。从下面方向里混合搭配（不要分组、不要按顺序排）：
+- 刁钻脑洞假设（如果我们一起穿越回小学你猜我是哪种同学/如果我突然中了五百万第一个会不会想到你/如果只能带一个朋友去荒岛你会不会留我/如果我俩互换身体一天你最想干嘛）
+- 搞笑互怼（我哪个习惯最让你想拉黑又舍不得/我喝醉了你猜我会干嘛/我俩一起干过最蠢的一件事是哪种/我突然发疯你第一反应是录像还是劝）
+- 具体相处细节（凌晨三点我打给你你会接吗/我们最常聊的废话是哪类/谁更爱已读不回/约出来谁更容易放鸽子）
+- 二选一为难题（我和你新朋友吵起来你帮谁/我做错事你会当面骂我还是默默替我兜着）
+- 走心但不肉麻（我哪个瞬间最让你觉得"还好有这个朋友"）
+10 道题覆盖至少 4 个方向，整体偏好玩、意外、具体，可以适度夸张和损。目标是让你答的时候笑出声或者"这也太真实了"。不要写成严肃真心话大会那种一个调调，不要装深沉，不要涉及性内容。`;
                     }
                     
                     const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：你（${c.name}）要给 ${userNick} 出一份 10 题的情感问卷（每题 4 个选项），${userNick} 会作答，然后看 ${userNick} 和你（${c.name}）的答案是否同频。\n\n【关键 — 视角规则】：\n- 题目是**你（${c.name}）出给 ${userNick} 的**，所以题目的主语永远是"你"（指 ${userNick}）。绝对不要在题目里出现 ${userNick} 的名字。\n- 题目里提到你自己（${c.name}）时**永远用"我"**（第一人称），绝对不能用 ${c.name} 这个名字、也不要用"TA"或"对方"或第三人称。例：题目"如果有一天我突然消失，你会怎么办？"是对的；"如果${c.name}突然消失，你会怎么办？"或"如果TA突然消失，你会怎么办？"都是错的。\n- 选项内容是 ${userNick} 视角的回答（${userNick} 会勾选），选项里提到你自己（${c.name}）也用"你"，提到 ${userNick} 自己用"我"。例：选项"我会紧紧抱住你"是对的；"我会紧紧抱住TA"是错的。\n- 答案那一栏，是你（${c.name}）从${userNick}的视角猜${userNick}会选哪个 + 你自己希望${userNick}选哪个的综合（更偏向"你真心觉得${userNick}会怎么选"，因为这是同频测试，要的是真实判断而非希望）。\n- 理由那一栏，是你为什么觉得${userNick}会选这个，以第一人称口语写（"因为我觉得 ${userNick} 一直都..."、"${userNick}上次跟我说过..."）。\n\n${topicHint}\n\n严格按以下格式输出每一题（每个字段一行，题与题之间空一行）：\n\n1. 题目：（题目内容，10-25字，主语是"你"，指${userNick}）\nA. （选项A内容，6-15字，${userNick}视角，主语"我"）\nB. （选项B内容，6-15字，${userNick}视角）\nC. （选项C内容，6-15字，${userNick}视角）\nD. （选项D内容，6-15字，${userNick}视角）\n答案：（你觉得${userNick}会选哪个，只写一个字母 A/B/C/D）\n理由：（你为什么觉得${userNick}会这么选，20-50字，第一人称口语）\n\n2. 题目：...\n（同样格式）\n\n额外要求：\n- 4个选项要有真实选择困难度，不能有明显的"正确答案"\n- 选项之间要有信息量差异（不要A B只是同义换词），让选择本身就暴露想法\n- 你对${userNick}的判断要符合你们的相处历史和${userNick}的性格\n- 10 题全部按此格式输出，从第1题到第10题，不要漏题不要加额外说明`;
@@ -8384,7 +8495,8 @@
                     history.unshift(result);
                     if (history.length > 20) history.length = 20;
                     hsSet(c.id, 'quizHistory', history);
-                    hsAddMemory(c.id, { type: 'quiz', kind, syncRate, totalQ: questions.length });
+                    // 不再自动存进心跳记忆——心跳记忆只收藏你喜欢的内容。
+                    // 问卷历史仍保存在 quizHistory（问卷页可查），是否收藏由结果页的「收藏」按钮决定。
                     
                     hsShowQuizResult(appPage, c, userNick, result, false, layer);
                 };
@@ -8443,13 +8555,32 @@
                     listEl.appendChild(card);
                 });
                 
+                // 底部按钮：收藏到心跳记忆（默认不自动收藏）+（新结果时）收下
+                const footer = document.createElement('div');
+                footer.style.cssText = 'margin-top:18px;padding-bottom:10px;display:flex;gap:10px;justify-content:center;';
+                const _mem0 = hsGet(c.id, 'memory', []);
+                const already = !!(result.time && _mem0.some(m => m && m.type === 'quiz' && m.quizTime === result.time));
+                const favBtn = document.createElement('span');
+                favBtn.style.cssText = 'background:#FFD3D4;color:#775C56;padding:8px 24px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;font-weight:500;' + (already ? 'opacity:0.65;cursor:default;' : '');
+                favBtn.textContent = already ? '已收藏 💗' : '收藏 🤍';
+                favBtn.onclick = () => {
+                    const mem = hsGet(c.id, 'memory', []);
+                    if (result.time && mem.some(m => m && m.type === 'quiz' && m.quizTime === result.time)) { favBtn.textContent = '已收藏 💗'; favBtn.style.opacity = '0.65'; favBtn.style.cursor = 'default'; favBtn.onclick = null; return; }
+                    hsAddMemory(c.id, { type: 'quiz', kind: result.kind, syncRate: result.syncRate, totalQ: result.answered, matched: result.matched, questions: result.questions, userPicks: result.userPicks, matches: result.matches, quizTime: result.time });
+                    favBtn.textContent = '已收藏 💗';
+                    favBtn.style.opacity = '0.65';
+                    favBtn.style.cursor = 'default';
+                    favBtn.onclick = null;
+                };
+                footer.appendChild(favBtn);
                 if (!isHistory) {
-                    const backBtn = document.createElement('div');
-                    backBtn.style.cssText = 'text-align:center;margin-top:18px;padding-bottom:10px;';
-                    backBtn.innerHTML = `<span class="hs-quiz-done" style="background:#D5EBE4;color:#775C56;padding:8px 28px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;font-weight:500;">收下啦 💗</span>`;
-                    body.appendChild(backBtn);
-                    backBtn.querySelector('.hs-quiz-done').onclick = () => layer.remove();
+                    const doneBtn = document.createElement('span');
+                    doneBtn.style.cssText = 'background:#D5EBE4;color:#775C56;padding:8px 24px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;font-weight:500;';
+                    doneBtn.textContent = '收下啦 💗';
+                    doneBtn.onclick = () => layer.remove();
+                    footer.appendChild(doneBtn);
                 }
+                body.appendChild(footer);
             }
             
             // ===== 健康陪伴：入口（打卡 + 月经） =====
@@ -8841,6 +8972,12 @@
                         try {
                             const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 刚刚在"月经记录"里登记今天来了。请你以 ${c.name} 的口吻，关心 TA 一句话（25-50字），体现你的性格——可以提醒喝热水/早点休息/夸夸 TA/调侃但温柔。不要加引号不要加额外说明。`;
                             const reply = await hsCallAI(sysPrompt, '请直接输出。');
+                            // 【心跳记忆完整化】把 AI 回复写回刚才那条 period 记忆，详情卡片才能展示
+                            const _mem = hsGet(c.id, 'memory', []);
+                            if (_mem[0] && _mem[0].type === 'period' && _mem[0].date === todayStr) {
+                                _mem[0].aiReply = reply;
+                                hsSet(c.id, 'memory', _mem);
+                            }
                             const o = document.createElement('div');
                             o.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
                             o.innerHTML = `<div style="background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;padding:22px 18px;max-width:260px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
@@ -9145,6 +9282,12 @@
                         try {
                             const sysPrompt = hsBuildPersona(c, userNick) + `\n【任务】：${userNick} 今天月经/生理期，告诉了你 TA 现在的身体状况：${syms.join('、')}。请你以 ${c.name} 的口吻，温柔回应 TA 一句话（30-60字），针对 TA 提到的症状关心，体现你的性格。不要加引号不要加额外说明。`;
                             const reply = await hsCallAI(sysPrompt, '请直接输出。');
+                            // 【心跳记忆完整化】把 AI 回复写回刚才那条 symptom 记忆
+                            const _mem = hsGet(c.id, 'memory', []);
+                            if (_mem[0] && _mem[0].type === 'symptom') {
+                                _mem[0].aiReply = reply;
+                                hsSet(c.id, 'memory', _mem);
+                            }
                             const o = document.createElement('div');
                             o.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;border-radius:30px;';
                             o.innerHTML = `<div style="background:linear-gradient(135deg,#FFE5E5,#FFF);border-radius:16px;padding:22px 18px;max-width:260px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.15);">
