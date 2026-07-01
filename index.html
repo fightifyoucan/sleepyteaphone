@@ -4280,7 +4280,7 @@
                                                 } catch(e) {}
                                                 if (imgData && imgData.startsWith('data:image')) {
                                                     const _defaultText = (msg.type === 'sticker')
-                                                        ? '（我发了一个表情包，请看看它是什么表情、什么情绪，然后像平时聊天那样自然地回应我——记得连发好几条短消息，别只回一条就完事）'
+                                                        ? '（我刚发了一个表情包，配合我前面说的话一起看就好。请结合上文自然地回应我们这段对话，不用特意去描述这个表情包长什么样，更不要因为它就忽略我前面说过的内容）'
                                                         : '（我发了一张图片，请仔细看看是什么，然后像平时聊天那样自然地回应我——记得连发好几条短消息，别只回一条就完事）';
                                                     messages.push({
                                                         role: 'user',
@@ -4424,7 +4424,29 @@
                                             return bubbles.filter(Boolean);
                                         }
 
-                                        const finalMessages = splitResponseWithSentenceMigration(cleanedReply);
+                                        // 【引号保护】AI 有时会在引号中间换行，导致 "…" 被拆成两个气泡。
+                                        // 这里把"引号还没闭合"的气泡与后一条合并，直到引号配平。
+                                        function mergeUnclosedQuotes(arr) {
+                                            const needMerge = (s) => {
+                                                const oC = (s.match(/“/g)||[]).length, cC = (s.match(/”/g)||[]).length;
+                                                const oK = (s.match(/「/g)||[]).length, cK = (s.match(/」/g)||[]).length;
+                                                const st = (s.match(/"/g)||[]).length;
+                                                return oC > cC || oK > cK || (st % 2 === 1);
+                                            };
+                                            const out = [];
+                                            for (let i = 0; i < arr.length; i++) {
+                                                let cur = arr[i];
+                                                let guard = 0;
+                                                while (needMerge(cur) && i + 1 < arr.length && guard < 20) {
+                                                    cur = cur + arr[i + 1];
+                                                    i++; guard++;
+                                                }
+                                                out.push(cur);
+                                            }
+                                            return out;
+                                        }
+
+                                        const finalMessages = mergeUnclosedQuotes(splitResponseWithSentenceMigration(cleanedReply));
                                         
                                         // 在完整回复里检测转账/礼物意图，避免分割后漏掉
                                         const moneyKeywords = ['转账','打款','给你钱','转给你','发红包','给你打','汇款'];
