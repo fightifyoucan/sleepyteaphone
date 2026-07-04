@@ -66,7 +66,7 @@
         /* app 打开期间冻结分页滑动动画 */
         .mobile-container.app-open .home-page-1,
         .mobile-container.app-open .home-page-2 { transition: none !important; }
-        .page-dots { position: absolute; left: 0; right: 0; bottom: 130px; display: flex; justify-content: center; align-items: center; gap: 8px; z-index: 3; pointer-events: auto; }
+        .page-dots { position: absolute; left: 0; right: 0; bottom: 112px; display: flex; justify-content: center; align-items: center; gap: 8px; z-index: 3; pointer-events: auto; }
         .page-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: background 0.2s, transform 0.2s; cursor: pointer; }
         .page-dot.active { background: rgba(255,255,255,0.95); transform: scale(1.1); }
         body.brown-font .page-dot { background: rgba(119,92,86,0.25); }
@@ -87,7 +87,7 @@
         .love-widget .avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.3); border: 2px solid white; background-size: cover; background-position: center; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 10px; color: rgba(255,255,255,0.7); }
         .love-widget .days-count { font-size: 24px; font-weight: 600; }
         #tea-widget { width: 140px !important; height: 140px !important; aspect-ratio: 1 / 1 !important; flex-shrink: 0 !important; border-radius: 2rem; margin: 0 auto; }
-        .dock { position: absolute; bottom: 30px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 30px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
+        .dock { position: absolute; bottom: 16px; left: 10px; right: 10px; height: 90px; background-color: rgba(255,255,255,0.5); border-radius: 30px; display: flex; justify-content: space-around; align-items: flex-start; padding: 6px 10px 16px; z-index: 20; }
 
         /* --- App 容器 --- */
         .app-page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #FBF9F4; z-index: 350; display: flex; flex-direction: column; box-sizing: border-box; opacity: 0; transform: scale(0.1); border-radius: 0; pointer-events: none; transform-origin: center; }
@@ -200,6 +200,9 @@
             border-top: 6px solid transparent;
             border-bottom: 6px solid transparent;
         }
+        /* 攻略者专属气泡三角（颜色对得上：TA粉/你白） */
+        .gl-b-ta::after { content:''; position:absolute; left:-7px; top:11px; width:0; height:0; border-right:8px solid #fdeceb; border-top:6px solid transparent; border-bottom:6px solid transparent; }
+        .gl-b-me::after { content:''; position:absolute; right:-7px; top:11px; width:0; height:0; border-left:8px solid #ffffff; border-top:6px solid transparent; border-bottom:6px solid transparent; }
         @keyframes shake {
             0%,100% { transform: translateX(0) rotate(0deg); }
             15% { transform: translateX(-4px) rotate(-5deg); }
@@ -617,6 +620,8 @@
         <div id="coread-page" class="app-page"></div>
         <div id="eat-well-page" class="app-page"></div>
         <div id="fridge-page" class="app-page"></div>
+        <div id="cool-down-page" class="app-page"></div>
+        <div id="seducer-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1754,6 +1759,8 @@
                 { id: 'coread', name: '共读', emoji: '📕', container: '.app-grid-page2' },
                 { id: 'eat-well', name: '好好吃饭', emoji: '🍚', container: '.app-grid-page2' },
                 { id: 'fridge', name: '冰箱', emoji: '🧊', container: '.app-grid-page2' },
+                { id: 'cool-down', name: '想买冷静期', emoji: '🛒', container: '.app-grid-page2' },
+                { id: 'seducer', name: '攻略者', emoji: '💘', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -9764,6 +9771,8 @@
                         else if (appId === 'coread') setupCoReadApp(appPage);
                         else if (appId === 'eat-well') setupEatWellApp(appPage);
                         else if (appId === 'fridge') setupFridgeApp(appPage);
+                        else if (appId === 'cool-down') setupCoolDownApp(appPage);
+                        else if (appId === 'seducer') setupSeducerApp(appPage);
                         else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
@@ -14299,7 +14308,7 @@
                         saveItems(arr);
                         renderZones();
                     };
-                    chip.onclick = () => editAmt();
+                    chip.onclick = () => openEditSheet(id);
                     chip.addEventListener('contextmenu',(ev)=>{ev.preventDefault();ask();});
                     chip.addEventListener('touchstart',()=>{moved=false;pt=setTimeout(()=>{moved=true;ask();},600);},{passive:true});
                     chip.addEventListener('touchend',()=>clearTimeout(pt));
@@ -14385,6 +14394,73 @@
                     const arr = getItems();
                     const amount = (dlg.querySelector('#fr-amount').value || '').trim();
                     arr.push({ id:'f_'+Date.now(), name, amount, cat:curCat, zone:curZone, addedAt:new Date().toISOString() });
+                    saveItems(arr);
+                    dlg.remove();
+                    renderZones();
+                };
+            }
+
+            // ===== 编辑食材弹窗 =====
+            function openEditSheet(id) {
+                const arr0 = getItems();
+                const it0 = arr0.find(x => x.id === id);
+                if (!it0) return;
+                document.querySelectorAll('.fr-sheet').forEach(d=>d.remove());
+                let curCat = it0.cat || '蔬菜';
+                let curZone = it0.zone || 'fridge';
+                const curAmount = it0.amount || (it0.qty!=null ? (it0.qty+'个') : '');
+                const dateStr = it0.addedAt ? new Date(it0.addedAt).toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
+                const dlg = document.createElement('div');
+                dlg.className = 'fr-sheet';
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+                dlg.innerHTML = `<div style="background:${PAPER};border-radius:20px 20px 0 0;width:100%;padding:16px 18px 24px;max-height:88%;overflow-y:auto;box-sizing:border-box;">
+                    <div style="text-align:center;font-size:15px;font-weight:700;color:${BROWN};margin-bottom:14px;">编辑食材 ✏️</div>
+                    <input id="fr-ename" value="${esc(it0.name)}" placeholder="食材名字" style="width:100%;box-sizing:border-box;border:1.5px solid ${MAIN};border-radius:12px;padding:11px 13px;font-size:14px;color:${BROWN};background:#fff;outline:none;font-family:inherit;margin-bottom:12px;">
+                    <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">分类</div>
+                    <div id="fr-ecat-row" style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;">
+                        ${CATS.map(c=>`<span class="fr-ecat-opt" data-k="${c.key}" style="cursor:pointer;border:1.5px solid ${LINE};border-radius:10px;padding:6px 11px;font-size:13px;color:${BROWN};">${c.emoji} ${c.key}</span>`).join('')}
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">多少（随便写～如 半斤 / 200g / 3个 / 一瓶）</div>
+                        <input id="fr-eamount" value="${esc(curAmount)}" placeholder="半斤、200g、3个、一瓶…留空也行" style="width:100%;box-sizing:border-box;border:1.5px solid ${LINE};border-radius:12px;padding:10px 13px;font-size:14px;color:${BROWN};background:#fff;outline:none;font-family:inherit;">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">放入日期</div>
+                        <input id="fr-edate" type="date" value="${dateStr}" style="width:100%;box-sizing:border-box;border:1.5px solid ${LINE};border-radius:12px;padding:10px 13px;font-size:14px;color:${BROWN};background:#fff;outline:none;font-family:inherit;">
+                    </div>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:6px;">放哪格</div>
+                        <div style="display:flex;gap:7px;">
+                            <span class="fr-ezone-opt" data-z="freeze" style="cursor:pointer;flex:1;text-align:center;border:1.5px solid ${LINE};border-radius:10px;padding:8px;font-size:13px;color:${BROWN};">❄️ 冷冻</span>
+                            <span class="fr-ezone-opt" data-z="fridge" style="cursor:pointer;flex:1;text-align:center;border:1.5px solid ${LINE};border-radius:10px;padding:8px;font-size:13px;color:${BROWN};">🧊 冷藏</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button id="fr-edel" style="flex:1;background:#fff;color:#C57B6E;border:1.5px solid #EACBC4;border-radius:12px;padding:12px;font-size:14px;cursor:pointer;">取出</button>
+                        <button id="fr-esave" style="flex:2;background:${MAIN};color:${BROWN};border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">保存</button>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                const paintCat = () => dlg.querySelectorAll('.fr-ecat-opt').forEach(o => { const on = o.dataset.k === curCat; o.style.background = on?MAIN:'#fff'; o.style.borderColor = on?MAIN:LINE; });
+                const paintZone = () => dlg.querySelectorAll('.fr-ezone-opt').forEach(o => { const on = o.dataset.z === curZone; o.style.background = on?MAIN:'#fff'; o.style.borderColor = on?MAIN:LINE; });
+                paintCat(); paintZone();
+                dlg.querySelectorAll('.fr-ecat-opt').forEach(o => o.onclick = () => { curCat = o.dataset.k; paintCat(); });
+                dlg.querySelectorAll('.fr-ezone-opt').forEach(o => o.onclick = () => { curZone = o.dataset.z; paintZone(); });
+                dlg.onclick = (ev) => { if(ev.target===dlg) dlg.remove(); };
+                dlg.querySelector('#fr-edel').onclick = () => { if (confirm('从冰箱拿出「'+it0.name+'」？')) { delItem(id); dlg.remove(); } };
+                dlg.querySelector('#fr-esave').onclick = () => {
+                    const nm = (dlg.querySelector('#fr-ename').value||'').trim();
+                    if (!nm) { dlg.querySelector('#fr-ename').focus(); return; }
+                    const arr = getItems();
+                    const it = arr.find(x => x.id === id);
+                    if (!it) { dlg.remove(); return; }
+                    it.name = nm;
+                    it.amount = (dlg.querySelector('#fr-eamount').value||'').trim();
+                    if (it.qty != null) delete it.qty;
+                    it.cat = curCat;
+                    it.zone = curZone;
+                    const dv = dlg.querySelector('#fr-edate').value;
+                    if (dv) it.addedAt = new Date(dv + 'T12:00:00').toISOString();
                     saveItems(arr);
                     dlg.remove();
                     renderZones();
@@ -14622,6 +14698,1510 @@
             }
 
             pickContactThen(() => renderMain());
+        }
+
+        function setupSeducerApp(appPage) {
+            // ============ 攻略者 v2：TA 主动触摸你（系统消息+按好感解锁部位），520气泡，身份决定文案，好感由你填 ============
+            const GL = (cid, k) => 'gl_' + cid + '_' + k;
+            const getState = (cid) => {
+                try { const s = JSON.parse(localStorage.getItem(GL(cid,'state')) || 'null'); if (s && typeof s === 'object') { if (!Array.isArray(s.log)) s.log = []; if (!Array.isArray(s.owned)) s.owned = []; if (typeof s.pityNextSSR !== 'boolean') s.pityNextSSR = false; if (!Array.isArray(s.bought)) s.bought = []; if (typeof s.wearing !== 'string') s.wearing = ''; if (typeof s.giftNotes !== 'object' || !s.giftNotes) s.giftNotes = {}; return s; } } catch(e){}
+                return { affinity: 0, coins: 0, diamonds: 0, log: [], phase: 'reply', owned: [], pityNextSSR: false, bought: [], wearing: '', giftNotes: {} };
+            };
+            const saveState = (cid, s) => { try { localStorage.setItem(GL(cid,'state'), JSON.stringify(s)); } catch(e){} };
+
+            // —— 暖光胶片 + 浅蓝 ——
+            const BG = '#fdf4e3';        // 浅奶黄底
+            const ROSE = '#fbd9d7', PINK = '#f9c1c4', PINK_HI = '#f6a6ab';
+            const BLUE = '#a9d3e5', BLUE_SOFT = '#eaf4fb', BLUE_TX = '#6f93a8';   // 淡透浅蓝（系统消息/部分按钮）
+            const BROWN = '#7a5650', BROWN_SOFT = '#a98f89';
+            const CREAM = '#fdeecb';     // 奖励奶黄
+
+            const COIN_REWARD = 100;     // 金币固定
+            const DIA_REWARD = 12;       // 钻石固定 +12
+
+            let selectedContact = null, name = 'TA', cid = null, state = null, busy = false, flavor = 'friend';
+
+            function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+            // —— 关系味道：恋人 / 亲情 / 友情 ——
+            function detectFlavor(c) {
+                const rel = c.relationship || '';
+                const txt = ((c.notes||'') + ' ' + (c.persona||'') + ' ' + (c.name||''));
+                if (/姐|妹|哥|弟|妈|娘|爸|爹|爷|奶|姑|姨|舅|婶|叔|伯|家人|亲人|兄|姊/.test(txt)) return 'family';
+                if (rel === 'lover' || /老婆|老公|媳妇|对象|男友|女友|恋人|爱人|亲爱|宝贝|心上人|喜欢你|追你|男朋友|女朋友|未婚/.test(txt)) return 'romance';
+                if (rel === 'friend' || rel === 'colleague') return 'friend';
+                return 'friend';
+            }
+            const FLAVOR_SUB = { romance: '正在努力攻略你', family: '正在努力黏着你', friend: '正在努力跟你变亲近' };
+            function relLabel(a) {
+                if (flavor === 'romance') return a>=80?'恋人 💞':a>=50?'心动加深 💓':a>=20?'暧昧中 💗':'追求中 🌱';
+                if (flavor === 'family')  return a>=80?'超级黏你 💞':a>=50?'很亲很亲 💛':a>=20?'越来越亲 🤍':'还有点生疏 🌱';
+                return a>=80?'死党 💛':a>=50?'超合拍 ✨':a>=20?'好朋友 🤝':'刚认识 🌱';
+            }
+            // —— 触摸池：按 味道 × 亲密档（低/中/高，由好感解锁）——
+            const TOUCHES = {
+                romance: {
+                    low: ['轻轻摸了摸你的头','把你散落的碎发别到耳后','递来一杯温热的奶茶，"给你"','悄悄拍了拍你的肩','偏头认真地看了看你'],
+                    mid: ['小心翼翼地牵起你的手','用额头轻轻碰了碰你的额头','把外套披到你肩上','伸手替你拂掉睫毛上的碎发'],
+                    high: ['从背后轻轻把你抱住','在你脸颊上飞快地亲了一下','把你的手指一根根扣进掌心','让你靠进怀里，下巴搁在你发顶']
+                },
+                family: {
+                    low: ['揉了揉你的头','拍了拍你的背','把好吃的推到你面前','替你理了理歪掉的衣领'],
+                    mid: ['勾住你的小指晃了晃','搭着你的肩往前走','戳了戳你鼓起来的脸颊','把你翘起来的头发压平'],
+                    high: ['一把把你搂进怀里','让你靠在肩膀上歇会儿','紧紧抱了你一下又拍拍你的头','把你护在身后']
+                },
+                friend: {
+                    low: ['拍了拍你的肩','伸手揉乱了你的头发','把一半零食塞进你手里','用胳膊肘碰了碰你'],
+                    mid: ['勾肩搭背地凑过来','跟你击了个响亮的掌','戳你腰想逗你笑','一把把你往身边扒拉'],
+                    high: ['张开手臂用力抱了你一下','揽住你的肩晃啊晃','把你护在怀里帮你挡开人群','拍着你的头说"傻瓜"']
+                }
+            };
+            function tierOf(a){ return a>=50 ? 'high' : (a>=20 ? 'mid' : 'low'); }
+            function ownedTouchByTier(tier){
+                if (tier !== 'mid') return [];   // R = 动作 归中档
+                return effectivePool().filter(c => (state.owned||[]).includes(c.id) && c.rarity==='R' && c.touch).map(c => c.touch);
+            }
+            function ownedLines(){
+                return effectivePool().filter(c => (state.owned||[]).includes(c.id) && c.rarity==='N' && c.line).map(c => c.line);
+            }
+            function pickTouch(){ const base = (TOUCHES[flavor] || TOUCHES.friend); const tier = tierOf(state.affinity); const poolArr = (base[tier] || base.low).concat(ownedTouchByTier(tier)); return pick(poolArr); }
+
+            // —— TA 说话（没API走预设，按味道）——
+            const SAY = {
+                romance: ['被你看着，我心跳有点快……','想一直待在你身边，可以吗？','你今天也好好看，我藏不住了。','离你近一点，我就觉得踏实。'],
+                family: ['乖，我在呢，别怕。','有我在，你什么都不用担心。','来，靠着我歇会儿。','你呀，永远是我要护着的小孩。'],
+                friend: ['嘿，有我在就别怕啦。','跟你待着最自在了。','走走走，我陪你。','你这家伙，还挺让人放心的。']
+            };
+            const REACT = {
+                romance: ['你这样回我，我更喜欢你了……','嘿嘿，被你理，一整天都值了。','再多看我一眼嘛。','心动的感觉，藏不住。'],
+                family: ['乖，真听话～','有你在我也开心。','嗯嗯，我都记着呢。','你笑一下，我就安心了。'],
+                friend: ['哈哈，就知道你懂我。','跟你聊天真痛快。','这默契，绝了。','你个小机灵鬼。']
+            };
+
+            const glAvatarHtml = (av) => {
+                if (!av) return '💘';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) return `<img data-glimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                return av;
+            };
+            const glResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-glimg]').forEach(async img => {
+                    const src = img.getAttribute('data-glimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} }
+                    else { img.src = src; }
+                });
+            };
+            async function glCallAI(sysPrompt, userMsg) {
+                if (typeof ApiHandler === 'undefined') throw new Error('no-api');
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('no-key');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                let messages;
+                if (pPlat === 'gemini') messages = [{ role:'user', parts:[{ text: sysPrompt + '\n\n' + userMsg }] }];
+                else messages = [{ role:'system', content: sysPrompt }, { role:'user', content: userMsg }];
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('api-fail');
+                const data = await resp.json();
+                let text = ApiHandler.parseChatResponse(pPlat, data);
+                if (!text) throw new Error('empty');
+                return text.trim().replace(/^["'“”*\s]+|["'“”*\s]+$/g, '');
+            }
+            function personaHead(c) {
+                let s = `角色：${c.name}\n`;
+                if (c.notes) s += `备注：${c.notes}\n`;
+                s += `人设：${c.persona || ''}\n`;
+                if (c.memory && c.memory.manual) s += `记忆：${c.memory.manual}\n`;
+                return s;
+            }
+            const flavorDesc = () => flavor==='romance' ? '你在甜甜地追求 TA、想让 TA 更喜欢你' : (flavor==='family' ? '你像家人一样温暖地黏着 TA、护着 TA' : '你像很好的朋友一样自然亲近 TA');
+
+            function pickContactThen(onPicked) {
+                let cs = [];
+                try { cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts().filter(c=>c && c.name) : []; } catch(e){ cs = []; }
+                if (!cs.length) { appPage.innerHTML = `<div style="padding:60px 30px;text-align:center;color:${BROWN};line-height:2;">还没有可以互动的联系人呀～<br><span style="font-size:12px;opacity:0.6;">先去 520 添加一个吧</span></div>`; return; }
+                if (cs.length === 1) { selectedContact = cs[0]; onPicked(); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="gl-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">选谁来陪你</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="gl-pick-list" style="background:${BG};padding:0;overflow-y:auto;"></div>`;
+                appPage.querySelector('#gl-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#gl-pick-list');
+                listEl.innerHTML = cs.map(c => {
+                    const relTxt = (c.relationship==='lover'?'恋人':c.relationship==='colleague'?'同事':'朋友');
+                    return `<div class="gl-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(249,193,196,0.3);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;">${glAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;"><div style="font-weight:500;color:${BROWN};">${esc(c.notes || c.name)}</div><div style="font-size:11px;color:${BROWN_SOFT};margin-top:2px;">${relTxt}</div></div>
+                        <span style="color:${PINK};font-size:13px;">进入 ›</span>
+                    </div>`; }).join('');
+                glResolveAvatars(listEl);
+                listEl.querySelectorAll('.gl-pick-item').forEach(item => {
+                    item.onclick = () => { selectedContact = cs.find(x=>x.id===item.dataset.id) || cs[0]; onPicked(); };
+                });
+            }
+
+            function shell() {
+                cid = selectedContact.id;
+                name = selectedContact.notes || selectedContact.name || 'TA';
+                flavor = detectFlavor(selectedContact);
+                state = getState(cid);
+                if (!state.phase) state.phase = 'reply';
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="gl-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">攻略者</h2>
+                        <span id="gl-reset" style="color:${BROWN};font-size:11px;opacity:0.7;cursor:pointer;padding-right:6px;white-space:nowrap;">清空 ⟳</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;height:calc(100% - 52px);background:${BG};">
+                        <div id="gl-top" style="flex-shrink:0;"></div>
+                        <div id="gl-feed" style="flex:1;min-height:0;overflow-y:auto;padding:14px 14px 6px;-webkit-overflow-scrolling:touch;"></div>
+                        <div id="gl-actionbar" style="flex-shrink:0;"></div>
+                        <div style="flex-shrink:0;display:flex;gap:6px;padding:8px 12px 30px;background:${CREAM};">
+                            <span class="gl-nav" data-nav="gacha" style="flex:1;text-align:center;background:#fff;color:${BROWN};border-radius:12px;padding:9px 4px;font-size:12px;cursor:pointer;border:1px solid ${ROSE};">💎 抽卡池</span>
+                            <span class="gl-nav" data-nav="shop" style="flex:1;text-align:center;background:#fff;color:${BROWN};border-radius:12px;padding:9px 4px;font-size:12px;cursor:pointer;border:1px solid ${ROSE};">🛍️ 商店</span>
+                            <span class="gl-nav" data-nav="date" style="flex:1;text-align:center;background:#fff;color:${BROWN};border-radius:12px;padding:9px 4px;font-size:12px;cursor:pointer;border:1px solid ${ROSE};">💌 约会</span>
+                        </div>
+                    </div>`;
+                appPage.querySelector('#gl-back').onclick = () => {
+                    const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts().filter(c=>c&&c.name) : [];
+                    if (cs.length > 1) { pickContactThen(() => shell()); }
+                    else { appPage.classList.remove('active'); appPage.innerHTML=''; }
+                };
+                appPage.querySelectorAll('.gl-nav').forEach(el => { el.onclick = () => { if (el.dataset.nav === 'gacha') openGacha(); else if (el.dataset.nav === 'date') openDate(); else if (el.dataset.nav === 'shop') openShop(); else toast('这块妈咪下次给你搭哦～现在先享受被 TA 黏着💗'); }; });
+                const rb = appPage.querySelector('#gl-reset'); if (rb) rb.onclick = () => confirmReset();
+                renderTop(); renderFeed(); renderActionBar();
+                // 没有待处理的触摸就发起一个
+                const last = state.log[state.log.length-1];
+                if (state.phase === 'reply' && (!last || (last.t !== 'react-line'))) {
+                    // 若最后不是"TA说完等你回"的状态，则发起新触摸
+                    const hasPendingSay = state.log.slice(-2).some(e=>e.t==='say');
+                    if (!hasPendingSay) taTouch();
+                }
+            }
+
+            function renderTop() {
+                const top = appPage.querySelector('#gl-top'); if (!top) return;
+                const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
+                top.innerHTML = `
+                    <div style="background:linear-gradient(135deg,${ROSE},${PINK});padding:12px 16px 14px;">
+                        <div style="display:flex;align-items:center;gap:11px;">
+                            <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 8px rgba(160,110,110,0.18);">${av}</div>
+                            <div style="flex:1;">
+                                <div style="font-size:15px;font-weight:700;color:${BROWN};">${esc(name)}</div>
+                                <div style="font-size:11.5px;color:${BROWN};opacity:0.75;margin-top:1px;">${FLAVOR_SUB[flavor]} · ${relLabel(state.affinity)}</div>
+                            </div>
+                            <div style="text-align:right;font-size:11px;color:${BROWN};line-height:1.7;background:rgba(255,255,255,0.55);border-radius:10px;padding:4px 9px;">
+                                <div>💰 ${state.coins}</div>
+                                <div>💎 ${state.diamonds}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:${BROWN};opacity:0.8;margin-bottom:3px;"><span>💗 好感度</span><span>${state.affinity} / 100${state.affinity>100?' 💕':''}</span></div>
+                            <div style="height:9px;background:rgba(255,255,255,0.6);border-radius:6px;overflow:hidden;">
+                                <div style="height:100%;width:${Math.min(100,state.affinity)}%;background:linear-gradient(90deg,${PINK},${PINK_HI});border-radius:6px;transition:width 0.4s;box-shadow:${state.affinity>100?'0 0 8px rgba(246,166,171,0.95)':'none'};"></div>
+                            </div>
+                            <div style="font-size:10px;color:${BROWN};opacity:0.55;margin-top:5px;">越熟越亲密～牵手/抱抱/亲亲会随好感慢慢解锁哦</div>${state.wearing ? (function(){ var w=shopItemById(state.wearing); return w?`<div style="font-size:10px;color:${BROWN};opacity:0.75;margin-top:4px;">👗 你正穿着：${w.emoji||''} ${esc(w.name)}</div>`:''; })() : ''}
+                        </div>
+                    </div>`;
+                glResolveAvatars(top);
+            }
+
+            function renderFeed() {
+                const feed = appPage.querySelector('#gl-feed'); if (!feed) return;
+                const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
+                if (!state.log.length) { feed.innerHTML = `<div style="text-align:center;color:${BROWN};opacity:0.4;font-size:13px;padding:40px 0;">TA 正朝你走过来……</div>`; return; }
+                feed.innerHTML = state.log.map(e => {
+                    if (e.t === 'touch') {
+                        return `<div style="text-align:center;margin:4px 0 14px;"><span style="display:inline-block;background:${BLUE_SOFT};color:${BLUE_TX};font-size:12px;border-radius:12px;padding:5px 14px;max-width:86%;line-height:1.5;">${esc(e.text)}</span></div>`;
+                    }
+                    if (e.t === 'say' || e.t === 'react-line') {
+                        return `<div class="message received"><div class="message-avatar" style="width:36px;height:36px;border-radius:9px;overflow:hidden;flex-shrink:0;">${av}</div><div class="bubble-group"><div class="message-bubble gl-b-ta" style="background:linear-gradient(135deg,#fdeceb,${ROSE});color:${BROWN};white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div></div></div>`;
+                    }
+                    if (e.t === 'me') {
+                        return `<div class="message sent"><div class="bubble-group"><div class="message-bubble gl-b-me" style="background:#fff;color:${BROWN};box-shadow:0 1px 4px rgba(160,120,110,0.12);white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div></div></div>`;
+                    }
+                    if (e.t === 'reward') {
+                        return `<div style="text-align:center;margin:2px 0 14px;"><span style="display:inline-block;background:${CREAM};color:#b98a4a;font-size:11px;border-radius:12px;padding:3px 12px;">💗${e.aff>=0?'+':''}${e.aff}　💰+${e.coins}　💎+${e.dia}</span></div>`;
+                    }
+                    if (e.t === 'gacha') {
+                        const gc = cardById(e.bestId); if (!gc) return '';
+                        const rr = RARITY[gc.rarity] || RARITY.N;
+                        return `<div style="text-align:center;margin:2px 0 14px;"><div class="gl-gacha-card" data-id="${e.bestId}" style="display:inline-block;background:${rr.bg};border:1.5px solid ${rr.c};border-radius:14px;padding:11px 16px;cursor:pointer;max-width:82%;text-align:left;">
+                            <div style="font-size:10px;font-weight:700;color:${rr.c};">🎴 十连 · 最高 ${rr.label}${e.newCount?('　NEW×'+e.newCount):''}</div>
+                            <div style="font-size:13px;color:${BROWN};font-weight:600;margin-top:4px;">${esc(gc.name)}</div>
+                            <div style="font-size:10px;color:${BROWN};opacity:0.6;margin-top:3px;">${cardSub(gc)} · 其余都在图鉴</div>
+                        </div></div>`;
+                    }
+                    if (e.t === 'gift') {
+                        const it = shopItemById(e.itemId); if (!it) return '';
+                        return `<div style="text-align:center;margin:2px 0 14px;"><span style="display:inline-block;background:${CREAM};color:#b98a4a;font-size:12px;border-radius:14px;padding:7px 14px;max-width:84%;line-height:1.5;">🎁 ${it.emoji||''} 收到「${esc(it.name)}」啦 · 已进${it.type==='cloth'?'衣柜':'收到的心意'}</span></div>`;
+                    }
+                    return '';
+                }).join('');
+                glResolveAvatars(feed);
+                feed.querySelectorAll('.gl-gacha-card').forEach(el => { el.onclick = () => { const c = cardById(el.dataset.id); if (c && c.premise) showPremise(c); else openCollection(); }; });
+                feed.scrollTop = feed.scrollHeight;
+            }
+
+            function renderActionBar() {
+                const bar = appPage.querySelector('#gl-actionbar'); if (!bar) return;
+                if (state.phase === 'affinity') {
+                    const room = 100 - state.affinity;
+                    bar.innerHTML = `
+                        <div style="padding:6px 12px 4px;text-align:center;font-size:11px;color:${BLUE_TX};">和 ${esc(name)} 相处后，想给 TA 加/扣多少好感？（正数加·负数扣）</div>
+                        <div style="display:flex;gap:8px;padding:2px 12px 12px;background:${CREAM};align-items:center;">
+                            <input id="gl-aff" type="number" placeholder="填数字，惹你了就填负的～" style="flex:1;min-width:0;box-sizing:border-box;border:1.5px solid ${BLUE};background:#fff;border-radius:20px;padding:10px 15px;font-size:14px;color:${BROWN};outline:none;font-family:inherit;">
+                            <button id="gl-aff-ok" style="flex-shrink:0;background:${BLUE};color:#fff;border:none;border-radius:20px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;">确定💗</button>
+                        </div>`;
+                    const affEl = bar.querySelector('#gl-aff');
+                    const ok = () => {
+                        let n = parseInt(affEl.value, 10); if (isNaN(n)) n = 0;
+                        grantAndNext(n);
+                    };
+                    bar.querySelector('#gl-aff-ok').onclick = ok;
+                    affEl.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+                } else {
+                    bar.innerHTML = `
+                        <div id="gl-hint" style="text-align:center;font-size:11px;color:${BROWN};opacity:0.5;padding:2px 0;">${state.log.length && state.log[state.log.length-1].t!=='reward' ? 'TA 在等你的回应…' : ''}</div>
+                        <div style="display:flex;gap:8px;padding:8px 12px 12px;background:${CREAM};align-items:center;">
+                            <input id="gl-input" placeholder="回应 TA 一句～" style="flex:1;min-width:0;box-sizing:border-box;border:1.5px solid ${ROSE};background:#fff;border-radius:20px;padding:10px 15px;font-size:14px;color:${BROWN};outline:none;font-family:inherit;">
+                            <button id="gl-send" style="flex-shrink:0;width:42px;height:42px;background:${PINK_HI};color:#fff;border:none;border-radius:50%;font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(246,166,171,0.5);">➤</button>
+                        </div>`;
+                    const input = bar.querySelector('#gl-input');
+                    const send = () => { const v = input.value.trim(); if (!v || busy) return; input.value=''; onUserReply(v); };
+                    bar.querySelector('#gl-send').onclick = send;
+                    input.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+                }
+            }
+
+            async function taTouch() {
+                const touch = pickTouch();
+                state.log.push({ t:'touch', text: name + touch + '。' });
+                if (state.log.length > 80) state.log = state.log.slice(-80);
+                state.phase = 'reply';
+                saveState(cid, state);
+                renderFeed(); renderActionBar();
+                // TA 说一句（配合动作）
+                let line = '';
+                try {
+                    const c = selectedContact;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    line = await glCallAI(personaHead(c) + `\n【场景】这是"攻略者"小互动，${flavorDesc()}。你和 ${userNick} 现在的亲近程度是「${relLabel(state.affinity)}」。你刚刚${touch}。请以 ${c.name} 的口吻、贴合你们的关系和这个亲近程度，说一句配合这个动作的话，自然不做作。18-38字，只说话、不要动作旁白、不要引号。`, '请直接输出。');
+                } catch(e) { line = pick((SAY[flavor] || SAY.friend).concat(ownedLines())); }
+                state.log.push({ t:'say', text: line });
+                saveState(cid, state);
+                renderFeed();
+            }
+
+            async function onUserReply(text) {
+                if (busy || state.phase !== 'reply') return;
+                busy = true;
+                state.log.push({ t:'me', text });
+                saveState(cid, state);
+                renderFeed();
+                let react = '';
+                const lastTouch = [...state.log].reverse().find(e=>e.t==='touch');
+                try {
+                    const c = selectedContact;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    react = await glCallAI(personaHead(c) + `\n【场景】"攻略者"小互动，${flavorDesc()}。亲近程度「${relLabel(state.affinity)}」。你刚刚${(lastTouch?lastTouch.text:'靠近了 TA')}然后对 ${userNick} 说了话，${userNick} 回你：「${text}」。请以 ${c.name} 的口吻顺着 TA 的回应再说一句，贴合关系与亲近度。18-38字，只说话、不要旁白、不要引号。`, '请直接输出。');
+                } catch(e) { react = pick(REACT[flavor] || REACT.friend); }
+                state.log.push({ t:'react-line', text: react });
+                state.phase = 'affinity';
+                saveState(cid, state);
+                renderFeed(); renderActionBar();
+                busy = false;
+            }
+
+            function grantAndNext(aff) {
+                state.affinity = Math.max(0, state.affinity + aff);
+                state.coins += COIN_REWARD;
+                state.diamonds += DIA_REWARD;
+                state.log.push({ t:'reward', aff, coins: COIN_REWARD, dia: DIA_REWARD });
+                state.phase = 'reply';
+                saveState(cid, state);
+                renderTop(); renderFeed(); renderActionBar();
+                maybeAutoGacha(() => { maybeAutoGift(() => { setTimeout(() => { taTouch(); }, 350); }); });
+            }
+
+            function confirmReset() {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.5);z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:300px;padding:22px 20px;text-align:center;">
+                    <div style="font-size:28px;">🧹</div>
+                    <div style="font-size:15px;font-weight:700;color:${BROWN};margin-top:8px;">清空和 ${esc(name)} 的进度？</div>
+                    <div style="font-size:12px;color:${BROWN};opacity:0.75;line-height:1.8;margin-top:8px;">好感、金币、钻石、抽到的卡、约会解锁都会归零，${esc(name)} 会从头重新攻略你哦。这一步不能撤销～</div>
+                    <div style="display:flex;gap:10px;margin-top:18px;">
+                        <span id="gl-rs-no" style="flex:1;text-align:center;background:#F0EAE4;color:${BROWN};border-radius:13px;padding:12px;font-size:14px;cursor:pointer;">再想想</span>
+                        <span id="gl-rs-yes" style="flex:1;text-align:center;background:#e39a9a;color:#fff;border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">确定清空</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#gl-rs-no').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+                dlg.querySelector('#gl-rs-yes').onclick = () => {
+                    state = { affinity: 0, coins: 0, diamonds: 0, log: [], phase: 'reply', owned: [], pityNextSSR: false };
+                    saveState(cid, state);
+                    dlg.remove();
+                    shell();
+                    toast(`都清空啦～${esc(name)} 要从头重新攻略你咯💗`);
+                };
+            }
+            function toast(msg) {
+                const t = document.createElement('div');
+                t.style.cssText = 'position:absolute;left:50%;bottom:130px;transform:translateX(-50%);background:rgba(122,86,80,0.92);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:40;max-width:80%;text-align:center;line-height:1.5;';
+                t.textContent = msg;
+                appPage.appendChild(t);
+                setTimeout(()=>{ t.style.transition='opacity 0.4s'; t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 1800);
+            }
+
+            // ========== 抽卡池（AI 抽"你"的卡）==========
+            const RARITY = {
+                N:  { label:'N',   c:'#9aa7b0', bg:'#eef2f4', odds:59 },
+                R:  { label:'R',   c:'#6f97cf', bg:'#e8f0fb', odds:30 },
+                SR: { label:'SR',  c:'#bd85d0', bg:'#f5ebfa', odds:10 },
+                SSR:{ label:'SSR', c:'#dca24e', bg:'#fdf3e0', odds:1 },
+            };
+            const COST_ONE = 120, COST_TEN = 1200;
+            // 固定卡池：N/R 是"触摸卡"(带 touch+line，抽到融入主界面)；SR/SSR 是"专属剧情卡"(带 story，可点开看)
+            const CARD_POOL = [
+                // N = 情话（只解锁台词）
+                { id:'n1', rarity:'N', flavor:'any',     name:'情话 · 在呢', line:'别怕，我一直都在你这边。' },
+                { id:'n2', rarity:'N', flavor:'romance', name:'情话 · 心动', line:'今天的你，也让我移不开眼。' },
+                { id:'n3', rarity:'N', flavor:'family',  name:'情话 · 护着', line:'有我在，天塌下来也先我顶着。' },
+                { id:'n4', rarity:'N', flavor:'friend',  name:'情话 · 靠谱', line:'放心，你的事就是我的事。' },
+                // R = 动作（解锁触摸 + 台词）
+                { id:'r1', rarity:'R', flavor:'any',     name:'动作 · 递水',   touch:'倒了杯温水放到你手边', line:'多喝点水，别老忘啦。' },
+                { id:'r2', rarity:'R', flavor:'any',     name:'动作 · 拍肩',   touch:'路过时轻轻拍了拍你的肩', line:'在呢，我一直都在。' },
+                { id:'r3', rarity:'R', flavor:'any',     name:'动作 · 压呆毛', touch:'伸手把你翘起来的呆毛压平', line:'乖，这样才乖。' },
+                { id:'r4', rarity:'R', flavor:'romance', name:'动作 · 额头',   touch:'低头用额头蹭了蹭你', line:'离你近一点，心里就踏实。' },
+                { id:'r5', rarity:'R', flavor:'family',  name:'动作 · 揉发',   touch:'一下一下揉着你的头发', line:'长这么大，还是我要护着的小孩。' },
+                { id:'r6', rarity:'R', flavor:'friend',  name:'动作 · 击掌',   touch:'跟你重重击了个掌', line:'这默契，绝了！' },
+                // SR = 日常相处剧情（约会背景）
+                { id:'sr1', rarity:'SR', flavor:'romance', name:'雨夜 · 同伞', premise:'一场突如其来的雨，一把只够一个人的伞。', story:'时间是初秋的傍晚，你们刚看完一场电影，从影院出来天就毫无预兆地下起了雨。那时你们还没挑明关系，介于朋友和"好像有点什么"之间，见面时会不自觉找话题、也会因为一次对视慌忙移开眼。TA 只带了一把伞，几乎整个撑到你这边，自己半边肩膀很快湿透了，却笑着说"我皮实，别担心"。一路上你们并肩走得很慢，谁都没提要走快点。到你家楼下，TA 明明可以把伞给你就走，却借口"伞明天还要还"，磨磨蹭蹭又站了好一会儿，只为多陪你、多看你两眼。那一晚 TA 心里翻来覆去想的是"要不要今天就说出口"，最后还是没敢，把喜欢又往心里压了压。这场雨，成了你们之间一个心照不宣、甜甜的开端。' },
+                { id:'sr2', rarity:'SR', flavor:'family',  name:'深夜 · 留灯', premise:'你晚归的每一晚，那盏小灯都为你亮着。', story:'那是你忙到时常深夜才回家的一段日子。你和 TA 之间，是那种嘴上互相嫌弃、心里却把对方放在最前面的亲人。每一个你晚归的夜里，客厅那盏小灯永远亮着，不管多晚。TA 嘴上总念叨"怎么又这么晚，也不知道照顾自己"，可话音没落，热汤已经端上了桌，拖鞋也摆到了你脚边。你知道 TA 白天也累，本可以早早睡下，却宁愿撑着困意，等你钥匙转动门锁的那一声。那盏灯、那碗汤，是 TA 从不肯直白说出口的"我担心你、我等你回来"。这段日子里藏着的，是一种不求回报、只想让你晚归时心里有个着落的踏实。' },
+                { id:'sr3', rarity:'SR', flavor:'friend',  name:'天台 · 并肩', premise:'心情最糟的那天，TA 拉你上了天台。', story:'那天你心情糟到谷底，具体因为什么已经不重要了，反正整个人像被抽空。TA 是那种话不多、却总在关键时刻出现的朋友。TA 没有多问一句"你怎么了"，只是二话不说拉着你上了楼顶天台，塞给你一罐冰可乐，然后陪你并肩坐下，一起看脚下城市密密麻麻的灯。天台上风很大，吹得人有点发懵。沉默了很久，TA 才闷闷地开口："谁欺负你，你告诉我，我陪你骂回去。"就这么一句糙话，却让你憋着的眼泪一下子掉了下来，笑着哭。那晚你们没聊什么大道理，只是并肩坐到很晚。这份"我不问，但我一直在"的陪伴，成了你心里很重要的一块底气。' },
+                // SSR = 最亲密剧情（约会背景）
+                { id:'ssr1', rarity:'SSR', flavor:'romance', name:'专属 · 你的星', premise:'TA 说，第一次见你笑，就像星空落进了胸口。', story:'TA 不止一次偷偷跟别人说过，第一次看见你笑的那一刻，就像有人把一整片星空塞进了 TA 胸口，从此心里就住进了一个人。你们相处的这段时间里，TA 表面不动声色，其实一直在悄悄记你所有的小习惯：你怕黑，睡觉要留一盏小灯；你难过时会先笑一下，把情绪藏起来；你嘴上说"不要""不用了"，其实心里最想要。这些细节 TA 全都记在心里，攒着、护着，只等一个合适的时机全部还给你。TA 心里其实早想好了要对你说的话——"往后余生，我想当那个懂你所有小情绪、也把你宠成小朋友的人。"这是 TA 最珍贵、也最不轻易示人的一片真心，只留给你一个人。' },
+                { id:'ssr2', rarity:'SSR', flavor:'family',  name:'专属 · 永远的港', premise:'TA 这辈子最骄傲的，是你。', story:'TA 这辈子最骄傲的，从来不是什么成就，而是你。从你还小的时候起，你摔过的每一次跤、哭过的每一个夜、闯过的每一次祸，TA 都默默替你记着、替你兜着、替你收拾好，却从不在你面前提一句"我为你付出过多少"。TA 不擅长说甜话，表达爱的方式笨拙又固执——是永远给你留的那顿饭，是你走多远都要惦记的那通电话，是你摔倒时永远在身后接住你的那双手。TA 只反反复复说一句："你只管往前跑，累了就回头，我永远在这儿。"这是 TA 给你的、一句永远不用还、也永远不会变的承诺。你是 TA 的软肋，也是 TA 甘愿守一辈子的港湾。' },
+                { id:'ssr3', rarity:'SSR', flavor:'friend',  name:'专属 · 十年之约', premise:'"别人来来去去，你得给我留下。"', story:'这个约定要从很多年前的一个晚上说起。那晚你们喝了点酒，TA 半醉半醒地拉着你，说了一句平时打死都不会说的心里话："别人来来去去的，我不在乎，但是你，你得给我留下。"然后你们像小孩一样勾了手指，约好十年后，无论各自过成什么样、混得好还是糟，都要回到最初你们常去的那家小店碰面。你以为 TA 只是醉话，可后来才发现，TA 把这个约定当真了——每次提起都记得清清楚楚，连那家小店都还悄悄记挂着。因为在 TA 心里，你早就不是"朋友"两个字装得下的人，而是那种"这辈子无论如何都不能走散"的存在。这份笨拙又长情的在乎，是 TA 藏得最深的珍惜。' },
+            ];
+            const RARITY_REFUND = { N:20, R:60, SR:200, SSR:500 };
+            function customPool(){ try { const a = JSON.parse(localStorage.getItem('gl_pool_custom')||'[]'); return Array.isArray(a)?a:[]; } catch(e){ return []; } }
+            function saveCustomPool(a){ try { localStorage.setItem('gl_pool_custom', JSON.stringify(a)); } catch(e){} }
+            function effectivePool(){ return CARD_POOL.concat(customPool()); }
+            function flavorMatch(c){ return c.flavor === 'any' || c.flavor === flavor; }
+            function cardById(id){ return effectivePool().find(c => c.id === id); }
+            function rollRarity(){ const r = Math.random()*100; return r < RARITY.SSR.odds ? 'SSR' : r < (RARITY.SSR.odds+RARITY.SR.odds) ? 'SR' : r < (RARITY.SSR.odds+RARITY.SR.odds+RARITY.R.odds) ? 'R' : 'N'; }
+            function drawCard(rarity){
+                const order = ['SSR','SR','R','N'];
+                let start = order.indexOf(rarity);
+                for (let i = start; i < order.length; i++){
+                    const cands = effectivePool().filter(c => flavorMatch(c) && c.rarity === order[i]);
+                    if (cands.length) return pick(cands);
+                }
+                // 再往高找
+                for (let i = start-1; i >= 0; i--){
+                    const cands = effectivePool().filter(c => flavorMatch(c) && c.rarity === order[i]);
+                    if (cands.length) return pick(cands);
+                }
+                return null;
+            }
+
+            function openGacha() {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="gc-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">心动卡池</h2>
+                        <span id="gc-book" style="color:${BROWN};font-size:12px;opacity:0.8;cursor:pointer;padding-right:6px;white-space:nowrap;">图鉴 ›</span>
+                    </div>
+                    <div class="app-content" id="gc-body" style="background:${BG};padding:0;overflow-y:auto;"></div>`;
+                appPage.querySelector('#gc-back').onclick = () => shell();
+                appPage.querySelector('#gc-book').onclick = () => openCollection();
+                renderGacha();
+            }
+            function renderGacha() {
+                const body = appPage.querySelector('#gc-body'); if (!body) return;
+                const total = effectivePool().filter(flavorMatch).length;
+                const own = (state.owned||[]).filter(id => { const c = cardById(id); return c && flavorMatch(c); }).length;
+                body.innerHTML = `
+                    <div style="margin:16px 14px;background:linear-gradient(135deg,#fdeceb,${ROSE});border-radius:18px;padding:20px 16px;text-align:center;box-shadow:0 4px 14px rgba(220,160,160,0.2);">
+                        <div style="font-size:34px;">💌</div>
+                        <div style="font-size:14px;color:${BROWN};font-weight:600;margin-top:6px;">${esc(name)} 想更懂你一点</div>
+                        <div style="font-size:11.5px;color:${BROWN};opacity:0.7;margin-top:6px;line-height:1.7;">TA 用钻石抽"你"的卡～抽到越高级，越靠近你的心。<br>N/R 会解锁 TA 对你的新触摸，SR/SSR 是写着你的专属剧情。</div>
+                        <div style="margin-top:12px;font-size:13px;color:${BROWN};">💎 TA 的钻石：<b>${state.diamonds}</b>　·　已集齐 ${own}/${total}</div>
+                        ${state.pityNextSSR ? `<div style="margin-top:6px;font-size:11px;color:${RARITY.SSR.c};">✨ 下次抽卡保底 SSR</div>` : ''}
+                    </div>
+                    <div style="display:flex;gap:10px;padding:0 16px;">
+                        <button id="gc-one" style="flex:1;background:#fff;color:${BROWN};border:1.5px solid ${ROSE};border-radius:14px;padding:14px 8px;font-size:13px;cursor:pointer;font-weight:600;">单抽<br><span style="font-size:11px;font-weight:400;opacity:0.7;">💎 ${COST_ONE}</span></button>
+                        <button id="gc-ten" style="flex:1.4;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border:none;border-radius:14px;padding:14px 8px;font-size:14px;cursor:pointer;font-weight:700;box-shadow:0 4px 12px rgba(246,166,171,0.4);">十连抽 ✨<br><span style="font-size:11px;font-weight:400;opacity:0.9;">💎 ${COST_TEN} · 保底SSR</span></button>
+                    </div>
+                    <div style="text-align:center;margin:14px 0;"><span id="gc-edit" style="font-size:12px;color:${BROWN};opacity:0.6;cursor:pointer;text-decoration:underline;">✏️ 编辑卡池（自己加卡）</span></div>
+                    <div style="height:20px;"></div>`;
+                body.querySelector('#gc-one').onclick = () => doPull(1);
+                body.querySelector('#gc-ten').onclick = () => doPull(10);
+                body.querySelector('#gc-edit').onclick = () => openPoolEditor();
+            }
+
+            function runPull(count) {
+                const cost = count === 10 ? COST_TEN : COST_ONE;
+                state.diamonds -= cost;
+                const forced = (count === 10) || state.pityNextSSR;
+                const results = [];
+                for (let i = 0; i < count; i++){ const c = drawCard(rollRarity()); if (c) results.push(c); }
+                if (forced && results.length && !results.some(c => c.rarity === 'SSR')) {
+                    const ssr = drawCard('SSR'); if (ssr) results[Math.floor(Math.random()*results.length)] = ssr;
+                }
+                state.pityNextSSR = false;
+                let refund = 0;
+                results.forEach(c => {
+                    if (!(state.owned||[]).includes(c.id)) { state.owned.push(c.id); c._new = true; }
+                    else { refund += (RARITY_REFUND[c.rarity]||10); c._new = false; }
+                });
+                if (refund) state.coins += refund;
+                saveState(cid, state);
+                return { cards: results, refund };
+            }
+            function doPull(count) {
+                const cost = count === 10 ? COST_TEN : COST_ONE;
+                if (state.diamonds < cost) { openRecharge(cost); return; }
+                const { cards, refund } = runPull(count);
+                showReveal(cards, refund);
+            }
+            // ——— TA 自己抽卡（攒够就忍不住 / 差一点就纠结要不要充）———
+            function autoAnnounceAndPull(prefix) {
+                const { cards } = runPull(10);
+                const best = ['SSR','SR','R','N'].find(r => cards.some(c=>c.rarity===r)) || 'N';
+                const bestCard = cards.find(c=>c.rarity===best) || cards[0];
+                const newCount = cards.filter(c=>c._new).length;
+                const hook = best==='SSR' ? '居然给我抽到了 SSR！你要不要看看？' : (best==='SR' ? '抽到 SR 啦，是写着你的故事哦～' : '手气还不错，又多懂了你一点点。');
+                state.log.push({ t:'say', text: (prefix||'') + '钻石攒够啦，我没忍住，偷偷抽了抽你的卡池——' + hook });
+                state.log.push({ t:'gacha', bestId: bestCard ? bestCard.id : '', newCount });
+                saveState(cid, state);
+                renderTop(); renderFeed();
+            }
+            function proposeAutoRecharge(next) {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.5);z-index:66;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:300px;padding:22px 20px;text-align:center;">
+                    <div style="font-size:30px;">🥺</div>
+                    <div style="font-size:14px;color:${BROWN};line-height:1.85;margin-top:10px;">${esc(name)}：钻石就差一点点，就能抽你了……我好想更懂你一点。我去充个 <b>¥520</b> 好不好？就当讨好你嘛，钱我打进你钱包～</div>
+                    <div style="display:flex;gap:10px;margin-top:18px;">
+                        <span id="ar-no" style="flex:1;text-align:center;background:#F0EAE4;color:${BROWN};border-radius:13px;padding:12px;font-size:13px;cursor:pointer;">拦住 TA·别乱花</span>
+                        <span id="ar-yes" style="flex:1.2;text-align:center;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border-radius:13px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;">让 TA 充 💗</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                const done = () => { dlg.remove(); next(); };
+                dlg.querySelector('#ar-no').onclick = () => { state.log.push({ t:'say', text:'……好吧，听你的，我不乱花钱。那我多陪陪你、慢慢攒，总会攒够的。' }); saveState(cid, state); renderFeed(); done(); };
+                dlg.querySelector('#ar-yes').onclick = () => {
+                    let w = parseFloat(localStorage.getItem('user_wallet')||'0'); w += 520; localStorage.setItem('user_wallet', w.toFixed(2));
+                    state.diamonds += 1200; state.pityNextSSR = true; saveState(cid, state);
+                    autoAnnounceAndPull('嘿嘿，我给你充了 520（顺手塞进你钱包啦）～');
+                    done();
+                };
+            }
+            function maybeAutoGift(next) {
+                try {
+                    const affordable = effectiveShop().filter(x => !(state.bought||[]).includes(x.id) && state.coins >= x.price);
+                    if (affordable.length && Math.random() < 0.30) {
+                        const it = affordable[Math.floor(Math.random()*affordable.length)];
+                        state.coins -= it.price;
+                        if (!Array.isArray(state.bought)) state.bought = [];
+                        state.bought.push(it.id);
+                        const lines = it.type==='cloth'
+                            ? ['逛到这件「'+it.name+'」，一下就想到你穿上肯定好看，忍不住给你买啦，收下嘛💗', '看到这个「'+it.name+'」脑子里全是你，就买下来了，去衣柜穿上给我看看好不好～']
+                            : ['路过看到这个「'+it.name+'」，觉得太适合你了，没忍住就买啦，喜欢吗？💗', '突然好想对你好，就顺手给你带了「'+it.name+'」，收下嘛～'];
+                        const noteLine = pick(lines);
+                        if (!state.giftNotes) state.giftNotes = {};
+                        state.giftNotes[it.id] = noteLine;
+                        state.log.push({ t:'say', text: noteLine });
+                        state.log.push({ t:'gift', itemId: it.id });
+                        saveState(cid, state);
+                        renderTop(); renderFeed();
+                    }
+                } catch(e){}
+                next();
+            }
+            function maybeAutoGacha(next) {
+                try {
+                    if (state.diamonds >= COST_TEN && Math.random() < 0.45) { autoAnnounceAndPull(''); next(); return; }
+                    if (state.diamonds >= 800 && state.diamonds < COST_TEN && Math.random() < 0.30) { proposeAutoRecharge(next); return; }
+                } catch(e){}
+                next();
+            }
+
+            function showReveal(results, refund) {
+                const best = ['SSR','SR','R','N'].find(r => results.some(c => c.rarity === r));
+                const dlg = document.createElement('div');
+                dlg.style.cssText = `position:absolute;inset:0;background:rgba(60,40,50,0.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;`;
+                dlg.innerHTML = `<div style="background:${BG};border-radius:20px;width:100%;max-width:340px;max-height:86%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="text-align:center;padding:14px 16px 6px;font-size:15px;font-weight:700;color:${BROWN};">${best==='SSR'?'✨ 命中 SSR！✨':(best==='SR'?'✨ 抽到 SR！':'抽卡结果')}</div>
+                    <div style="overflow-y:auto;padding:8px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        ${results.map(c => `<div class="gc-card" data-id="${c.id}" style="background:${RARITY[c.rarity].bg};border:1.5px solid ${RARITY[c.rarity].c};border-radius:12px;padding:10px;cursor:${c.premise?'pointer':'default'};position:relative;">
+                            <div style="font-size:10px;font-weight:700;color:${RARITY[c.rarity].c};">${RARITY[c.rarity].label}${c._new?'':' · 重复'}</div>
+                            <div style="font-size:12.5px;color:${BROWN};font-weight:600;margin-top:4px;line-height:1.4;">${esc(c.name)}</div>
+                            <div style="font-size:10px;color:${BROWN};opacity:0.6;margin-top:4px;">${cardSub(c)}</div>
+                            ${c._new?`<div style="position:absolute;top:6px;right:6px;background:${PINK_HI};color:#fff;font-size:9px;border-radius:8px;padding:1px 6px;">NEW</div>`:''}
+                        </div>`).join('')}
+                    </div>
+                    ${refund?`<div style="text-align:center;font-size:11px;color:#b98a4a;padding:4px;">重复卡转化为 💰+${refund}</div>`:''}
+                    <div style="padding:10px 16px 16px;"><div id="gc-rev-ok" style="text-align:center;background:${PINK_HI};color:#fff;border-radius:13px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">收下啦 💗</div></div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelectorAll('.gc-card').forEach(el => { el.onclick = () => { const c = cardById(el.dataset.id); if (c && c.premise) showPremise(c); }; });
+                dlg.querySelector('#gc-rev-ok').onclick = () => { dlg.remove(); renderGacha(); };
+            }
+
+            function cardSub(c){
+                if (!c) return '';
+                if (c.rarity === 'N') return '解锁情话';
+                if (c.rarity === 'R') return '解锁动作';
+                return '约会剧情 · 去约会体验 ›';
+            }
+            function showPremise(c) {
+                const rr = RARITY[c.rarity] || RARITY.N;
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.55);z-index:70;display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:320px;overflow:hidden;">
+                    ${c.img?`<img data-glimg="${c.img}" style="width:100%;max-height:170px;object-fit:cover;display:block;">`:''}
+                    <div style="background:${rr.bg};padding:13px 16px;display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;font-weight:700;color:${rr.c};border:1px solid ${rr.c};border-radius:8px;padding:1px 7px;">${rr.label}</span>
+                        <span style="font-size:14px;font-weight:700;color:${BROWN};">${esc(c.name)}</span>
+                        <span id="gc-pre-x" style="margin-left:auto;font-size:20px;color:${BROWN};opacity:0.5;cursor:pointer;">×</span>
+                    </div>
+                    <div style="padding:16px 18px;">
+                        <div style="font-size:11px;color:${BROWN};opacity:0.6;margin-bottom:6px;">剧情发生前提</div>
+                        <div style="font-size:13.5px;color:${BROWN};line-height:1.9;">${esc(c.premise || '一段属于你们的小故事，正等着展开。')}</div>
+                        <div style="margin-top:14px;background:${BLUE_SOFT};color:${BLUE_TX};border-radius:12px;padding:11px;text-align:center;font-size:12px;">完整剧情要去【约会 💌】里，和 TA 一起展开哦～</div>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                glResolveAvatars(dlg);
+                dlg.querySelector('#gc-pre-x').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+            }
+            function showStory(c) {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.55);z-index:70;display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:320px;max-height:82%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="background:${RARITY[c.rarity].bg};padding:14px 16px;display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;font-weight:700;color:${RARITY[c.rarity].c};border:1px solid ${RARITY[c.rarity].c};border-radius:8px;padding:1px 7px;">${RARITY[c.rarity].label}</span>
+                        <span style="font-size:14px;font-weight:700;color:${BROWN};">${esc(c.name)}</span>
+                        <span id="gc-story-x" style="margin-left:auto;font-size:20px;color:${BROWN};opacity:0.5;cursor:pointer;">×</span>
+                    </div>
+                    <div style="padding:18px;overflow-y:auto;font-size:14px;color:${BROWN};line-height:1.95;white-space:pre-wrap;">${esc(c.story)}</div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#gc-story-x').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+            }
+
+            function openRecharge(need) {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.5);z-index:65;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:300px;padding:22px 20px;text-align:center;">
+                    <div style="font-size:30px;">💸</div>
+                    <div style="font-size:15px;font-weight:700;color:${BROWN};margin-top:8px;">TA 的钻石不够啦</div>
+                    <div style="font-size:12px;color:${BROWN};opacity:0.75;line-height:1.8;margin-top:8px;">要让 TA 为你充一笔吗？充值固定 <b>¥520</b>，会给 TA 补满钻石、还<b>保底抽出 SSR</b>～<br>而且这 520 会打进<b>你的 520 钱包</b>哦（TA 讨好你的小心意💗）。</div>
+                    <div style="display:flex;gap:10px;margin-top:18px;">
+                        <span id="gc-rc-no" style="flex:1;text-align:center;background:#F0EAE4;color:${BROWN};border-radius:13px;padding:12px;font-size:14px;cursor:pointer;">再想想</span>
+                        <span id="gc-rc-yes" style="flex:1.4;text-align:center;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">充 ¥520 💗</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#gc-rc-no').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+                dlg.querySelector('#gc-rc-yes').onclick = () => {
+                    let w = parseFloat(localStorage.getItem('user_wallet')||'0'); w += 520; localStorage.setItem('user_wallet', w.toFixed(2));
+                    state.diamonds += 1200; state.pityNextSSR = true; saveState(cid, state);
+                    dlg.remove(); renderGacha();
+                    toast(`${name}给你的 520 钱包打了钱💗 钻石也补满啦，这次保底 SSR～`);
+                };
+            }
+
+            function openCollection() {
+                const own = (state.owned||[]);
+                const mine = effectivePool().filter(c => flavorMatch(c));
+                const byR = { SSR:[], SR:[], R:[], N:[] };
+                mine.forEach(c => { if (byR[c.rarity]) byR[c.rarity].push(c); });
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="gc-col-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">你的图鉴</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:12px 14px;overflow-y:auto;">
+                        ${['SSR','SR','R','N'].map(r => byR[r].length ? `
+                            <div style="font-size:12px;font-weight:700;color:${RARITY[r].c};margin:10px 2px 8px;">${RARITY[r].label}</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                ${byR[r].map(c => { const has = own.includes(c.id); return `<div class="gc-col-card" data-id="${c.id}" style="background:${has?RARITY[r].bg:'#f0eeeb'};border:1.5px solid ${has?RARITY[r].c:'#ddd'};border-radius:12px;padding:10px;opacity:${has?1:0.55};cursor:${has&&c.premise?'pointer':'default'};">
+                                    <div style="font-size:10px;font-weight:700;color:${has?RARITY[r].c:'#aaa'};">${RARITY[r].label}</div>
+                                    <div style="font-size:12.5px;color:${BROWN};font-weight:600;margin-top:4px;line-height:1.4;">${has?esc(c.name):'？？？'}</div>
+                                    <div style="font-size:10px;color:${BROWN};opacity:0.55;margin-top:4px;">${has?cardSub(c):'未解锁'}</div>
+                                </div>`; }).join('')}
+                            </div>` : '').join('')}
+                        <div style="height:24px;"></div>
+                    </div>`;
+                appPage.querySelector('#gc-col-back').onclick = () => openGacha();
+                appPage.querySelectorAll('.gc-col-card').forEach(el => { el.onclick = () => { const c = cardById(el.dataset.id); if (c && c.premise && own.includes(c.id)) showPremise(c); }; });
+            }
+
+            function openPoolEditor() {
+                let editingId = null;
+                const renderEditor = () => {
+                    const custom = customPool();
+                    const cur = editingId ? (custom.find(c => c.id === editingId) || {}) : {};
+                    const rar = cur.rarity || 'N', flav = cur.flavor || 'any';
+                    const opt = (v,label,sel) => `<option value="${v}"${sel===v?' selected':''}>${label}</option>`;
+                    appPage.innerHTML = `
+                        <div class="app-header-520" style="background:${ROSE};">
+                            <span class="close-btn-520" id="gc-ed-back" style="color:${BROWN};">‹</span>
+                            <h2 class="title" style="color:${BROWN};">编辑卡池</h2>
+                            <span style="width:40px;"></span>
+                        </div>
+                        <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">
+                            <div style="font-size:12px;color:${BROWN};opacity:0.7;margin-bottom:10px;line-height:1.7;">按稀有度填对应内容就好～ N＝情话（只填台词）；R＝动作（填动作＋台词）；SR/SSR＝约会剧情（填"背景前提"＋"完整背景剧情"，还能传张背景图）。</div>
+                            <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:16px;">
+                                ${editingId?`<div style="font-size:12px;color:${PINK_HI};font-weight:700;margin-bottom:8px;">✏️ 正在修改这张卡</div>`:''}
+                                <input id="ge-name" value="${esc(cur.name||'')}" placeholder="卡片名字，如：雪天·围巾" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:8px;">
+                                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                                    <select id="ge-rarity" style="flex:1;border:1.5px solid ${ROSE};border-radius:10px;padding:9px;font-size:13px;color:${BROWN};background:#fff;font-family:inherit;">${opt('N','N',rar)}${opt('R','R',rar)}${opt('SR','SR',rar)}${opt('SSR','SSR',rar)}</select>
+                                    <select id="ge-flavor" style="flex:1;border:1.5px solid ${ROSE};border-radius:10px;padding:9px;font-size:13px;color:${BROWN};background:#fff;font-family:inherit;">${opt('any','通用',flav)}${opt('romance','恋人',flav)}${opt('family','亲情',flav)}${opt('friend','友情',flav)}</select>
+                                </div>
+                                <input id="ge-line" value="${esc(cur.line||'')}" placeholder="情话/台词（N 必填 · R 也填），如：别冻着自己。" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:8px;">
+                                <input id="ge-touch" value="${esc(cur.touch||'')}" placeholder="动作（R 用），如：帮你围上围巾" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:8px;">
+                                <input id="ge-premise" value="${esc(cur.premise||'')}" placeholder="背景前提（SR/SSR 用 · 图鉴里显示），如：一场突如其来的雨" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:8px;">
+                                <textarea id="ge-story" placeholder="前情提要（SR/SSR 用 · 喂给 TA 的厚背景，越详细越好）：时间地点、你俩当时的关系、发生了什么、TA 的心情和小心思、留下的余韵…TA 会照这个即兴演约会" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;min-height:96px;resize:vertical;margin-bottom:8px;line-height:1.6;">${esc(cur.story||'')}</textarea>
+                                <input type="file" id="ge-img-input" accept="image/*" style="display:none;">
+                                <div id="ge-img-btn" style="border:1.5px dashed ${ROSE};border-radius:10px;padding:10px;text-align:center;font-size:12px;color:${BROWN};cursor:pointer;margin-bottom:8px;">🖼️ 传张约会背景图（SR/SSR 可选）</div>
+                                <img id="ge-img-thumb" style="display:${cur.img?'block':'none'};width:100%;max-height:120px;object-fit:cover;border-radius:10px;margin-bottom:10px;">
+                                <div id="ge-add" style="text-align:center;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border-radius:12px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">${editingId?'保存修改 ✓':'＋ 加进卡池'}</div>
+                                ${editingId?`<div id="ge-cancel" style="text-align:center;margin-top:8px;font-size:12px;color:${BROWN};opacity:0.6;cursor:pointer;">取消修改</div>`:''}
+                            </div>
+                            <div style="font-size:12px;color:${BROWN};opacity:0.7;margin-bottom:8px;">我加的卡（${custom.length}）</div>
+                            ${custom.length ? custom.map(c => `<div style="background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                                <span style="font-size:10px;font-weight:700;color:${(RARITY[c.rarity]||RARITY.N).c};">${(RARITY[c.rarity]||RARITY.N).label}</span>
+                                <span style="flex:1;font-size:13px;color:${BROWN};">${esc(c.name)}</span>
+                                <span class="ge-edit" data-id="${c.id}" style="font-size:12px;color:${PINK_HI};cursor:pointer;font-weight:600;">编辑</span>
+                                <span class="ge-del" data-id="${c.id}" style="font-size:12px;color:#c57b6e;cursor:pointer;">删除</span>
+                            </div>`).join('') : `<div style="text-align:center;color:${BROWN};opacity:0.4;font-size:12px;padding:20px;">还没加过卡～</div>`}
+                            <div style="height:20px;"></div>
+                        </div>`;
+                    appPage.querySelector('#gc-ed-back').onclick = () => openGacha();
+                    const thumb0 = appPage.querySelector('#ge-img-thumb');
+                    if (thumb0 && cur.img) { if (String(cur.img).startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { window.ImageDB.resolve(cur.img).then(u=>{ thumb0.src=u; }).catch(()=>{}); } else { thumb0.src = cur.img; } }
+                    let pickedImg = '';
+                    const imgIn = appPage.querySelector('#ge-img-input');
+                    const imgBtn = appPage.querySelector('#ge-img-btn');
+                    if (imgBtn) imgBtn.onclick = () => imgIn.click();
+                    if (imgIn) imgIn.onchange = () => { const f = imgIn.files && imgIn.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = (ev) => { pickedImg = ev.target.result; const th = appPage.querySelector('#ge-img-thumb'); if (th){ th.src = pickedImg; th.style.display = 'block'; } }; rd.readAsDataURL(f); };
+                    appPage.querySelector('#ge-add').onclick = async () => {
+                        const nm = (appPage.querySelector('#ge-name').value||'').trim(); if (!nm) { appPage.querySelector('#ge-name').focus(); return; }
+                        const rarity = appPage.querySelector('#ge-rarity').value;
+                        const flavv = appPage.querySelector('#ge-flavor').value;
+                        const line = (appPage.querySelector('#ge-line').value||'').trim();
+                        const touch = (appPage.querySelector('#ge-touch').value||'').trim();
+                        const premise = (appPage.querySelector('#ge-premise').value||'').trim();
+                        const story = (appPage.querySelector('#ge-story').value||'').trim();
+                        const card = { id: editingId || ('gcu_'+Date.now()), rarity, flavor:flavv, name:nm };
+                        if (rarity==='SR'||rarity==='SSR') {
+                            card.premise = premise || '一段属于你们的小故事。';
+                            card.story = story || premise || '（还没写背景剧情哦～）';
+                            if (pickedImg) { try { card.img = (window.ImageDB && window.ImageDB.saveAndRef) ? await window.ImageDB.saveAndRef(pickedImg) : pickedImg; } catch(e){} }
+                            else if (editingId && cur.img) { card.img = cur.img; }
+                        } else if (rarity==='R') {
+                            card.touch = touch || '轻轻碰了碰你'; card.line = line || '嘿。';
+                        } else {
+                            card.line = line || '嘿，我在呢。';
+                        }
+                        let cp = customPool();
+                        if (editingId) { const i = cp.findIndex(x=>x.id===editingId); if (i>=0) cp[i] = card; else cp.push(card); }
+                        else cp.push(card);
+                        saveCustomPool(cp);
+                        editingId = null;
+                        renderEditor();
+                    };
+                    const cancelBtn = appPage.querySelector('#ge-cancel');
+                    if (cancelBtn) cancelBtn.onclick = () => { editingId = null; renderEditor(); };
+                    appPage.querySelectorAll('.ge-edit').forEach(el => { el.onclick = () => { editingId = el.dataset.id; renderEditor(); const sc = appPage.querySelector('.app-content'); if (sc) sc.scrollTop = 0; }; });
+                    appPage.querySelectorAll('.ge-del').forEach(el => { el.onclick = () => { const cp = customPool().filter(x => x.id !== el.dataset.id); saveCustomPool(cp); if (editingId===el.dataset.id) editingId=null; renderEditor(); }; });
+                };
+                renderEditor();
+            }
+
+
+            // ========== 约会模块（AI 照卡的前情提要即兴演，选项明标加/扣好感）==========
+            const DATE_MAX = 5;
+            function openDate() {
+                const cards = effectivePool().filter(c => flavorMatch(c) && (c.rarity==='SR' || c.rarity==='SSR'));
+                const own = (state.owned||[]);
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="dt-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">约会 💌</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${BROWN};opacity:0.7;margin-bottom:12px;line-height:1.7;">挑一段已解锁的剧情，和 ${esc(name)} 展开一场约会～ 每个选择都由你决定给 TA 加还是扣好感。</div>
+                        ${cards.length ? cards.map(c => {
+                            const has = own.includes(c.id); const rr = RARITY[c.rarity]||RARITY.SR;
+                            return `<div class="dt-card" data-id="${c.id}" style="background:#fff;border:1.5px solid ${has?rr.c:'#e2ddd8'};border-radius:14px;overflow:hidden;margin-bottom:12px;opacity:${has?1:0.55};cursor:${has?'pointer':'default'};">
+                                ${(has&&c.img)?`<img data-glimg="${c.img}" style="width:100%;height:110px;object-fit:cover;display:block;">`:''}
+                                <div style="padding:12px 14px;">
+                                    <div style="display:flex;align-items:center;gap:7px;"><span style="font-size:10px;font-weight:700;color:${has?rr.c:'#aaa'};border:1px solid ${has?rr.c:'#ccc'};border-radius:7px;padding:0 6px;">${rr.label}</span><span style="font-size:14px;font-weight:600;color:${BROWN};">${has?esc(c.name):'？？？'}</span></div>
+                                    <div style="font-size:11.5px;color:${BROWN};opacity:0.65;margin-top:6px;line-height:1.6;">${has?esc(c.premise||''):'去抽卡池抽到就能解锁啦'}</div>
+                                    ${has?`<div style="font-size:11px;color:${PINK_HI};margin-top:8px;font-weight:600;">开始约会 ›</div>`:`<div style="font-size:11px;color:#bbb;margin-top:8px;">未解锁</div>`}
+                                </div>
+                            </div>`;
+                        }).join('') : `<div style="text-align:center;color:${BROWN};opacity:0.45;font-size:13px;padding:40px 20px;line-height:1.9;">还没有解锁约会剧情呀～<br><span style="font-size:11px;">去抽卡池抽到 SR / SSR 卡就能约会啦💗</span></div>`}
+                        <div style="height:24px;"></div>
+                    </div>`;
+                appPage.querySelector('#dt-back').onclick = () => shell();
+                glResolveAvatars(appPage);
+                appPage.querySelectorAll('.dt-card').forEach(el => { el.onclick = () => { if (own.includes(el.dataset.id)) startDate(cardById(el.dataset.id)); }; });
+            }
+
+            function startDate(card) {
+                let round = 0; const history = []; let pendingReply = ''; let sessionDelta = 0;
+                const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${ROSE};">
+                        <span class="close-btn-520" id="dt-d-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};font-size:15px;">约会 · ${esc(card.name)}</h2>
+                        <span id="dt-end" style="color:${BROWN};font-size:12px;opacity:0.85;cursor:pointer;padding-right:6px;white-space:nowrap;">结束 ›</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;height:calc(100% - 52px);background:${BG};">
+                        ${card.img?`<img data-glimg="${card.img}" style="width:100%;height:120px;object-fit:cover;display:block;flex-shrink:0;">`:''}
+                        <div id="dt-scene" style="flex:1;min-height:0;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch;"></div>
+                        <div id="dt-ctrl" style="flex-shrink:0;padding:10px 12px 16px;background:${CREAM};"></div>
+                    </div>`;
+                appPage.querySelector('#dt-d-back').onclick = () => openDate();
+                appPage.querySelector('#dt-end').onclick = () => showRating();
+                glResolveAvatars(appPage);
+                const scene = appPage.querySelector('#dt-scene');
+                const ctrl = appPage.querySelector('#dt-ctrl');
+
+                const appendNarration = (txt) => {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'display:flex;gap:8px;margin-bottom:14px;align-items:flex-start;';
+                    d.innerHTML = `<div style="width:30px;height:30px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;">${av}</div><div style="flex:1;background:#fff;border-radius:4px 14px 14px 14px;padding:11px 13px;font-size:13.5px;color:${BROWN};line-height:1.85;box-shadow:0 1px 4px rgba(160,120,110,0.1);white-space:pre-wrap;">${esc(txt)}</div>`;
+                    scene.appendChild(d); glResolveAvatars(d); scene.scrollTop = scene.scrollHeight;
+                };
+                const appendChoice = (delta) => {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:14px;';
+                    let bg='#f0efef', col='#999', txt='😐 好感没变';
+                    if (delta>0){ bg='#e4f2ea'; col='#5b9b6f'; txt='💗 你给 '+esc(name)+' 加了 '+delta+' 好感'; }
+                    else if (delta<0){ bg='#fbe9e6'; col='#c77'; txt='💔 你扣了 '+esc(name)+' '+Math.abs(delta)+' 好感'; }
+                    d.innerHTML = `<div style="background:${bg};color:${col};border-radius:14px;padding:7px 14px;font-size:12px;font-weight:600;">${txt}</div>`;
+                    scene.appendChild(d); scene.scrollTop = scene.scrollHeight;
+                };
+                const appendSystemChoice = (txt) => {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'text-align:center;margin:2px 0 14px;';
+                    d.innerHTML = `<span style="display:inline-block;background:${BLUE_SOFT};color:${BLUE_TX};font-size:12px;border-radius:12px;padding:5px 14px;max-width:88%;line-height:1.5;">⚡ ${esc(name)} 选择了：${esc(txt)}</span>`;
+                    scene.appendChild(d); scene.scrollTop = scene.scrollHeight;
+                };
+                const appendUserSay = (txt) => {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:10px;';
+                    d.innerHTML = `<div style="max-width:78%;background:${ROSE};border-radius:14px 4px 14px 14px;padding:9px 13px;font-size:13.5px;color:${BROWN};line-height:1.6;">${esc(txt)}</div>`;
+                    scene.appendChild(d); scene.scrollTop = scene.scrollHeight;
+                };
+                const setLoading = (t) => { ctrl.innerHTML = `<div style="text-align:center;font-size:12px;color:${BROWN};opacity:0.55;padding:8px;">${t}</div>`; };
+
+                function personaSys(roundNo, isLast) {
+                    const c = selectedContact;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    let persona = `角色：${c.name}\n`;
+                    if (c.notes) persona += `备注：${c.notes}\n`;
+                    persona += `人设：${c.persona || ''}\n`;
+                    if (c.memory && c.memory.manual) persona += `记忆：${c.memory.manual}\n`;
+                    return persona + `\n【约会剧情·AVG玩法】你（${c.name}）正在和 ${userNick} 进行一场约会，${flavorDesc()}。这场约会的前情提要/背景是：「${card.story}」。\n请像 galgame 一样推进这场约会：先以第一人称"我"、用 ${c.name} 的口吻流畅地描写一小段剧情（场景推进＋我说的话或心里的想法，两三句、别太碎）；然后在这一小段的结尾，我会面临一个"该怎么对 ${userNick}"的小抉择——请你替我在心里的几个念头里挑定一个，把我最终【做出的那个具体举动】用一句话概括，放进 choice 字段（例如"鼓起勇气牵住了你的手"、"把想说的情话又咽了回去，只是安静陪着你"）。主动权在我：是我在主动向 ${userNick} 靠近、讨好、表达心意。称呼对方用"你"，自己一律用"我"，绝不用"TA"指代自己；不要替 ${userNick} 决定反应、也不要给 ${userNick} 任何选项。这是第 ${roundNo}/${DATE_MAX} 幕，请自然承接上一幕 ${userNick} 对你的态度。${isLast ? '这是最后一幕，请让我把这场约会温柔收尾，choice 可留空，ending 设 true。' : ''}\n严格只输出 JSON，不要多余文字：{"narration":"剧情描写，60到130字","choice":"我这一幕最终做出的那个举动，一句话","ending":${isLast?'true':'false'}}`;
+                }
+                function parseDate(raw) {
+                    let t = String(raw||'').trim().replace(/^```(json)?/i,'').replace(/```$/,'').trim();
+                    const a = t.indexOf('{'), b = t.lastIndexOf('}');
+                    if (a>=0 && b>a) t = t.slice(a, b+1);
+                    const d = JSON.parse(t);
+                    return { narration: String(d.narration||'').trim(), choice: String(d.choice||'').trim(), ending: !!d.ending };
+                }
+                function fallbackRound(isLast) {
+                    if (isLast) return { narration:'夜色温柔下来，我把这场约会轻轻收进心里，看着你认真地说："今天有你在，就是我最好的一天。"', choice:'', ending:true };
+                    const beats = [
+                        { narration:'我们沿着安静的小路慢慢走着，我一直悄悄把手背往你那边蹭，心里翻来覆去想着要不要牵你。走到路灯下，我停住脚步，转过身认真看你。', choice:'鼓起勇气，主动牵住了你的手' },
+                        { narration:'夜风把你的碎发吹乱，我看着你说话的样子，指尖有点发痒，几次想开口又忍了回去。沉默了几秒，我还是没忍住，抬起了手。', choice:'伸手替你把碎发别到耳后，指尖在你脸颊边停了一下' },
+                        { narration:'夜色渐深，你轻轻打了个小哈欠。我心里一下子软了，想把外套给你，又怕你嫌我啰嗦。犹豫了一瞬——', choice:'默默把外套披到你肩上，什么也没多说' }
+                    ];
+                    return Object.assign({ ending:false }, pick(beats));
+                }
+
+                async function nextRound(prevAttitude) {
+                    const isLast = round >= (DATE_MAX - 1);
+                    setLoading(`${esc(name)} 正在为你安排这场约会…`);
+                    let data;
+                    try {
+                        const um = prevAttitude ? ('上一幕我做出选择后，'+prevAttitude+'。请自然承接、继续演下一幕，并在结尾给出我这一幕做出的举动。') : '约会开始了，请演开场第一幕，并在结尾给出我这一幕做出的举动。';
+                        data = parseDate(await glCallAI(personaSys(round+1, isLast), um));
+                    } catch(e) { data = fallbackRound(isLast); }
+                    if (data.narration) appendNarration(data.narration);
+                    if (data.choice) appendSystemChoice(data.choice);
+                    if (isLast || data.ending) { showRating(); }
+                    else { renderAttitude(); }
+                }
+                function renderAttitude() {
+                    ctrl.innerHTML = `<input id="dt-reply" placeholder="想对 ${esc(name)} 说点什么…（可选，TA 会接住）" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};background:#fff;border-radius:20px;padding:9px 14px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:9px;">
+                        <div style="text-align:center;font-size:11px;color:${BROWN};opacity:0.6;margin-bottom:8px;">对 ${esc(name)} 这个选择，你想…</div>
+                        <div style="display:flex;gap:8px;">
+                            <div id="dt-add" style="flex:1;text-align:center;background:#e4f2ea;color:#5b9b6f;border-radius:13px;padding:12px 4px;font-size:13px;font-weight:600;cursor:pointer;">加好感 💗</div>
+                            <div id="dt-zero" style="flex:1;text-align:center;background:#fff;color:${BROWN};border:1.5px solid ${ROSE};border-radius:13px;padding:12px 4px;font-size:13px;cursor:pointer;">不加不扣 😐</div>
+                            <div id="dt-sub" style="flex:1;text-align:center;background:#fbe9e6;color:#c77;border-radius:13px;padding:12px 4px;font-size:13px;font-weight:600;cursor:pointer;">扣好感 💔</div>
+                        </div>`;
+                    const grabReply = () => { const el = ctrl.querySelector('#dt-reply'); return el ? el.value.trim() : ''; };
+                    ctrl.querySelector('#dt-add').onclick = () => { pendingReply = grabReply(); affInput('add'); };
+                    ctrl.querySelector('#dt-sub').onclick = () => { pendingReply = grabReply(); affInput('sub'); };
+                    ctrl.querySelector('#dt-zero').onclick = () => { pendingReply = grabReply(); applyAff(0); };
+                }
+                function affInput(sign) {
+                    const label = sign==='add' ? `给 ${esc(name)} 加多少好感？` : `扣 ${esc(name)} 多少好感？`;
+                    ctrl.innerHTML = `<div style="text-align:center;font-size:12px;color:${BROWN};margin-bottom:8px;">${label}</div>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <span id="dt-aff-cancel" style="flex-shrink:0;font-size:12px;color:${BROWN};opacity:0.6;cursor:pointer;padding:8px;">返回</span>
+                            <input id="dt-aff-n" type="number" min="0" placeholder="填个数字～" style="flex:1;min-width:0;box-sizing:border-box;border:1.5px solid ${ROSE};background:#fff;border-radius:20px;padding:10px 15px;font-size:14px;color:${BROWN};outline:none;font-family:inherit;">
+                            <button id="dt-aff-ok" style="flex-shrink:0;width:44px;height:44px;background:${sign==='add'?'#7cbf95':'#e39a9a'};color:#fff;border:none;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(150,150,150,0.35);">✓</button>
+                        </div>`;
+                    const inp = ctrl.querySelector('#dt-aff-n');
+                    const ok = () => { let n = Math.abs(parseInt(inp.value,10)); if (isNaN(n)) n = 0; applyAff(sign==='add' ? n : -n); };
+                    ctrl.querySelector('#dt-aff-ok').onclick = ok;
+                    ctrl.querySelector('#dt-aff-cancel').onclick = () => renderAttitude();
+                    inp.addEventListener('keydown', e => { if (e.key==='Enter') ok(); });
+                    setTimeout(()=>{ try{ inp.focus(); }catch(e){} }, 60);
+                }
+                function applyAff(delta) {
+                    const before = state.affinity;
+                    state.affinity = Math.max(0, state.affinity + delta);
+                    sessionDelta += (state.affinity - before);
+                    saveState(cid, state);
+                    const reply = pendingReply; pendingReply = '';
+                    if (reply) appendUserSay(reply);
+                    appendChoice(delta);
+                    round++;
+                    const userNick = localStorage.getItem('user_nick') || '我';
+                    const affDesc = delta>0 ? (userNick+'对你这一下很心动，给你加了'+delta+'点好感') : (delta<0 ? (userNick+'对你这一下不太满意，扣了你'+Math.abs(delta)+'点好感') : (userNick+'对你这一下没什么特别反应，好感没变'));
+                    const desc = (reply ? (userNick+'回应你说：「'+reply+'」。') : '') + affDesc + '。请在下一幕自然接住 '+userNick+' 说的话和态度，继续往下演。';
+                    nextRound(desc);
+                }
+                function showRating() {
+                    ctrl.innerHTML = `<div style="text-align:center;font-size:12px;color:${BROWN};opacity:0.7;margin-bottom:8px;">这次约会你还满意吗？给 TA 打个分吧～</div>
+                        <div style="display:flex;gap:10px;">
+                            <div id="dt-good" style="flex:1;text-align:center;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">好评 👍</div>
+                            <div id="dt-bad" style="flex:1;text-align:center;background:#fff;color:${BROWN};border:1.5px solid ${ROSE};border-radius:13px;padding:12px;font-size:14px;cursor:pointer;">差评 👎</div>
+                        </div>`;
+                    ctrl.querySelector('#dt-good').onclick = () => finishDate(true);
+                    ctrl.querySelector('#dt-bad').onclick = () => finishDate(false);
+                }
+                async function finishDate(good) {
+                    // 好评/差评只是态度，不额外改好感——好感全由用户自己给
+                    saveState(cid, state);
+                    setLoading(`${esc(name)} 正在回应…`);
+                    let reply = '';
+                    const goodBank = ['听到你说满意，我整颗心都轻飘飘的，能让你开心，比什么都值。','嘿嘿，被你打好评啦？那下次…还想和你约会，可以吗？','太好了…原来我也能把你逗得这么开心，我会记住今天的。'];
+                    const badBank = ['……是我做得还不够好吗？对不起，我下次一定更用心，把你哄得开开心心的。','打了差评呀…没关系，你告诉我哪里不好，我想变成更让你喜欢的样子。','有点失落，但更多是不甘心——下次我一定拿到你更高的好感，你等着看。'];
+                    try {
+                        const c = selectedContact;
+                        const userNick = localStorage.getItem('user_nick') || '我';
+                        let persona = `角色：${c.name}\n人设：${c.persona||''}\n`;
+                        reply = await glCallAI(persona + `\n刚刚你和 ${userNick} 结束了一场约会，${userNick} 给这次约会打了「${good?'好评':'差评'}」。请以 ${c.name} 的口吻回应：${good?'开心、被认可的雀跃，想再约 TA':'失落但不埋怨，反省自己没做好、暗暗希望下次能拿到 TA 更高的好感'}。30-55字，只说话、不要旁白、不要引号。`, '请直接输出。');
+                    } catch(e) { reply = pick(good?goodBank:badBank); }
+                    appendNarration(reply);
+                    const sd = (sessionDelta>0?'+':'')+sessionDelta;
+                    ctrl.innerHTML = `<div id="dt-done" style="text-align:center;background:${BLUE_SOFT};color:${BLUE_TX};border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">本场好感 ${sd} · 回到攻略 ›</div>`;
+                    ctrl.querySelector('#dt-done').onclick = () => shell();
+                }
+
+                nextRound(null);
+            }
+
+
+            // ========== 商店（TA 用金币给你买礼物/衣服）==========
+            const SHOP_ITEMS = [
+                { id:'g1', type:'gift', name:'一束向日葵', emoji:'🌻', price:200 },
+                { id:'g2', type:'gift', name:'热奶茶',     emoji:'🧋', price:120 },
+                { id:'g3', type:'gift', name:'抱抱小熊',   emoji:'🧸', price:350 },
+                { id:'g4', type:'gift', name:'星星小夜灯', emoji:'🌟', price:300 },
+                { id:'g5', type:'gift', name:'草莓蛋糕',   emoji:'🍰', price:180 },
+                { id:'g6', type:'gift', name:'一整片星空', emoji:'🌌', price:800 },
+                { id:'c1', type:'cloth', name:'奶黄小卫衣', emoji:'🧥', price:400 },
+                { id:'c2', type:'cloth', name:'软乎乎围巾', emoji:'🧣', price:250 },
+                { id:'c3', type:'cloth', name:'草莓发卡',   emoji:'🎀', price:150 },
+                { id:'c4', type:'cloth', name:'软软小裙子', emoji:'👗', price:500 },
+                { id:'c5', type:'cloth', name:'情侣卫衣',   emoji:'👕', price:600 },
+            ];
+            function shopCustom(){ try { const a = JSON.parse(localStorage.getItem('gl_shop_custom')||'[]'); return Array.isArray(a)?a:[]; } catch(e){ return []; } }
+            function saveShopCustom(a){ try { localStorage.setItem('gl_shop_custom', JSON.stringify(a)); } catch(e){} }
+            function effectiveShop(){ return SHOP_ITEMS.concat(shopCustom()); }
+            function shopItemById(id){ return effectiveShop().find(x => x.id === id); }
+
+            function openShop() {
+                let tab = 'shop';
+                const render = () => {
+                    const items = effectiveShop();
+                    const bought = (state.bought||[]);
+                    const gifts = items.filter(x => x.type === 'gift');
+                    const cloths = items.filter(x => x.type === 'cloth');
+                    let body = '';
+                    if (tab === 'shop') {
+                        const itemCard = (x) => {
+                            const has = bought.includes(x.id);
+                            const afford = state.coins >= x.price;
+                            return `<div style="background:#fff;border-radius:14px;padding:12px;text-align:center;">
+                                <div style="font-size:30px;">${x.emoji||'🎁'}</div>
+                                <div style="font-size:12.5px;color:${BROWN};font-weight:600;margin-top:4px;">${esc(x.name)}</div>
+                                <div style="font-size:11px;color:${BROWN};opacity:0.6;margin-top:2px;">💰 ${x.price}</div>
+                                ${has
+                                    ? `<div style="margin-top:8px;font-size:11px;color:#8fbf9f;font-weight:600;">已拥有 ✓</div>`
+                                    : `<div class="sh-buy" data-id="${x.id}" style="margin-top:8px;background:${afford?PINK_HI:'#e6ddd8'};color:#fff;border-radius:10px;padding:7px 4px;font-size:11.5px;cursor:${afford?'pointer':'default'};font-weight:600;">${afford?'让 TA 买给我':'金币不够'}</div>`}
+                            </div>`;
+                        };
+                        body = `
+                            <div style="font-size:12px;color:${BROWN};opacity:0.7;margin:2px 2px 10px;">让 ${esc(name)} 用金币给你买点东西呀～ 💰 TA 的金币：<b>${state.coins}</b></div>
+                            <div style="font-size:12px;font-weight:700;color:${PINK_HI};margin:6px 2px;">🎁 礼物</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">${gifts.map(itemCard).join('')}</div>
+                            <div style="font-size:12px;font-weight:700;color:${PINK_HI};margin:16px 2px 6px;">👗 衣服 · 装扮</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">${cloths.map(itemCard).join('')}</div>
+                            <div style="text-align:center;margin:16px 0;"><span id="sh-edit" style="font-size:12px;color:${BROWN};opacity:0.6;cursor:pointer;text-decoration:underline;">✏️ 编辑商品（自己加）</span></div>`;
+                    } else if (tab === 'gift') {
+                        const mine = gifts.filter(x => bought.includes(x.id));
+                        body = mine.length
+                            ? `<div style="font-size:12px;color:${BROWN};opacity:0.7;margin:2px 2px 10px;">${esc(name)} 送给你的心意，都在这儿啦💗</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">${mine.map(x=>`<div class="sh-note" data-id="${x.id}" style="background:#fff;border-radius:14px;padding:14px;text-align:center;cursor:pointer;"><div style="font-size:30px;">${x.emoji||'🎁'}</div><div style="font-size:12.5px;color:${BROWN};font-weight:600;margin-top:5px;">${esc(x.name)}</div><div style="font-size:10px;color:${PINK_HI};margin-top:4px;">💬 看 TA 的话</div></div>`).join('')}</div>`
+                            : `<div style="text-align:center;color:${BROWN};opacity:0.45;font-size:13px;padding:44px 20px;line-height:1.9;">还没收到礼物呀～<br><span style="font-size:11px;">去商店让 TA 给你买点吧💗</span></div>`;
+                    } else {
+                        const mine = cloths.filter(x => bought.includes(x.id));
+                        body = mine.length
+                            ? `<div style="font-size:12px;color:${BROWN};opacity:0.7;margin:2px 2px 10px;">点一件穿上试试呀～</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">${mine.map(x=>{
+                                const on = state.wearing === x.id;
+                                return `<div style="background:#fff;border-radius:14px;padding:14px 10px;text-align:center;border:1.5px solid ${on?PINK_HI:'transparent'};"><div class="sh-note" data-id="${x.id}" style="cursor:pointer;"><div style="font-size:30px;">${x.emoji||'👗'}</div><div style="font-size:12.5px;color:${BROWN};font-weight:600;margin-top:5px;">${esc(x.name)}</div><div style="font-size:10px;color:${PINK_HI};margin-top:3px;">💬 看 TA 的话</div></div><div class="sh-wear" data-id="${x.id}" style="margin-top:8px;background:${on?'#f0efef':PINK_HI};color:${on?BROWN:'#fff'};border-radius:10px;padding:6px;font-size:11px;cursor:pointer;font-weight:600;">${on?'脱下':'穿上'}</div></div>`;
+                            }).join('')}</div>`
+                            : `<div style="text-align:center;color:${BROWN};opacity:0.45;font-size:13px;padding:44px 20px;line-height:1.9;">衣柜还空空的～<br><span style="font-size:11px;">去商店让 TA 给你买件衣服吧👗</span></div>`;
+                    }
+                    const tabBtn = (k,label) => `<span class="sh-tab" data-k="${k}" style="flex:1;text-align:center;padding:9px 4px;font-size:12.5px;cursor:pointer;color:${tab===k?PINK_HI:BROWN};font-weight:${tab===k?'700':'400'};border-bottom:2px solid ${tab===k?PINK_HI:'transparent'};">${label}</span>`;
+                    appPage.innerHTML = `
+                        <div class="app-header-520" style="background:${ROSE};">
+                            <span class="close-btn-520" id="sh-back" style="color:${BROWN};">‹</span>
+                            <h2 class="title" style="color:${BROWN};">商店 🛍️</h2>
+                            <span style="width:40px;"></span>
+                        </div>
+                        <div style="display:flex;background:#fff;border-bottom:1px solid rgba(249,193,196,0.3);">${tabBtn('shop','逛商店')}${tabBtn('gift','收到的心意')}${tabBtn('wear','衣柜')}</div>
+                        <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">${body}<div style="height:20px;"></div></div>`;
+                    appPage.querySelector('#sh-back').onclick = () => shell();
+                    appPage.querySelectorAll('.sh-tab').forEach(el => { el.onclick = () => { tab = el.dataset.k === 'wear' ? 'wear' : el.dataset.k; render(); }; });
+                    appPage.querySelectorAll('.sh-buy').forEach(el => { el.onclick = () => buyItem(el.dataset.id, render); });
+                    appPage.querySelectorAll('.sh-wear').forEach(el => { el.onclick = () => { state.wearing = (state.wearing === el.dataset.id) ? '' : el.dataset.id; saveState(cid, state); render(); }; });
+                    appPage.querySelectorAll('.sh-note').forEach(el => { el.onclick = () => showGiftNote(el.dataset.id); });
+                    const se = appPage.querySelector('#sh-edit'); if (se) se.onclick = () => openShopEditor();
+                };
+                render();
+            }
+
+            function noteFor(it) {
+                const n = it.name;
+                if (it.type==='cloth') return pick(['这件「'+n+'」一看到就想到你，穿上肯定好看，快去衣柜换上给我看看💗', '给你挑的「'+n+'」，光是想象你穿上的样子，我就先心动了～', '「'+n+'」是我特意给你选的，喜欢的话，多穿给我看看嘛。']);
+                return pick(['你想要的「'+n+'」，我当然给你买呀，喜欢就多喜欢一会儿💗', '这个「'+n+'」是给你的，收下嘛，看到你开心我就满足了～', '把「'+n+'」买下来的那一刻，满脑子都是你收到时的样子。']);
+            }
+            function showGiftNote(id) {
+                const it = shopItemById(id); if (!it) return;
+                const note = (state.giftNotes && state.giftNotes[id]) || noteFor(it);
+                const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,40,50,0.5);z-index:70;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:#fff;border-radius:20px;width:100%;max-width:300px;overflow:hidden;">
+                    <div style="background:${ROSE};padding:16px;text-align:center;">
+                        <div style="font-size:38px;">${it.emoji||'🎁'}</div>
+                        <div style="font-size:14px;font-weight:700;color:${BROWN};margin-top:4px;">${esc(it.name)}</div>
+                    </div>
+                    <div style="padding:16px;display:flex;gap:9px;align-items:flex-start;">
+                        <div style="width:32px;height:32px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;">${av}</div>
+                        <div style="flex:1;background:linear-gradient(135deg,#fdeceb,${ROSE});border-radius:4px 14px 14px 14px;padding:11px 13px;font-size:13.5px;color:${BROWN};line-height:1.8;">${esc(note)}</div>
+                    </div>
+                    <div style="padding:0 16px 16px;"><div id="sh-note-close" style="text-align:center;background:${PINK_HI};color:#fff;border-radius:13px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;">收下这份心意 💗</div></div>
+                </div>`;
+                appPage.appendChild(dlg);
+                glResolveAvatars(dlg);
+                dlg.querySelector('#sh-note-close').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+            }
+            async function buyItem(id, after) {
+                const x = shopItemById(id); if (!x) return;
+                if ((state.bought||[]).includes(id)) return;
+                if (state.coins < x.price) { toast('TA 的金币还不够呀～多陪 TA 互动攒攒金币💰'); return; }
+                state.coins -= x.price;
+                if (!Array.isArray(state.bought)) state.bought = [];
+                state.bought.push(id);
+                if (!state.giftNotes) state.giftNotes = {};
+                let note = '';
+                try {
+                    const c = selectedContact; const userNick = localStorage.getItem('user_nick')||'我';
+                    note = await glCallAI(`角色：${c.name}\n人设：${c.persona||''}\n\n${userNick} 让你给 TA 买了「${x.name}」（一件${x.type==='cloth'?'衣服/装扮':'礼物'}）。请以 ${c.name} 的口吻，说一句贴着这个东西、宠溺又自然的话。20-40字，只说话、不要旁白、不要引号。`, '请直接输出。');
+                } catch(e) { note = noteFor(x); }
+                state.giftNotes[id] = note;
+                saveState(cid, state);
+                toast(`${esc(name)} 花 ${x.price} 金币给你买了 ${x.emoji||''}${esc(x.name)}💗`);
+                if (after) after();
+            }
+
+            function openShopEditor() {
+                let editingId = null;
+                const renderE = () => {
+                    const custom = shopCustom();
+                    const cur = editingId ? (custom.find(c=>c.id===editingId)||{}) : {};
+                    const typ = cur.type || 'gift';
+                    const opt = (v,l,sel)=>`<option value="${v}"${sel===v?' selected':''}>${l}</option>`;
+                    appPage.innerHTML = `
+                        <div class="app-header-520" style="background:${ROSE};">
+                            <span class="close-btn-520" id="she-back" style="color:${BROWN};">‹</span>
+                            <h2 class="title" style="color:${BROWN};">编辑商品</h2>
+                            <span style="width:40px;"></span>
+                        </div>
+                        <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">
+                            <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:16px;">
+                                ${editingId?`<div style="font-size:12px;color:${PINK_HI};font-weight:700;margin-bottom:8px;">✏️ 正在修改</div>`:''}
+                                <input id="she-name" value="${esc(cur.name||'')}" placeholder="商品名字，如：小雏菊胸针" style="width:100%;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px 12px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;margin-bottom:8px;">
+                                <div style="display:flex;gap:6px;margin-bottom:8px;">
+                                    <input id="she-emoji" value="${esc(cur.emoji||'')}" placeholder="emoji 如 🌷" style="width:90px;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px;font-size:15px;color:${BROWN};outline:none;text-align:center;font-family:inherit;">
+                                    <select id="she-type" style="flex:1;border:1.5px solid ${ROSE};border-radius:10px;padding:9px;font-size:13px;color:${BROWN};background:#fff;font-family:inherit;">${opt('gift','礼物',typ)}${opt('cloth','衣服/装扮',typ)}</select>
+                                    <input id="she-price" type="number" value="${cur.price!=null?cur.price:''}" placeholder="金币价" style="width:100px;box-sizing:border-box;border:1.5px solid ${ROSE};border-radius:10px;padding:9px;font-size:13px;color:${BROWN};outline:none;font-family:inherit;">
+                                </div>
+                                <div id="she-add" style="text-align:center;background:linear-gradient(135deg,${PINK},${PINK_HI});color:#fff;border-radius:12px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">${editingId?'保存修改 ✓':'＋ 加进商店'}</div>
+                                ${editingId?`<div id="she-cancel" style="text-align:center;margin-top:8px;font-size:12px;color:${BROWN};opacity:0.6;cursor:pointer;">取消修改</div>`:''}
+                            </div>
+                            <div style="font-size:12px;color:${BROWN};opacity:0.7;margin-bottom:8px;">我加的商品（${custom.length}）</div>
+                            ${custom.length ? custom.map(c=>`<div style="background:#fff;border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+                                <span style="font-size:18px;">${c.emoji||'🎁'}</span>
+                                <span style="flex:1;font-size:13px;color:${BROWN};">${esc(c.name)} <span style="opacity:0.5;font-size:11px;">· 💰${c.price} · ${c.type==='cloth'?'衣服':'礼物'}</span></span>
+                                <span class="she-edit" data-id="${c.id}" style="font-size:12px;color:${PINK_HI};cursor:pointer;font-weight:600;">编辑</span>
+                                <span class="she-del" data-id="${c.id}" style="font-size:12px;color:#c57b6e;cursor:pointer;">删除</span>
+                            </div>`).join('') : `<div style="text-align:center;color:${BROWN};opacity:0.4;font-size:12px;padding:20px;">还没加过商品～</div>`}
+                            <div style="height:20px;"></div>
+                        </div>`;
+                    appPage.querySelector('#she-back').onclick = () => openShop();
+                    appPage.querySelector('#she-add').onclick = () => {
+                        const nm = (appPage.querySelector('#she-name').value||'').trim(); if (!nm) { appPage.querySelector('#she-name').focus(); return; }
+                        const emoji = (appPage.querySelector('#she-emoji').value||'').trim();
+                        const type = appPage.querySelector('#she-type').value;
+                        let price = parseInt(appPage.querySelector('#she-price').value,10); if (isNaN(price)||price<0) price = 100;
+                        const item = { id: editingId || ('shu_'+Date.now()), type, name:nm, emoji: emoji || (type==='cloth'?'👗':'🎁'), price };
+                        let cp = shopCustom();
+                        if (editingId) { const i = cp.findIndex(x=>x.id===editingId); if (i>=0) cp[i]=item; else cp.push(item); }
+                        else cp.push(item);
+                        saveShopCustom(cp); editingId = null; renderE();
+                    };
+                    const cb = appPage.querySelector('#she-cancel'); if (cb) cb.onclick = () => { editingId=null; renderE(); };
+                    appPage.querySelectorAll('.she-edit').forEach(el=>{ el.onclick=()=>{ editingId=el.dataset.id; renderE(); }; });
+                    appPage.querySelectorAll('.she-del').forEach(el=>{ el.onclick=()=>{ const cp=shopCustom().filter(x=>x.id!==el.dataset.id); saveShopCustom(cp); if(editingId===el.dataset.id) editingId=null; renderE(); }; });
+                };
+                renderE();
+            }
+
+
+            pickContactThen(() => shell());
+        }
+
+        function setupCoolDownApp(appPage) {
+            // ============ 想买冷静期：冲动想买的先关几天，到期先生来问你还要不要 ============
+            const CD_KEY = 'cool-down-items';
+            const getItems = () => { try { return JSON.parse(localStorage.getItem(CD_KEY) || '[]'); } catch(e){ return []; } };
+            const saveItems = (arr) => { try { localStorage.setItem(CD_KEY, JSON.stringify(arr)); } catch(e){} };
+
+            const BLUE = '#95c4da';        // 水青（主色）
+            const BLUE_SOFT = '#cae0ea';   // 浅水青（卡片头/气泡/输入框）
+            const BROWN = '#775C56';       // 系统棕（文字，全app一致）
+            const PAPER = '#e8f1ef';       // 水雾白（页面底）
+            const PINK = '#7fb8ce';        // 到期提醒（同家族深水青，让卡片跳出来）
+            const GREEN = '#8FBF9F';       // 忍住了的成就绿（省钱=绿，和水青相衬）
+
+            let selectedContact = null;
+            let contactName = '先生';
+
+            const DURATIONS = [
+                { label: '冲动小东西 · 24 小时', ms: 24*3600*1000 },
+                { label: '一般 · 3 天', ms: 3*24*3600*1000 },
+                { label: '大件 · 7 天', ms: 7*24*3600*1000 },
+            ];
+
+            function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function fmtLeft(ms) {
+                if (ms <= 0) return '';
+                const d = Math.floor(ms/86400000), h = Math.floor((ms%86400000)/3600000), m = Math.floor((ms%3600000)/60000), s = Math.floor((ms%60000)/1000);
+                if (d>0) return `还需冷静 ${d} 天 ${h} 小时`;
+                if (h>0) return `还需冷静 ${h} 小时 ${m} 分`;
+                if (m>0) return `还需冷静 ${m} 分 ${s} 秒`;
+                return `还需冷静 ${s} 秒`;
+            }
+            const ASK_LINES = [
+                '这个你现在还惦记着吗？还是那天只是刷到、心动了一下下～',
+                '冷静了这几天，再看看它——是真的想要，还是当时上头啦？',
+                '嗯……它还在你心里发光吗？还是已经有点想不起来为什么要买了？',
+                '慢慢想，不急，要不要把它带进你的生活，我陪你一起决定～',
+            ];
+            function askLine(id){ let n=0; for(let i=0;i<id.length;i++) n=(n+id.charCodeAt(i))%ASK_LINES.length; return ASK_LINES[n]; }
+
+            function stats() {
+                const items = getItems();
+                const resisted = items.filter(x=>x.status==='resisted');
+                const saved = resisted.reduce((s,x)=> s + (parseFloat(x.price)||0), 0);
+                return { count: resisted.length, saved };
+            }
+
+            function toast(msg) {
+                const t = document.createElement('div');
+                t.style.cssText = 'position:absolute;left:50%;bottom:82px;transform:translateX(-50%);background:rgba(119,92,86,0.92);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:40;max-width:80%;text-align:center;line-height:1.5;';
+                t.textContent = msg;
+                appPage.appendChild(t);
+                setTimeout(()=>{ t.style.transition='opacity 0.4s'; t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 1800);
+            }
+
+            function shell() {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${BLUE_SOFT};">
+                        <span class="close-btn-520" id="cd-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">想买冷静期</h2>
+                        <span id="cd-archive-btn" style="color:${BROWN};font-size:12px;opacity:0.75;cursor:pointer;padding-right:6px;white-space:nowrap;">忍住了 ›</span>
+                    </div>
+                    <div class="app-content" id="cd-content" style="background:${PAPER};padding:0;overflow-y:auto;position:relative;"></div>
+                `;
+                appPage.querySelector('#cd-back').onclick = () => {
+                    if (window._cdTimer) { clearInterval(window._cdTimer); window._cdTimer = null; }
+                    appPage.classList.remove('active'); appPage.innerHTML = '';
+                };
+                appPage.querySelector('#cd-archive-btn').onclick = () => renderArchive();
+            }
+
+            function renderList() {
+                const content = appPage.querySelector('#cd-content');
+                if (!content) return;
+                const items = getItems();
+                const now = Date.now();
+                const cooling = items.filter(x=>x.status==='cooling');
+                cooling.forEach(x => x._left = (x.createdAt + x.coolMs) - now);
+                cooling.sort((a,b) => {
+                    const ae = a._left<=0, be = b._left<=0;
+                    if (ae !== be) return ae ? -1 : 1;
+                    return a._left - b._left;
+                });
+                const st = stats();
+                const summary = `
+                    <div style="margin:14px 14px 4px;background:${BLUE_SOFT};border-radius:14px;padding:14px 16px;">
+                        <div style="font-size:13px;color:${BROWN};font-weight:600;">你已经忍住了 <span style="color:${GREEN};">${st.count}</span> 样${st.saved>0?` · 大概省下 <span style="color:${GREEN};">¥${st.saved.toFixed(0)}</span>`:''}</div>
+                        <div style="font-size:11px;color:${BROWN};opacity:0.6;margin-top:4px;">冲动想买就先丢进来关几天，到期我来问你还要不要～</div>
+                    </div>`;
+                let listHtml = '';
+                if (!cooling.length) {
+                    listHtml = `<div style="text-align:center;padding:46px 20px;color:${BROWN};opacity:0.45;font-size:13px;line-height:1.9;">还没有在冷静的东西<br><span style="font-size:11px;">下次心动想买，先丢进来～</span></div>`;
+                } else {
+                    listHtml = cooling.map(x => {
+                        const expired = x._left <= 0;
+                        if (expired) {
+                            return `
+                            <div style="margin:10px 14px;background:#fff;border-radius:14px;padding:14px 16px;border:1.5px solid ${PINK};box-shadow:0 3px 12px rgba(127,184,206,0.22);">
+                                ${x.img?`<img data-cdimg="${x.img}" style="width:100%;max-height:150px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;">`:''}
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <div style="font-size:15px;font-weight:600;color:${BROWN};">${esc(x.name)}</div>
+                                    ${x.price?`<div style="font-size:12px;color:${BROWN};opacity:0.7;white-space:nowrap;">¥${esc(x.price)}</div>`:''}
+                                </div>
+                                <div style="font-size:12px;color:#B07E6E;line-height:1.6;margin:9px 0 12px;background:${BLUE_SOFT};border-radius:10px;padding:9px 11px;">${esc(contactName)}：${esc(askLine(x.id))}</div>
+                                <div style="display:flex;gap:7px;">
+                                    <span class="cd-act" data-act="buy" data-id="${x.id}" style="flex:1;text-align:center;background:${BLUE};color:#fff;border-radius:11px;padding:9px 4px;font-size:12px;cursor:pointer;font-weight:500;">还想要·去买</span>
+                                    <span class="cd-act" data-act="resist" data-id="${x.id}" style="flex:1;text-align:center;background:${GREEN};color:#fff;border-radius:11px;padding:9px 4px;font-size:12px;cursor:pointer;font-weight:500;">忍住·放手</span>
+                                    <span class="cd-act" data-act="more" data-id="${x.id}" style="text-align:center;background:#F0EAE4;color:${BROWN};border-radius:11px;padding:9px 12px;font-size:12px;cursor:pointer;white-space:nowrap;">再等等</span>
+                                </div>
+                            </div>`;
+                        }
+                        return `
+                            <div style="margin:10px 14px;background:#fff;border-radius:14px;padding:14px 16px;opacity:0.92;">
+                                ${x.img?`<img data-cdimg="${x.img}" style="width:100%;max-height:130px;object-fit:cover;border-radius:10px;display:block;margin-bottom:10px;filter:grayscale(0.15);">`:''}
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <div style="font-size:15px;font-weight:600;color:${BROWN};">🔒 ${esc(x.name)}</div>
+                                    ${x.price?`<div style="font-size:12px;color:${BROWN};opacity:0.6;white-space:nowrap;">¥${esc(x.price)}</div>`:''}
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;gap:8px;">
+                                    <div style="font-size:12px;color:${BLUE};font-weight:500;">${fmtLeft(x._left)}</div>
+                                    <span class="cd-act" data-act="resist" data-id="${x.id}" style="font-size:11px;color:${BROWN};opacity:0.5;cursor:pointer;white-space:nowrap;">已经不想要了 →</span>
+                                </div>
+                            </div>`;
+                    }).join('');
+                }
+                content.innerHTML = summary + listHtml + `<div style="height:96px;"></div>`;
+                cdResolveAvatars(content);
+
+                let fab = appPage.querySelector('#cd-fab');
+                if (!fab) {
+                    fab = document.createElement('div');
+                    fab.id = 'cd-fab';
+                    fab.style.cssText = `position:absolute;left:50%;transform:translateX(-50%);bottom:22px;background:${BLUE};color:#fff;padding:12px 28px;border-radius:24px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(149,196,218,0.45);z-index:5;`;
+                    fab.textContent = '＋ 想要';
+                    fab.onclick = openAddModal;
+                    appPage.appendChild(fab);
+                }
+                content.querySelectorAll('.cd-act').forEach(el => {
+                    el.onclick = () => handleAct(el.dataset.act, el.dataset.id);
+                });
+            }
+
+            function handleAct(act, id) {
+                const items = getItems();
+                const it = items.find(x=>x.id===id);
+                if (!it) return;
+                if (act === 'buy') { it.status='bought'; it.decidedAt=Date.now(); saveItems(items); toast('那就去买吧～这是经得起时间的真喜欢💙'); renderList(); }
+                else if (act === 'resist') { it.status='resisted'; it.decidedAt=Date.now(); saveItems(items); renderList(); showResistFeedback(it); }
+                else if (act === 'more') { it.createdAt = Date.now(); saveItems(items); toast('好，再陪它冷静几天～'); renderList(); }
+            }
+
+            async function cdCallAI(sysPrompt, userMsg) {
+                if (typeof ApiHandler === 'undefined') throw new Error('no-api');
+                const apiKey = localStorage.getItem('apiKey');
+                if (!apiKey) throw new Error('no-key');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                let messages;
+                if (pPlat === 'gemini') messages = [{ role:'user', parts:[{ text: sysPrompt + '\n\n' + userMsg }] }];
+                else messages = [{ role:'system', content: sysPrompt }, { role:'user', content: userMsg }];
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('api-fail');
+                const data = await resp.json();
+                let text = ApiHandler.parseChatResponse(pPlat, data);
+                if (!text) throw new Error('empty');
+                return text.trim().replace(/^["'“”]|["'“”]$/g, '');
+            }
+
+            function cdBuildPrompt(item) {
+                const c = selectedContact;
+                const userNick = localStorage.getItem('user_nick') || '我';
+                let persona = '';
+                if (c) {
+                    persona += `角色：${c.name}\n`;
+                    if (c.notes) persona += `备注：${c.notes}\n`;
+                    persona += `人设：${c.persona || ''}\n`;
+                    if (c.memory && c.memory.manual) persona += `记忆：${c.memory.manual}\n`;
+                    try {
+                        const msgs = (typeof DB !== 'undefined' && DB.getChatById ? DB.getChatById(c.id) : []) || [];
+                        const recent = msgs.slice(-12).filter(m=>!m.revoked).map(m=>(m.sender==='me'?userNick:(c.notes||c.name))+'：'+(m.text||'[消息]')).join('\n');
+                        if (recent) persona += `\n【你和${userNick}最近的聊天存档】：\n${recent}\n`;
+                    } catch(e){}
+                }
+                const who = c ? c.name : '先生';
+                return persona + `\n【任务】：${userNick} 刚刚在"想买冷静期"里成功忍住、没有冲动买下「${item.name}」${item.price?`（大概 ¥${item.price}）`:''}。请你以 ${who} 的口吻，温柔但坚定地陪 ${userNick}：先真心夸 TA 忍住了、夸夸定力；再帮 TA 冷静分析这件东西可能的缺点、或冲动买它容易后悔的地方（比如实用性高不高、会不会买回来就吃灰、有没有更划算的平替、是不是只是刷到那一下的心动、值不值这个价），让 TA 更笃定"放手是对的"。要完全贴合你的人设和你俩的相处感，自然口语，像真的在陪 ${userNick} 说话。60-140字，不要用列表符号、不要加引号、不要额外说明。`;
+            }
+
+            function showResistFeedback(item) {
+                const nm = contactName;
+                const avatar = (selectedContact && selectedContact.avatar) ? cdAvatarHtml(selectedContact.avatar) : '💗';
+                const overlay = document.createElement('div');
+                overlay.id = 'cd-fb';
+                overlay.style.cssText = 'position:absolute;inset:0;background:rgba(80,110,120,0.28);z-index:30;display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;';
+                overlay.innerHTML = `
+                    <div style="background:#fff;border-radius:20px;width:100%;max-width:320px;overflow:hidden;box-shadow:0 12px 40px rgba(90,120,140,0.28);">
+                        <div style="background:${BLUE_SOFT};padding:13px 16px;display:flex;align-items:center;gap:10px;">
+                            <div style="width:38px;height:38px;border-radius:11px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${avatar}</div>
+                            <div style="font-size:14px;font-weight:600;color:${BROWN};">${esc(nm)}</div>
+                            <div style="margin-left:auto;font-size:11px;color:${BROWN};background:#fff;border-radius:10px;padding:3px 9px;">忍住啦 🌿</div>
+                        </div>
+                        <div id="cd-fb-body" style="padding:16px;font-size:13.5px;color:${BROWN};line-height:1.9;min-height:66px;white-space:pre-wrap;">${esc(nm)}正在看看这个东西……</div>
+                        <div style="padding:0 16px 16px;">
+                            <div id="cd-fb-close" style="text-align:center;background:${BLUE};color:#fff;border-radius:13px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">好的，抱抱 💗</div>
+                        </div>
+                    </div>`;
+                appPage.appendChild(overlay);
+                cdResolveAvatars(overlay);
+                const body = overlay.querySelector('#cd-fb-body');
+                overlay.querySelector('#cd-fb-close').onclick = () => overlay.remove();
+                (async () => {
+                    try {
+                        const reply = await cdCallAI(cdBuildPrompt(item), '请直接输出。');
+                        body.textContent = reply;
+                    } catch(e) {
+                        const fbs = [
+                            `你忍住啦，好有定力呀～说真的，「${item.name}」这种东西，多半是刷到那一下子的心动，买回来新鲜几天就搁着吃灰了。你现在不心动了，就说明它配不上你的钱包，抱抱。`,
+                            `放手啦，我为你骄傲～「${item.name}」冷静下来看，实用性没那么高、市面上也常有更划算的平替，冲动买了容易后悔。你留住了钱、也留住了清醒，来贴贴。`,
+                            `乖，忍住了最棒啦～「${item.name}」当时那么想要，多半是氛围和心情在推你。真正需要的东西不会怕等，等一等还想要才是真喜欢。这次你赢了冲动，摸摸头。`,
+                        ];
+                        body.textContent = fbs[Math.floor(Math.random()*fbs.length)];
+                    }
+                })();
+            }
+
+            function openAddModal() {
+                if (appPage.querySelector('#cd-modal')) return;
+                const modal = document.createElement('div');
+                modal.id = 'cd-modal';
+                modal.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.3);z-index:20;display:flex;align-items:flex-end;justify-content:center;';
+                modal.innerHTML = `
+                    <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;box-sizing:border-box;padding:20px 18px 24px;">
+                        <div style="text-align:center;font-size:15px;font-weight:600;color:${BROWN};margin-bottom:16px;">有什么心动想买的？</div>
+                        <input id="cd-name" placeholder="它叫什么呀（必填）" style="width:100%;box-sizing:border-box;border:1.5px solid ${BLUE_SOFT};background:${BLUE_SOFT};border-radius:12px;padding:12px 14px;font-size:14px;color:${BROWN};outline:none;margin-bottom:10px;">
+                        <input id="cd-price" type="number" inputmode="decimal" placeholder="大概多少钱（可不填）" style="width:100%;box-sizing:border-box;border:1.5px solid ${BLUE_SOFT};background:${BLUE_SOFT};border-radius:12px;padding:12px 14px;font-size:14px;color:${BROWN};outline:none;margin-bottom:14px;">
+                        <div id="cd-img-wrap" style="margin-bottom:14px;">
+                            <input type="file" id="cd-img-input" accept="image/*" style="display:none;">
+                            <div id="cd-img-btn" style="border:1.5px dashed ${BLUE};background:${BLUE_SOFT};border-radius:12px;padding:13px;text-align:center;font-size:13px;color:${BROWN};cursor:pointer;">🖼️ 加张图（可选）</div>
+                            <div id="cd-img-preview" style="display:none;margin-top:8px;position:relative;">
+                                <img id="cd-img-thumb" style="width:100%;max-height:150px;object-fit:cover;border-radius:12px;display:block;">
+                                <div id="cd-img-remove" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.45);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;line-height:1;">×</div>
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:${BROWN};opacity:0.6;margin-bottom:8px;">关它多久？</div>
+                        <div id="cd-durs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+                            ${DURATIONS.map((d,i)=>`<span class="cd-dur" data-i="${i}" style="border:1.5px solid ${i===1?BLUE:BLUE_SOFT};background:${i===1?BLUE_SOFT:'#fff'};border-radius:12px;padding:11px 14px;font-size:13px;color:${BROWN};cursor:pointer;text-align:center;">${d.label}</span>`).join('')}
+                        </div>
+                        <div style="display:flex;gap:10px;">
+                            <span id="cd-cancel" style="flex:1;text-align:center;background:#F0EAE4;color:${BROWN};border-radius:13px;padding:12px;font-size:14px;cursor:pointer;">再想想</span>
+                            <span id="cd-save" style="flex:2;text-align:center;background:${BLUE};color:#fff;border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">丢进冷静期</span>
+                        </div>
+                    </div>`;
+                appPage.appendChild(modal);
+                let durIdx = 1;
+                let pickedImg = null;
+                const imgInput = modal.querySelector('#cd-img-input');
+                const imgBtn = modal.querySelector('#cd-img-btn');
+                const imgPreview = modal.querySelector('#cd-img-preview');
+                const imgThumb = modal.querySelector('#cd-img-thumb');
+                imgBtn.onclick = () => imgInput.click();
+                imgInput.onchange = () => {
+                    const f = imgInput.files && imgInput.files[0];
+                    if (!f) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        pickedImg = ev.target.result;
+                        imgThumb.src = pickedImg;
+                        imgPreview.style.display = 'block';
+                        imgBtn.style.display = 'none';
+                    };
+                    reader.readAsDataURL(f);
+                };
+                modal.querySelector('#cd-img-remove').onclick = () => {
+                    pickedImg = null; imgInput.value = '';
+                    imgPreview.style.display = 'none'; imgBtn.style.display = 'block';
+                };
+                modal.querySelectorAll('.cd-dur').forEach(el => {
+                    el.onclick = () => {
+                        durIdx = parseInt(el.dataset.i);
+                        modal.querySelectorAll('.cd-dur').forEach((e2,i2)=>{
+                            e2.style.borderColor = (i2===durIdx)?BLUE:BLUE_SOFT;
+                            e2.style.background = (i2===durIdx)?BLUE_SOFT:'#fff';
+                        });
+                    };
+                });
+                modal.querySelector('#cd-cancel').onclick = () => modal.remove();
+                modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+                modal.querySelector('#cd-save').onclick = async () => {
+                    const nameEl = modal.querySelector('#cd-name');
+                    const name = nameEl.value.trim();
+                    if (!name) { nameEl.style.borderColor = PINK; nameEl.focus(); return; }
+                    const priceRaw = modal.querySelector('#cd-price').value.trim();
+                    let imgRef = '';
+                    if (pickedImg) {
+                        try { imgRef = (window.ImageDB && window.ImageDB.saveAndRef) ? await window.ImageDB.saveAndRef(pickedImg) : pickedImg; } catch(e) { imgRef = ''; }
+                    }
+                    const items = getItems();
+                    items.push({ id:'cd_'+Date.now()+'_'+Math.floor(Math.random()*1000), name, price: priceRaw||'', img: imgRef, createdAt: Date.now(), coolMs: DURATIONS[durIdx].ms, status:'cooling' });
+                    saveItems(items);
+                    modal.remove();
+                    renderList();
+                    toast('好啦，先关它几天～冲动交给时间💙');
+                };
+                setTimeout(()=>{ try{ modal.querySelector('#cd-name').focus(); }catch(e){} }, 80);
+            }
+
+            function renderArchive() {
+                if (window._cdTimer) { clearInterval(window._cdTimer); window._cdTimer = null; }
+                const items = getItems();
+                const resisted = items.filter(x=>x.status==='resisted').sort((a,b)=>(b.decidedAt||0)-(a.decidedAt||0));
+                const st = stats();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${BLUE_SOFT};">
+                        <span class="close-btn-520" id="cd-arc-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">忍住了</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${PAPER};padding:0;overflow-y:auto;">
+                        <div style="margin:16px 14px;background:linear-gradient(135deg,#b2dde7,#e8f1ef);border-radius:16px;padding:18px;text-align:center;">
+                            <div style="font-size:30px;">🌿</div>
+                            <div style="font-size:15px;color:${BROWN};font-weight:600;margin-top:6px;">你一共忍住了 ${st.count} 样</div>
+                            ${st.saved>0?`<div style="font-size:13px;color:${GREEN};margin-top:4px;">大概省下 ¥${st.saved.toFixed(0)} 呢</div>`:''}
+                            <div style="font-size:11px;color:${BROWN};opacity:0.65;margin-top:8px;">${esc(contactName)}：好有定力呀，为你骄傲～</div>
+                        </div>
+                        ${resisted.length ? resisted.map(x=>`
+                            <div style="margin:8px 14px;background:#fff;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+                                ${x.img?`<img data-cdimg="${x.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;">`:''}
+                                <div style="font-size:14px;color:${BROWN};flex:1;">${esc(x.name)}</div>
+                                ${x.price?`<div style="font-size:12px;color:${GREEN};white-space:nowrap;">省下 ¥${esc(x.price)}</div>`:''}
+                            </div>`).join('') : `<div style="text-align:center;padding:32px 20px;color:${BROWN};opacity:0.45;font-size:13px;line-height:1.9;">还没有忍住的东西<br><span style="font-size:11px;">到期时选「忍住·放手」，就会收进这里～</span></div>`}
+                        <div style="height:30px;"></div>
+                    </div>`;
+                cdResolveAvatars(appPage);
+                appPage.querySelector('#cd-arc-back').onclick = () => { shell(); renderList(); startTimer(); };
+            }
+
+            function startTimer() {
+                if (window._cdTimer) { clearInterval(window._cdTimer); }
+                window._cdTimer = setInterval(() => {
+                    if (!appPage.classList.contains('active')) { clearInterval(window._cdTimer); window._cdTimer = null; return; }
+                    if (appPage.querySelector('#cd-modal')) return;        // 正在新增就不打扰
+                    if (appPage.querySelector('#cd-content')) renderList(); // 只在列表视图刷新倒计时
+                }, 1000);
+            }
+
+            const cdAvatarHtml = (av) => {
+                if (!av) return '👤';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) return `<img data-cdimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                return av;
+            };
+            const cdResolveAvatars = (root) => {
+                root.querySelectorAll('img[data-cdimg]').forEach(async img => {
+                    const src = img.getAttribute('data-cdimg');
+                    if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} }
+                    else { img.src = src; }
+                });
+            };
+            function pickContactThen(onPicked) {
+                let cs = [];
+                try { cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts().filter(c=>c && c.name) : []; } catch(e){ cs = []; }
+                if (!cs.length) { selectedContact = null; contactName = '先生'; onPicked(); return; }
+                if (cs.length === 1) { selectedContact = cs[0]; contactName = cs[0].notes || cs[0].name || '先生'; onPicked(); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${BLUE_SOFT};">
+                        <span class="close-btn-520" id="cd-pick-back" style="color:${BROWN};">‹</span>
+                        <h2 class="title" style="color:${BROWN};">让谁陪你一起冷静？</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="cd-pick-list" style="background:${PAPER};padding:0;overflow-y:auto;"></div>`;
+                appPage.querySelector('#cd-pick-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                const listEl = appPage.querySelector('#cd-pick-list');
+                listEl.innerHTML = cs.map(c => `
+                    <div class="cd-pick-item" data-id="${c.id}" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;border-bottom:1px solid rgba(180,150,110,0.15);">
+                        <div style="width:46px;height:46px;border-radius:12px;overflow:hidden;flex-shrink:0;margin-right:12px;background:#eee;display:flex;align-items:center;justify-content:center;font-size:24px;">${cdAvatarHtml(c.avatar)}</div>
+                        <div style="flex:1;font-weight:500;color:${BROWN};">${esc(c.notes || c.name)}</div>
+                        <span style="color:${BROWN};opacity:0.3;font-size:20px;">›</span>
+                    </div>`).join('');
+                cdResolveAvatars(listEl);
+                listEl.querySelectorAll('.cd-pick-item').forEach(item => {
+                    item.onclick = () => {
+                        selectedContact = cs.find(x=>x.id===item.dataset.id) || cs[0];
+                        contactName = selectedContact.notes || selectedContact.name || '先生';
+                        onPicked();
+                    };
+                });
+            }
+
+            pickContactThen(() => { shell(); renderList(); startTimer(); });
         }
 
         function setupDreamJournalApp(appPage) {
