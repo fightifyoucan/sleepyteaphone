@@ -2210,6 +2210,12 @@
                                 <div id="brownfont-toggle-thumb" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></div>
                             </div>
                         </div>
+                        <div style="display:block;padding:12px 0 4px;margin-top:2px;">
+                            <h3 class="font-bold" style="color:#775C56;margin-bottom:12px;">数据备份与恢复</h3>
+                            <button id="backup-data-btn" class="w-full mb-2" style="box-sizing:border-box;background-color:#D5EBE4;color:#775C56;font-weight:600;padding:13px;border:1px solid #D5EBE4;border-radius:12px;font-size:15px;">📦 全局备份（导出文件）</button>
+                            <button id="import-data-btn" class="w-full" style="box-sizing:border-box;background-color:#ffffff;color:#775C56;font-weight:600;padding:13px;border:1.5px solid #A9D4C3;border-radius:12px;font-size:15px;">📩 导入备份文件</button>
+                            <input type="file" id="import-data-file" accept="application/json,.json" style="display:none;">
+                        </div>
                         <div class="settings-item"><button id="restore-default-btn" class="w-full py-2 rounded-lg" style="background-color:#FFD3D4;color:#775C56;font-weight:500;">恢复默认</button></div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
                     </div>
@@ -10209,6 +10215,66 @@
                                 location.reload();
                             }
                         };
+
+                        // ===== 数据备份 / 导入 =====
+                        const backupBtn = appPage.querySelector('#backup-data-btn');
+                        if (backupBtn) backupBtn.onclick = async () => {
+                            const orig = backupBtn.textContent;
+                            try {
+                                backupBtn.textContent = '正在打包…'; backupBtn.style.pointerEvents = 'none';
+                                const ls = {};
+                                for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); ls[k] = localStorage.getItem(k); }
+                                let images = [];
+                                try { if (window.ImageDB && ImageDB.list) { await ImageDB.readyPromise; images = await ImageDB.list(); } } catch(e){}
+                                const backup = { app: 'MianChaJi', version: 1, exportedAt: new Date().toISOString(), localStorage: ls, images: images };
+                                const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+                                const url = URL.createObjectURL(blob);
+                                const d = new Date();
+                                const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+                                const a = document.createElement('a'); a.href = url; a.download = `眠茶机备份_${stamp}.json`;
+                                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                                setTimeout(() => URL.revokeObjectURL(url), 2000);
+                                backupBtn.textContent = `✅ 已备份（含 ${images.length} 张图）`;
+                                setTimeout(() => { backupBtn.textContent = orig; backupBtn.style.pointerEvents = ''; }, 2600);
+                            } catch(e) {
+                                alert('备份失败：' + (e.message || e));
+                                backupBtn.textContent = orig; backupBtn.style.pointerEvents = '';
+                            }
+                        };
+                        const importBtn = appPage.querySelector('#import-data-btn');
+                        const importFile = appPage.querySelector('#import-data-file');
+                        if (importBtn && importFile) {
+                            importBtn.onclick = () => importFile.click();
+                            importFile.onchange = () => {
+                                const f = importFile.files && importFile.files[0]; if (!f) return;
+                                const reader = new FileReader();
+                                reader.onload = async (ev) => {
+                                    let data;
+                                    try { data = JSON.parse(ev.target.result); } catch(e) { alert('这个文件读不出来，可能不是备份文件哦'); importFile.value = ''; return; }
+                                    if (!data || !data.localStorage) { alert('这个文件里没有备份数据哦'); importFile.value = ''; return; }
+                                    const imgN = (data.images && data.images.length) || 0;
+                                    if (!confirm(`确定用这个备份覆盖现在的数据吗？\n（含 ${imgN} 张图片，现有数据会被整个替换、不可撤销）`)) { importFile.value = ''; return; }
+                                    try {
+                                        importBtn.textContent = '正在导入…'; importBtn.style.pointerEvents = 'none';
+                                        // 先清空现有图片，再塞回备份里的
+                                        if (window.ImageDB && ImageDB.list && ImageDB.remove && ImageDB.save) {
+                                            await ImageDB.readyPromise;
+                                            try { const cur = await ImageDB.list(); for (const r of cur) { if (r && r.id) await ImageDB.remove(r.id); } } catch(e){}
+                                            if (data.images) { for (const rec of data.images) { if (rec && rec.id) { try { await ImageDB.save(rec.id, rec.data); } catch(e){} } } }
+                                        }
+                                        // 整体覆盖 localStorage
+                                        localStorage.clear();
+                                        Object.keys(data.localStorage).forEach(k => { try { localStorage.setItem(k, data.localStorage[k]); } catch(e){} });
+                                        alert('导入完成啦～马上帮你刷新页面💗');
+                                        location.reload();
+                                    } catch(e) {
+                                        alert('导入失败：' + (e.message || e));
+                                        importBtn.textContent = '📩 导入备份文件'; importBtn.style.pointerEvents = '';
+                                    }
+                                };
+                                reader.readAsText(f);
+                            };
+                        }
 
                         // 沉浸模式开关
                         const immersiveTrack = appPage.querySelector('#immersive-toggle-track');
