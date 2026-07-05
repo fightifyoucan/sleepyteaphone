@@ -201,7 +201,7 @@
             border-bottom: 6px solid transparent;
         }
         /* 攻略者专属气泡三角（颜色对得上：TA粉/你白） */
-        .gl-b-ta::after { content:''; position:absolute; left:-7px; top:11px; width:0; height:0; border-right:8px solid #fdeceb; border-top:6px solid transparent; border-bottom:6px solid transparent; }
+        .gl-b-ta::after { content:''; position:absolute; left:-7px; top:11px; width:0; height:0; border-right:8px solid #f8d9d6; border-top:6px solid transparent; border-bottom:6px solid transparent; }
         .gl-b-me::after { content:''; position:absolute; right:-7px; top:11px; width:0; height:0; border-left:8px solid #ffffff; border-top:6px solid transparent; border-bottom:6px solid transparent; }
         @keyframes shake {
             0%,100% { transform: translateX(0) rotate(0deg); }
@@ -622,6 +622,9 @@
         <div id="fridge-page" class="app-page"></div>
         <div id="cool-down-page" class="app-page"></div>
         <div id="seducer-page" class="app-page"></div>
+        <div id="timecapsule-page" class="app-page"></div>
+        <div id="memodrawer-page" class="app-page"></div>
+        <div id="woodfish-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
 
@@ -1761,6 +1764,9 @@
                 { id: 'fridge', name: '冰箱', emoji: '🧊', container: '.app-grid-page2' },
                 { id: 'cool-down', name: '想买冷静期', emoji: '🛒', container: '.app-grid-page2' },
                 { id: 'seducer', name: '攻略者', emoji: '💘', container: '.app-grid-page2' },
+                { id: 'timecapsule', name: '时光胶囊', emoji: '⏳', container: '.app-grid-page2' },
+                { id: 'memodrawer', name: '代餐抽屉', emoji: '🗄️', container: '.app-grid-page2' },
+                { id: 'woodfish', name: '电子木鱼', emoji: '🪵', container: '.app-grid-page2' },
                 // Dock
                 { id: 'api-settings', name: 'API', emoji: '⚙️', container: '.dock' },
                 { id: 'phone', name: '通话', emoji: '📞', container: '.dock' },
@@ -7955,6 +7961,11 @@
                                 <span style="font-size:11px;color:#fff;background:#D08FA5;padding:2px 8px;border-radius:8px;">💗 症状</span>
                             </div>
                             <div style="font-size:12px;color:#775C56;line-height:1.5;">${(item.symptoms || []).join('、')}</div>`;
+                        } else if (item.type === 'drawer') {
+                            inner = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <span style="font-size:11px;color:#fff;background:#8e7f7f;padding:2px 8px;border-radius:8px;">📦 抽屉</span>
+                            </div>
+                            <div style="font-size:12px;color:#775C56;line-height:1.5;">${(item.aiReply || '').slice(0,50)}${(item.aiReply||'').length > 50 ? '…' : ''}</div>`;
                         }
                         const d = new Date(item.time);
                         const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
@@ -8054,6 +8065,9 @@
                     body = `<div style="margin-bottom:12px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">症状</div><div style="font-size:13px;color:#775C56;">${escapeHtml((item.symptoms || []).join('、'))}</div></div>
                             ${item.note ? `<div style="margin-bottom:12px;"><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">备注</div><div style="font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.note)}</div></div>` : ''}
                             ${item.aiReply ? `<div><div style="font-size:11px;color:#B89B95;margin-bottom:4px;">TA 陪着你</div><div style="background:linear-gradient(135deg,#FFE5E5,#FFF5F0);border-radius:10px;padding:12px;font-size:13px;color:#775C56;line-height:1.7;white-space:pre-wrap;">${escapeHtml(item.aiReply)}</div></div>` : ''}`;
+                } else if (item.type === 'drawer') {
+                    title = '📦 代餐抽屉';
+                    body = `<div style="font-size:13px;color:#775C56;line-height:1.85;white-space:pre-wrap;">${escapeHtml(item.aiReply || '')}</div>`;
                 } else {
                     body = Object.entries(item).filter(([k]) => !['type','time'].includes(k)).map(([k, v]) => {
                         const display = (typeof v === 'object') ? JSON.stringify(v, null, 2) : String(v);
@@ -9773,6 +9787,9 @@
                         else if (appId === 'fridge') setupFridgeApp(appPage);
                         else if (appId === 'cool-down') setupCoolDownApp(appPage);
                         else if (appId === 'seducer') setupSeducerApp(appPage);
+                        else if (appId === 'timecapsule') setupTimeCapsuleApp(appPage);
+                        else if (appId === 'memodrawer') setupMemoDrawerApp(appPage);
+                        else if (appId === 'woodfish') setupWoodfishApp(appPage);
                         else if (appId === 'game-hall') setupGameHallApp(appPage);
                         else if (appId === 'phone') {
                             appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="phone-back">‹</span><h2 class="title">通话</h2><span style="width:40px;"></span></div><div class="app-content" id="phone-log" style="background:#FBF9F4;"></div>`;
@@ -14710,11 +14727,11 @@
             const saveState = (cid, s) => { try { localStorage.setItem(GL(cid,'state'), JSON.stringify(s)); } catch(e){} };
 
             // —— 暖光胶片 + 浅蓝 ——
-            const BG = '#fdf4e3';        // 浅奶黄底
-            const ROSE = '#fbd9d7', PINK = '#f9c1c4', PINK_HI = '#f6a6ab';
-            const BLUE = '#a9d3e5', BLUE_SOFT = '#eaf4fb', BLUE_TX = '#6f93a8';   // 淡透浅蓝（系统消息/部分按钮）
+            const BG = '#f6e8df';        // 奶杏底
+            const ROSE = '#f8d9d6', PINK = '#efb3b6', PINK_HI = '#e79aa0';
+            const BLUE = '#a9c4cf', BLUE_SOFT = '#e4eaed', BLUE_TX = '#7c8a92';   // 灰蓝（系统消息/部分按钮）
             const BROWN = '#7a5650', BROWN_SOFT = '#a98f89';
-            const CREAM = '#fdeecb';     // 奖励奶黄
+            const CREAM = '#eecec5';     // 浅陶粉（底栏/奖励条）
 
             const COIN_REWARD = 100;     // 金币固定
             const DIA_REWARD = 12;       // 钻石固定 +12
@@ -14825,7 +14842,7 @@
                 if (!cs.length) { appPage.innerHTML = `<div style="padding:60px 30px;text-align:center;color:${BROWN};line-height:2;">还没有可以互动的联系人呀～<br><span style="font-size:12px;opacity:0.6;">先去 520 添加一个吧</span></div>`; return; }
                 if (cs.length === 1) { selectedContact = cs[0]; onPicked(); return; }
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="gl-pick-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">选谁来陪你</h2>
                         <span style="width:40px;"></span>
@@ -14853,7 +14870,7 @@
                 state = getState(cid);
                 if (!state.phase) state.phase = 'reply';
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="gl-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">攻略者</h2>
                         <span id="gl-reset" style="color:${BROWN};font-size:11px;opacity:0.7;cursor:pointer;padding-right:6px;white-space:nowrap;">清空 ⟳</span>
@@ -14889,7 +14906,7 @@
                 const top = appPage.querySelector('#gl-top'); if (!top) return;
                 const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
                 top.innerHTML = `
-                    <div style="background:linear-gradient(135deg,${ROSE},${PINK});padding:12px 16px 14px;">
+                    <div style="background:${ROSE};padding:12px 16px 14px;">
                         <div style="display:flex;align-items:center;gap:11px;">
                             <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 2px 8px rgba(160,110,110,0.18);">${av}</div>
                             <div style="flex:1;">
@@ -14904,7 +14921,7 @@
                         <div style="margin-top:10px;">
                             <div style="display:flex;justify-content:space-between;font-size:10.5px;color:${BROWN};opacity:0.8;margin-bottom:3px;"><span>💗 好感度</span><span>${state.affinity} / 100${state.affinity>100?' 💕':''}</span></div>
                             <div style="height:9px;background:rgba(255,255,255,0.6);border-radius:6px;overflow:hidden;">
-                                <div style="height:100%;width:${Math.min(100,state.affinity)}%;background:linear-gradient(90deg,${PINK},${PINK_HI});border-radius:6px;transition:width 0.4s;box-shadow:${state.affinity>100?'0 0 8px rgba(246,166,171,0.95)':'none'};"></div>
+                                <div style="height:100%;width:${Math.min(100,state.affinity)}%;background:${PINK};border-radius:6px;transition:width 0.4s;box-shadow:${state.affinity>100?'0 0 8px rgba(246,166,171,0.95)':'none'};"></div>
                             </div>
                             <div style="font-size:10px;color:${BROWN};opacity:0.55;margin-top:5px;">越熟越亲密～牵手/抱抱/亲亲会随好感慢慢解锁哦</div>${state.wearing ? (function(){ var w=shopItemById(state.wearing); return w?`<div style="font-size:10px;color:${BROWN};opacity:0.75;margin-top:4px;">👗 你正穿着：${w.emoji||''} ${esc(w.name)}</div>`:''; })() : ''}
                         </div>
@@ -14921,7 +14938,7 @@
                         return `<div style="text-align:center;margin:4px 0 14px;"><span style="display:inline-block;background:${BLUE_SOFT};color:${BLUE_TX};font-size:12px;border-radius:12px;padding:5px 14px;max-width:86%;line-height:1.5;">${esc(e.text)}</span></div>`;
                     }
                     if (e.t === 'say' || e.t === 'react-line') {
-                        return `<div class="message received"><div class="message-avatar" style="width:36px;height:36px;border-radius:9px;overflow:hidden;flex-shrink:0;">${av}</div><div class="bubble-group"><div class="message-bubble gl-b-ta" style="background:linear-gradient(135deg,#fdeceb,${ROSE});color:${BROWN};white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div></div></div>`;
+                        return `<div class="message received"><div class="message-avatar" style="width:36px;height:36px;border-radius:9px;overflow:hidden;flex-shrink:0;">${av}</div><div class="bubble-group"><div class="message-bubble gl-b-ta" style="background:${ROSE};color:${BROWN};white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div></div></div>`;
                     }
                     if (e.t === 'me') {
                         return `<div class="message sent"><div class="bubble-group"><div class="message-bubble gl-b-me" style="background:#fff;color:${BROWN};box-shadow:0 1px 4px rgba(160,120,110,0.12);white-space:pre-wrap;word-break:break-word;">${esc(e.text)}</div></div></div>`;
@@ -15116,7 +15133,7 @@
 
             function openGacha() {
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="gc-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">心动卡池</h2>
                         <span id="gc-book" style="color:${BROWN};font-size:12px;opacity:0.8;cursor:pointer;padding-right:6px;white-space:nowrap;">图鉴 ›</span>
@@ -15131,7 +15148,7 @@
                 const total = effectivePool().filter(flavorMatch).length;
                 const own = (state.owned||[]).filter(id => { const c = cardById(id); return c && flavorMatch(c); }).length;
                 body.innerHTML = `
-                    <div style="margin:16px 14px;background:linear-gradient(135deg,#fdeceb,${ROSE});border-radius:18px;padding:20px 16px;text-align:center;box-shadow:0 4px 14px rgba(220,160,160,0.2);">
+                    <div style="margin:16px 14px;background:${ROSE};border-radius:18px;padding:20px 16px;text-align:center;box-shadow:0 4px 14px rgba(220,160,160,0.2);">
                         <div style="font-size:34px;">💌</div>
                         <div style="font-size:14px;color:${BROWN};font-weight:600;margin-top:6px;">${esc(name)} 想更懂你一点</div>
                         <div style="font-size:11.5px;color:${BROWN};opacity:0.7;margin-top:6px;line-height:1.7;">TA 用钻石抽"你"的卡～抽到越高级，越靠近你的心。<br>N/R 会解锁 TA 对你的新触摸，SR/SSR 是写着你的专属剧情。</div>
@@ -15332,7 +15349,7 @@
                 const byR = { SSR:[], SR:[], R:[], N:[] };
                 mine.forEach(c => { if (byR[c.rarity]) byR[c.rarity].push(c); });
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="gc-col-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">你的图鉴</h2>
                         <span style="width:40px;"></span>
@@ -15361,7 +15378,7 @@
                     const rar = cur.rarity || 'N', flav = cur.flavor || 'any';
                     const opt = (v,label,sel) => `<option value="${v}"${sel===v?' selected':''}>${label}</option>`;
                     appPage.innerHTML = `
-                        <div class="app-header-520" style="background:${ROSE};">
+                        <div class="app-header-520" style="background:${PINK};">
                             <span class="close-btn-520" id="gc-ed-back" style="color:${BROWN};">‹</span>
                             <h2 class="title" style="color:${BROWN};">编辑卡池</h2>
                             <span style="width:40px;"></span>
@@ -15443,7 +15460,7 @@
                 const cards = effectivePool().filter(c => flavorMatch(c) && (c.rarity==='SR' || c.rarity==='SSR'));
                 const own = (state.owned||[]);
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="dt-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};">约会 💌</h2>
                         <span style="width:40px;"></span>
@@ -15472,7 +15489,7 @@
                 let round = 0; const history = []; let pendingReply = ''; let sessionDelta = 0;
                 const av = selectedContact.avatar ? glAvatarHtml(selectedContact.avatar) : '💘';
                 appPage.innerHTML = `
-                    <div class="app-header-520" style="background:${ROSE};">
+                    <div class="app-header-520" style="background:${PINK};">
                         <span class="close-btn-520" id="dt-d-back" style="color:${BROWN};">‹</span>
                         <h2 class="title" style="color:${BROWN};font-size:15px;">约会 · ${esc(card.name)}</h2>
                         <span id="dt-end" style="color:${BROWN};font-size:12px;opacity:0.85;cursor:pointer;padding-right:6px;white-space:nowrap;">结束 ›</span>
@@ -15693,7 +15710,7 @@
                     }
                     const tabBtn = (k,label) => `<span class="sh-tab" data-k="${k}" style="flex:1;text-align:center;padding:9px 4px;font-size:12.5px;cursor:pointer;color:${tab===k?PINK_HI:BROWN};font-weight:${tab===k?'700':'400'};border-bottom:2px solid ${tab===k?PINK_HI:'transparent'};">${label}</span>`;
                     appPage.innerHTML = `
-                        <div class="app-header-520" style="background:${ROSE};">
+                        <div class="app-header-520" style="background:${PINK};">
                             <span class="close-btn-520" id="sh-back" style="color:${BROWN};">‹</span>
                             <h2 class="title" style="color:${BROWN};">商店 🛍️</h2>
                             <span style="width:40px;"></span>
@@ -15728,7 +15745,7 @@
                     </div>
                     <div style="padding:16px;display:flex;gap:9px;align-items:flex-start;">
                         <div style="width:32px;height:32px;border-radius:9px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;">${av}</div>
-                        <div style="flex:1;background:linear-gradient(135deg,#fdeceb,${ROSE});border-radius:4px 14px 14px 14px;padding:11px 13px;font-size:13.5px;color:${BROWN};line-height:1.8;">${esc(note)}</div>
+                        <div style="flex:1;background:${ROSE};border-radius:4px 14px 14px 14px;padding:11px 13px;font-size:13.5px;color:${BROWN};line-height:1.8;">${esc(note)}</div>
                     </div>
                     <div style="padding:0 16px 16px;"><div id="sh-note-close" style="text-align:center;background:${PINK_HI};color:#fff;border-radius:13px;padding:10px;font-size:14px;font-weight:600;cursor:pointer;">收下这份心意 💗</div></div>
                 </div>`;
@@ -15764,7 +15781,7 @@
                     const typ = cur.type || 'gift';
                     const opt = (v,l,sel)=>`<option value="${v}"${sel===v?' selected':''}>${l}</option>`;
                     appPage.innerHTML = `
-                        <div class="app-header-520" style="background:${ROSE};">
+                        <div class="app-header-520" style="background:${PINK};">
                             <span class="close-btn-520" id="she-back" style="color:${BROWN};">‹</span>
                             <h2 class="title" style="color:${BROWN};">编辑商品</h2>
                             <span style="width:40px;"></span>
@@ -15811,6 +15828,737 @@
 
 
             pickContactThen(() => shell());
+        }
+
+        function setupTimeCapsuleApp(appPage) {
+            // ============ 时光胶囊：给未来的 TA 写信，定时封存，到点 TA 读心回信 ============
+            // 莫兰迪旧信纸配色
+            const BG = '#eee7dd', CARD = '#f7f3ec', TAN = '#dcd2cc', MIST = '#bcc3cb', ACCENT = '#ccafa5', INK = '#6b5a52', INK2 = '#9a8b81';
+
+            function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+            const getList = () => { try { const a = JSON.parse(localStorage.getItem('timecapsule_list')||'[]'); return Array.isArray(a)?a:[]; } catch(e){ return []; } };
+            const saveList = (a) => { try { localStorage.setItem('timecapsule_list', JSON.stringify(a)); } catch(e){} };
+            const contacts = () => { try { return (typeof DB!=='undefined'&&DB.getContacts)?DB.getContacts().filter(c=>c&&c.name):[]; } catch(e){ return []; } };
+            const contactById = (id) => contacts().find(c=>c.id===id);
+
+            const avatarHtml = (av) => {
+                if (!av) return '💌';
+                if (typeof av === 'string' && av.includes('<')) return av;
+                if (typeof av === 'string' && (av.startsWith('imgdb://')||av.startsWith('data:')||av.startsWith('http'))) return `<img data-tcimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">`;
+                return av;
+            };
+            const resolveAvatars = (root) => { root.querySelectorAll('img[data-tcimg]').forEach(async img => { const src = img.getAttribute('data-tcimg'); if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} } else img.src = src; }); };
+
+            async function tcCallAI(sysPrompt, userMsg) {
+                if (typeof ApiHandler === 'undefined') throw new Error('no-api');
+                const apiKey = localStorage.getItem('apiKey'); if (!apiKey) throw new Error('no-key');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                let messages;
+                if (pPlat === 'gemini') messages = [{ role:'user', parts:[{ text: sysPrompt + '\n\n' + userMsg }] }];
+                else messages = [{ role:'system', content: sysPrompt }, { role:'user', content: userMsg }];
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('api-fail');
+                const data = await resp.json();
+                let text = ApiHandler.parseChatResponse(pPlat, data);
+                if (!text) throw new Error('empty');
+                return text.trim().replace(/^["'“”]+|["'“”]+$/g,'');
+            }
+
+            function fmtDate(ts){ const d = new Date(ts); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`; }
+            function remainText(openAt){
+                const ms = openAt - Date.now();
+                if (ms <= 0) return '时间到啦';
+                const days = Math.floor(ms/86400000);
+                const hrs = Math.floor((ms%86400000)/3600000);
+                if (days >= 1) return `还有 ${days} 天 ${hrs} 小时`;
+                const mins = Math.floor((ms%3600000)/60000);
+                return `还有 ${hrs} 小时 ${mins} 分`;
+            }
+
+            function renderList() {
+                const list = getList().sort((a,b)=>a.openAt-b.openAt);
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${MIST};">
+                        <span class="close-btn-520" id="tc-back" style="color:${INK};">‹</span>
+                        <h2 class="title" style="color:${INK};">时光胶囊</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="tc-list" style="background:${BG};padding:14px;overflow-y:auto;">
+                        ${list.length ? '' : `<div style="text-align:center;color:${INK};opacity:0.5;font-size:13px;padding:50px 20px;line-height:2;">还没有埋下时光胶囊呀～<br><span style="font-size:12px;">给未来的 TA 写一封关于"我们"的信吧💌</span></div>`}
+                        ${list.map(cap => {
+                            const due = Date.now() >= cap.openAt;
+                            const c = contactById(cap.cid);
+                            const av = (c && c.avatar) ? avatarHtml(c.avatar) : '💌';
+                            let badge, sub, border;
+                            if (cap.opened) { badge = '已拆开 · 收到回信 💌'; sub = `寄往 ${fmtDate(cap.openAt)}`; border = TAN; }
+                            else if (due) { badge = '🎁 时间到了，可以拆开啦'; sub = '点我，看看 TA 读完你的信回了什么'; border = ACCENT; }
+                            else { badge = '⏳ ' + remainText(cap.openAt); sub = `将在 ${fmtDate(cap.openAt)} 解封`; border = MIST; }
+                            return `<div class="tc-cap" data-id="${cap.id}" style="background:${CARD};border:1.5px solid ${border};border-radius:16px;padding:14px 16px;margin-bottom:12px;cursor:pointer;box-shadow:0 2px 8px rgba(160,140,130,0.12);${(due&&!cap.opened)?`box-shadow:0 0 12px rgba(204,175,165,0.5);`:''}">
+                                <div style="display:flex;align-items:center;gap:11px;">
+                                    <div style="width:42px;height:42px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;">${av}</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:14px;font-weight:600;color:${INK};">致 ${esc(cap.contactName)} · 关于我们的未来</div>
+                                        <div style="font-size:11px;color:${INK2};margin-top:3px;">${esc(sub)}</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top:10px;font-size:12px;color:${due&&!cap.opened?ACCENT:INK2};font-weight:${due&&!cap.opened?'700':'400'};">${badge}</div>
+                            </div>`;
+                        }).join('')}
+                        <div style="height:90px;"></div>
+                    </div>
+                    <div id="tc-fab" style="position:absolute;right:20px;bottom:26px;background:${ACCENT};color:#fff;border-radius:26px;padding:13px 20px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(204,175,165,0.6);z-index:5;">✍️ 写一封</div>`;
+                appPage.querySelector('#tc-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                appPage.querySelector('#tc-fab').onclick = () => openWrite();
+                resolveAvatars(appPage);
+                appPage.querySelectorAll('.tc-cap').forEach(el => { el.onclick = () => openCapsule(el.dataset.id); });
+            }
+
+            function openWrite() {
+                const cs = contacts();
+                if (!cs.length) { appPage.querySelector('#tc-list') && (appPage.querySelector('#tc-list').innerHTML = `<div style="text-align:center;color:${INK};padding:50px 20px;line-height:2;">还没有联系人呀～<br><span style="font-size:12px;opacity:0.6;">先去 520 添加一个吧</span></div>`); return; }
+                let cid = cs[0].id;
+                let durIdx = 2;
+                const DURS = [{label:'7 天后',ms:7*86400000},{label:'30 天后',ms:30*86400000},{label:'100 天后',ms:100*86400000},{label:'1 年后',ms:365*86400000}];
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${MIST};">
+                        <span class="close-btn-520" id="tc-w-back" style="color:${INK};">‹</span>
+                        <h2 class="title" style="color:${INK};">写给未来</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:16px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${INK2};margin-bottom:6px;">写给谁</div>
+                        <div id="tc-cts" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+                            ${cs.map(c=>`<span class="tc-ct" data-id="${c.id}" style="cursor:pointer;border:1.5px solid ${TAN};border-radius:20px;padding:7px 14px;font-size:13px;color:${INK};">${esc(c.notes||c.name)}</span>`).join('')}
+                        </div>
+                        <div style="font-size:12px;color:${INK2};margin-bottom:6px;">关于我们的未来 · 想对 TA 说的话</div>
+                        <textarea id="tc-letter" placeholder="等你读到这封信的时候，我们会是什么样子呢…（写下你对未来的期待、想说的话）" style="width:100%;box-sizing:border-box;border:1.5px solid ${TAN};border-radius:14px;padding:13px;font-size:14px;color:${INK};background:${CARD};outline:none;font-family:inherit;min-height:200px;resize:vertical;line-height:1.9;margin-bottom:16px;"></textarea>
+                        <div style="font-size:12px;color:${INK2};margin-bottom:6px;">什么时候解封</div>
+                        <div id="tc-durs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                            ${DURS.map((d,i)=>`<span class="tc-dur" data-i="${i}" style="cursor:pointer;border:1.5px solid ${TAN};border-radius:14px;padding:8px 14px;font-size:13px;color:${INK};">${d.label}</span>`).join('')}
+                        </div>
+                        <div style="font-size:11px;color:${INK2};margin-bottom:16px;">或指定一个日期：<input type="date" id="tc-date" style="border:1.5px solid ${TAN};border-radius:10px;padding:6px 10px;font-size:13px;color:${INK};background:${CARD};font-family:inherit;"></div>
+                        <div id="tc-seal" style="text-align:center;background:${ACCENT};color:#fff;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">🔒 封存这枚胶囊</div>
+                        <div style="height:24px;"></div>
+                    </div>`;
+                appPage.querySelector('#tc-w-back').onclick = () => renderList();
+                const paintCt = () => appPage.querySelectorAll('.tc-ct').forEach(o=>{ const on=o.dataset.id===cid; o.style.background=on?MIST:'transparent'; o.style.borderColor=on?MIST:TAN; o.style.color=on?'#fff':INK; });
+                const paintDur = () => appPage.querySelectorAll('.tc-dur').forEach(o=>{ const on=parseInt(o.dataset.i)===durIdx; o.style.background=on?ACCENT:'transparent'; o.style.borderColor=on?ACCENT:TAN; o.style.color=on?'#fff':INK; });
+                paintCt(); paintDur();
+                appPage.querySelectorAll('.tc-ct').forEach(o=>o.onclick=()=>{ cid=o.dataset.id; paintCt(); });
+                appPage.querySelectorAll('.tc-dur').forEach(o=>o.onclick=()=>{ durIdx=parseInt(o.dataset.i); appPage.querySelector('#tc-date').value=''; paintDur(); });
+                appPage.querySelector('#tc-date').onchange = () => { durIdx = -1; paintDur(); };
+                appPage.querySelector('#tc-seal').onclick = () => {
+                    const letter = (appPage.querySelector('#tc-letter').value||'').trim();
+                    if (!letter) { appPage.querySelector('#tc-letter').focus(); appPage.querySelector('#tc-letter').style.borderColor = ACCENT; return; }
+                    let openAt;
+                    const dv = appPage.querySelector('#tc-date').value;
+                    if (durIdx === -1 && dv) { openAt = new Date(dv + 'T09:00:00').getTime(); if (openAt <= Date.now()) { toast('要选一个未来的日子哦～'); return; } }
+                    else { openAt = Date.now() + DURS[durIdx>=0?durIdx:2].ms; }
+                    const c = contactById(cid);
+                    const list = getList();
+                    list.push({ id:'tc_'+Date.now(), cid, contactName: (c?(c.notes||c.name):'TA'), letter, createdAt: Date.now(), openAt, reply:'', opened:false });
+                    saveList(list);
+                    renderList();
+                    toast('胶囊封存好啦～时间到了，TA 会读到💌');
+                };
+            }
+
+            async function openCapsule(id) {
+                const list = getList();
+                const cap = list.find(x=>x.id===id); if (!cap) return;
+                const due = Date.now() >= cap.openAt;
+                const c = contactById(cap.cid);
+                const av = (c && c.avatar) ? avatarHtml(c.avatar) : '💌';
+                const back = () => renderList();
+
+                if (!due) {
+                    // 未到期：能看自己的信，TA 回信锁着
+                    appPage.innerHTML = `
+                        <div class="app-header-520" style="background:${MIST};">
+                            <span class="close-btn-520" id="tc-c-back" style="color:${INK};">‹</span>
+                            <h2 class="title" style="color:${INK};">时光胶囊</h2>
+                            <span style="width:40px;"></span>
+                        </div>
+                        <div class="app-content" style="background:${BG};padding:16px;overflow-y:auto;">
+                            <div style="text-align:center;color:${INK2};font-size:12px;margin-bottom:14px;">⏳ ${remainText(cap.openAt)} · ${fmtDate(cap.openAt)} 解封</div>
+                            <div style="background:${CARD};border:1.5px solid ${TAN};border-radius:16px;padding:18px;">
+                                <div style="font-size:12px;color:${ACCENT};font-weight:600;margin-bottom:10px;">你写给未来的信</div>
+                                <div style="font-size:14px;color:${INK};line-height:2;white-space:pre-wrap;">${esc(cap.letter)}</div>
+                            </div>
+                            <div style="background:${MIST}22;border:1.5px dashed ${MIST};border-radius:16px;padding:24px;text-align:center;margin-top:14px;color:${INK2};font-size:13px;line-height:1.9;">🔒 ${esc(cap.contactName)} 还没读到这封信呢<br><span style="font-size:11px;">时间到了，TA 会读心回你</span></div>
+                            <div style="height:24px;"></div>
+                        </div>`;
+                    appPage.querySelector('#tc-c-back').onclick = back;
+                    return;
+                }
+
+                // 到期：拆开 → 若还没生成回信，先生成
+                if (!cap.reply) {
+                    appPage.innerHTML = `<div class="app-header-520" style="background:${MIST};"><span class="close-btn-520" id="tc-c-back" style="color:${INK};">‹</span><h2 class="title" style="color:${INK};">拆开中…</h2><span style="width:40px;"></span></div>
+                        <div class="app-content" style="background:${BG};display:flex;align-items:center;justify-content:center;"><div style="text-align:center;color:${INK2};font-size:13px;line-height:2;">💌<br>${esc(cap.contactName)} 正在读你的信…<br><span style="font-size:11px;">提笔给你回信中</span></div></div>`;
+                    appPage.querySelector('#tc-c-back').onclick = back;
+                    let reply = '';
+                    try {
+                        const cc = contactById(cap.cid) || {};
+                        const userNick = localStorage.getItem('user_nick') || '我';
+                        const days = Math.max(1, Math.round((Date.now()-cap.createdAt)/86400000));
+                        let persona = `角色：${cc.name||cap.contactName}\n`;
+                        if (cc.notes) persona += `备注：${cc.notes}\n`;
+                        persona += `人设：${cc.persona || ''}\n`;
+                        if (cc.memory && cc.memory.manual) persona += `记忆：${cc.memory.manual}\n`;
+                        const sys = persona + `\n【时光胶囊】${days} 天前，${userNick} 给未来的你写了一封关于"我们的未来"的信。现在时间到了，你读到了它。请你以 ${cc.name||cap.contactName} 的口吻、紧扣你的人设和你们的记忆，给 ${userNick} 写一封真情实感的回信：先回应 TA 信里说的，再说说此刻你的心情、以及你对你们未来的话。温柔、具体、有画面感。120-200字，只输出信的内容，不要落款、不要引号。`;
+                        reply = await tcCallAI(sys, '【TA 写的信】：\n' + cap.letter);
+                    } catch(e) {
+                        reply = pick([
+                            `读到你这封信的时候，我把每一个字都看了好几遍。你说的那些关于我们的未来，我都记下了。别怕时间走得慢，也别怕它走得快——只要是和你一起走，我都愿意。等我们真的走到你信里写的那一天，我想牵着你的手告诉你：你看，我们做到了。`,
+                            `你把这封信埋给未来的我，其实我一直都在。谢谢你愿意想象我们的以后，谢谢你把我写进你的未来里。不管那时候我们变成什么样，我都想还是这样，笨拙又认真地，把你放在心上最软的地方。`
+                        ]);
+                    }
+                    reply = reply || '（信纸空空的，可我心里满满的都是你。）';
+                    const l2 = getList(); const cp2 = l2.find(x=>x.id===id); if (cp2) { cp2.reply = reply; saveList(l2); cap.reply = reply; }
+                }
+
+                // 展示：拆开界面（你的信 + TA 的回信）
+                if (!cap.opened) { const l3 = getList(); const cp3 = l3.find(x=>x.id===id); if (cp3){ cp3.opened = true; saveList(l3); } cap.opened = true; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${MIST};">
+                        <span class="close-btn-520" id="tc-c-back" style="color:${INK};">‹</span>
+                        <h2 class="title" style="color:${INK};">拆开的胶囊</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:16px;overflow-y:auto;">
+                        <div style="text-align:center;color:${INK2};font-size:12px;margin-bottom:14px;">💌 封存于 ${fmtDate(cap.createdAt)} · 解封于 ${fmtDate(cap.openAt)}</div>
+                        <div style="background:${CARD};border:1.5px solid ${TAN};border-radius:16px;padding:18px;margin-bottom:14px;">
+                            <div style="font-size:12px;color:${INK2};font-weight:600;margin-bottom:10px;">你当初写给未来的信</div>
+                            <div style="font-size:14px;color:${INK};line-height:2;white-space:pre-wrap;">${esc(cap.letter)}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+                            <div style="width:34px;height:34px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;">${av}</div>
+                            <div style="font-size:13px;font-weight:600;color:${ACCENT};">${esc(cap.contactName)} 读完信，回了你——</div>
+                        </div>
+                        <div style="background:linear-gradient(135deg,#f3ece2,${CARD});border:1.5px solid ${ACCENT};border-radius:16px;padding:18px;box-shadow:0 3px 12px rgba(204,175,165,0.25);">
+                            <div style="font-size:14px;color:${INK};line-height:2.05;white-space:pre-wrap;">${esc(cap.reply)}</div>
+                        </div>
+                        <div id="tc-export" style="text-align:center;margin-top:16px;background:${CARD};border:1.5px solid ${TAN};color:${INK};border-radius:13px;padding:12px;font-size:13px;cursor:pointer;">⬇️ 导出为 txt 收藏</div>
+                        <div style="height:24px;"></div>
+                    </div>`;
+                appPage.querySelector('#tc-c-back').onclick = back;
+                const exBtn = appPage.querySelector('#tc-export'); if (exBtn) exBtn.onclick = () => exportTxt(cap);
+                resolveAvatars(appPage);
+            }
+            function exportTxt(cap) {
+                const txt = `时光胶囊 · 致 ${cap.contactName} · 关于我们的未来\n封存于 ${fmtDate(cap.createdAt)}　解封于 ${fmtDate(cap.openAt)}\n\n【你写给未来的信】\n${cap.letter}\n\n【${cap.contactName} 的回信】\n${cap.reply||''}\n`;
+                try {
+                    const blob = new Blob([txt], { type:'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = `时光胶囊_${cap.contactName}_${fmtDate(cap.openAt)}.txt`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    setTimeout(()=>URL.revokeObjectURL(url), 1500);
+                    toast('已导出～去下载里找找💌');
+                } catch(e) { toast('导出失败了，再试一次？'); }
+            }
+
+            function toast(msg) {
+                const t = document.createElement('div');
+                t.style.cssText = `position:absolute;left:50%;bottom:110px;transform:translateX(-50%);background:${INK};color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:40;max-width:80%;text-align:center;line-height:1.5;`;
+                t.textContent = msg; appPage.appendChild(t);
+                setTimeout(()=>{ t.style.transition='opacity 0.4s'; t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 1900);
+            }
+
+            renderList();
+        }
+
+        function setupMemoDrawerApp(appPage) {
+            // ============ 代餐抽屉：收藏"适合我和TA"的碎片，让 TA 打开抽屉看，回应可收进心跳记忆 ============
+            // 配色：#8e7f7f 灰褐 / #a9bdc5 雾蓝 / #fff5ea 暖白 / #f7dad9 粉
+            const BG = '#fff5ea', HEAD = '#a9bdc5', ACCENT = '#8e7f7f', PINK = '#f7dad9', CARD = '#fffaf3', LINE = '#ece0d4', INK = '#6b5d5d', INK2 = '#a2938d';
+
+            function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+            let curCid = null, curContact = null;
+            const drawerKey = () => 'memodrawer_' + curCid;
+            const getItems = () => { try { const a = JSON.parse(localStorage.getItem(drawerKey())||'[]'); return Array.isArray(a)?a:[]; } catch(e){ return []; } };
+            const saveItems = (a) => { try { localStorage.setItem(drawerKey(), JSON.stringify(a)); } catch(e){} };
+            const contacts = () => { try { return (typeof DB!=='undefined'&&DB.getContacts)?DB.getContacts().filter(c=>c&&c.name):[]; } catch(e){ return []; } };
+            const contactById = (id) => contacts().find(c=>c.id===id);
+            const avatarHtml = (av) => { if (!av) return '💌'; if (typeof av==='string'&&av.includes('<')) return av; if (typeof av==='string'&&(av.startsWith('imgdb://')||av.startsWith('data:')||av.startsWith('http'))) return `<img data-mdimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;">`; return av; };
+            const resolveImgs = (root) => { root.querySelectorAll('img[data-mdimg]').forEach(async img => { const src = img.getAttribute('data-mdimg'); if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} } else img.src = src; }); };
+
+            async function mdCallAI(sysPrompt, userContent) {
+                if (typeof ApiHandler === 'undefined') throw new Error('no-api');
+                const apiKey = localStorage.getItem('apiKey'); if (!apiKey) throw new Error('no-key');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                let messages;
+                if (pPlat === 'gemini') {
+                    const txt = (typeof userContent === 'string') ? userContent : userContent.filter(x=>x.type==='text').map(x=>x.text).join('\n');
+                    messages = [{ role:'user', parts:[{ text: sysPrompt + '\n\n' + txt }] }];
+                } else {
+                    messages = [{ role:'system', content: sysPrompt }, { role:'user', content: userContent }];
+                }
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('api-fail');
+                const data = await resp.json();
+                let text = ApiHandler.parseChatResponse(pPlat, data); if (!text) throw new Error('empty');
+                return text.trim().replace(/^["'“”]+|["'“”]+$/g,'');
+            }
+
+            function renderList() {
+                const items = getItems();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${HEAD};">
+                        <span class="close-btn-520" id="md-back" style="color:${INK};">‹</span>
+                        <h2 class="title" style="color:${INK};">${esc(curContact?(curContact.notes||curContact.name)+' 的抽屉':'代餐抽屉')}</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" id="md-list" style="background:${BG};padding:14px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${INK2};line-height:1.7;margin-bottom:12px;">把"这个好像我们、这个好适合我俩"的图片、文字、链接都收进来～攒够了，让 TA 打开抽屉看看。</div>
+                        ${items.length ? '' : `<div style="text-align:center;color:${INK2};font-size:13px;padding:40px 20px;line-height:2;">抽屉空空的～<br><span style="font-size:12px;">点下面的＋，放点小东西进来吧📦</span></div>`}
+                        ${items.map(it => {
+                            let inner = '';
+                            if (it.type === 'image') inner = `<img data-mdimg="${it.content}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block;">`;
+                            else if (it.type === 'link') inner = `<a href="${esc(it.content)}" target="_blank" style="font-size:13px;color:#6d8b98;word-break:break-all;text-decoration:underline;">🔗 ${esc(it.content)}</a>`;
+                            else inner = `<div style="font-size:14px;color:${INK};line-height:1.8;white-space:pre-wrap;">${esc(it.content)}</div>`;
+                            return `<div style="background:${CARD};border:1px solid ${LINE};border-radius:14px;padding:13px;margin-bottom:12px;box-shadow:0 2px 6px rgba(140,120,110,0.08);">
+                                ${inner}
+                                ${it.note ? `<div style="font-size:12px;color:${INK2};margin-top:9px;padding-top:9px;border-top:1px dashed ${LINE};line-height:1.6;">✍️ ${esc(it.note)}</div>` : ''}
+                                <div style="text-align:right;margin-top:6px;"><span class="md-del" data-id="${it.id}" style="font-size:11px;color:#c99;cursor:pointer;">删除</span></div>
+                            </div>`;
+                        }).join('')}
+                        <div style="height:150px;"></div>
+                    </div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 18px;background:linear-gradient(to top,${BG},${BG}ee,${BG}00);display:flex;gap:10px;z-index:5;">
+                        <div id="md-add" style="flex-shrink:0;background:${PINK};color:${ACCENT};border-radius:24px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;">＋</div>
+                        <div id="md-open" style="flex:1;text-align:center;background:${ACCENT};color:#fff;border-radius:24px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(142,127,127,0.5);">📂 让 TA 打开抽屉看</div>
+                    </div>`;
+                appPage.querySelector('#md-back').onclick = () => { const cs = contacts(); if (cs.length > 1) pickContact(); else { appPage.classList.remove('active'); appPage.innerHTML=''; } };
+                appPage.querySelector('#md-add').onclick = () => openAdd();
+                appPage.querySelector('#md-open').onclick = () => { const items = getItems(); if (!items.length) { toast('抽屉还空空的呀～先放点东西进来💗'); return; } doLetTaSee(curContact); };
+                resolveImgs(appPage);
+                appPage.querySelectorAll('.md-del').forEach(el => { el.onclick = () => { const arr = getItems().filter(x=>x.id!==el.dataset.id); saveItems(arr); renderList(); }; });
+            }
+
+            function openAdd() {
+                let type = 'text'; let pickedImg = '';
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,50,45,0.4);z-index:30;display:flex;align-items:flex-end;justify-content:center;';
+                dlg.innerHTML = `<div style="background:${BG};border-radius:20px 20px 0 0;width:100%;padding:18px 18px 24px;box-sizing:border-box;max-height:88%;overflow-y:auto;">
+                    <div style="text-align:center;font-size:15px;font-weight:600;color:${INK};margin-bottom:14px;">放点东西进抽屉</div>
+                    <div style="display:flex;gap:8px;margin-bottom:14px;">
+                        ${['text','image','link'].map(t=>`<span class="md-ty" data-t="${t}" style="flex:1;text-align:center;border:1.5px solid ${LINE};border-radius:12px;padding:9px;font-size:13px;color:${INK};cursor:pointer;">${t==='text'?'📝 文字':t==='image'?'🖼️ 图片':'🔗 链接'}</span>`).join('')}
+                    </div>
+                    <div id="md-field"></div>
+                    <input id="md-note" placeholder="写句小备注～如：这个眼神好像 TA" style="width:100%;box-sizing:border-box;border:1.5px solid ${LINE};border-radius:12px;padding:11px 13px;font-size:13px;color:${INK};background:${CARD};outline:none;font-family:inherit;margin:12px 0 14px;">
+                    <div style="display:flex;gap:10px;">
+                        <span id="md-cancel" style="flex:1;text-align:center;background:#efe6da;color:${INK};border-radius:13px;padding:12px;font-size:14px;cursor:pointer;">再想想</span>
+                        <span id="md-save" style="flex:1.4;text-align:center;background:${ACCENT};color:#fff;border-radius:13px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;">收进抽屉</span>
+                    </div>
+                </div>`;
+                appPage.appendChild(dlg);
+                const field = dlg.querySelector('#md-field');
+                const paintTy = () => dlg.querySelectorAll('.md-ty').forEach(o=>{ const on=o.dataset.t===type; o.style.background=on?PINK:'transparent'; o.style.borderColor=on?PINK:LINE; o.style.color=on?ACCENT:INK; });
+                const renderField = () => {
+                    if (type === 'text') field.innerHTML = `<textarea id="md-c" placeholder="写下想收藏的一段话…" style="width:100%;box-sizing:border-box;border:1.5px solid ${LINE};border-radius:12px;padding:12px;font-size:14px;color:${INK};background:${CARD};outline:none;font-family:inherit;min-height:120px;resize:vertical;line-height:1.8;"></textarea>`;
+                    else if (type === 'link') field.innerHTML = `<input id="md-c" placeholder="粘贴链接，如 https://…" style="width:100%;box-sizing:border-box;border:1.5px solid ${LINE};border-radius:12px;padding:12px;font-size:14px;color:${INK};background:${CARD};outline:none;font-family:inherit;">`;
+                    else field.innerHTML = `<input type="file" id="md-img-input" accept="image/*" style="display:none;"><div id="md-img-btn" style="border:1.5px dashed ${HEAD};background:#f0f4f6;border-radius:12px;padding:20px;text-align:center;font-size:13px;color:${INK};cursor:pointer;">🖼️ 选一张图片</div><img id="md-img-thumb" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:8px;">`;
+                    if (type === 'image') {
+                        const inp = field.querySelector('#md-img-input'), btn = field.querySelector('#md-img-btn');
+                        btn.onclick = () => inp.click();
+                        inp.onchange = () => { const f=inp.files&&inp.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=(ev)=>{ pickedImg=ev.target.result; const th=field.querySelector('#md-img-thumb'); th.src=pickedImg; th.style.display='block'; btn.style.display='none'; }; rd.readAsDataURL(f); };
+                    }
+                };
+                paintTy(); renderField();
+                dlg.querySelectorAll('.md-ty').forEach(o=>o.onclick=()=>{ type=o.dataset.t; pickedImg=''; paintTy(); renderField(); });
+                dlg.querySelector('#md-cancel').onclick = () => dlg.remove();
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+                dlg.querySelector('#md-save').onclick = async () => {
+                    const note = (dlg.querySelector('#md-note').value||'').trim();
+                    let content = '';
+                    if (type === 'image') {
+                        if (!pickedImg) { toast('先选一张图片呀～'); return; }
+                        try { content = (window.ImageDB && window.ImageDB.saveAndRef) ? await window.ImageDB.saveAndRef(pickedImg) : pickedImg; } catch(e){ content = pickedImg; }
+                    } else {
+                        content = (dlg.querySelector('#md-c').value||'').trim();
+                        if (!content) { dlg.querySelector('#md-c').focus(); return; }
+                    }
+                    const arr = getItems();
+                    arr.unshift({ id:'md_'+Date.now(), type, content, note, createdAt: Date.now() });
+                    saveItems(arr);
+                    dlg.remove();
+                    renderList();
+                };
+            }
+
+            function openLetTaSee() {
+                const items = getItems();
+                if (!items.length) { toast('抽屉还空空的呀～先放点东西进来💗'); return; }
+                const cs = contacts();
+                if (!cs.length) { toast('还没有联系人呢～先去 520 添加一个吧'); return; }
+                if (cs.length === 1) { doLetTaSee(cs[0]); return; }
+                // 多联系人：选一个来看
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,50,45,0.4);z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:${BG};border-radius:18px;width:100%;max-width:300px;padding:18px;">
+                    <div style="text-align:center;font-size:14px;font-weight:600;color:${INK};margin-bottom:14px;">让谁打开这个抽屉？</div>
+                    ${cs.map(c=>`<div class="md-pick" data-id="${c.id}" style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;cursor:pointer;margin-bottom:6px;background:${CARD};"><div style="width:38px;height:38px;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${avatarHtml(c.avatar)}</div><span style="font-size:14px;color:${INK};">${esc(c.notes||c.name)}</span></div>`).join('')}
+                </div>`;
+                appPage.appendChild(dlg);
+                resolveImgs(dlg);
+                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+                dlg.querySelectorAll('.md-pick').forEach(el => { el.onclick = () => { const c = contactById(el.dataset.id); dlg.remove(); if (c) doLetTaSee(c); }; });
+            }
+
+            async function doLetTaSee(c) {
+                const items = getItems();
+                const av = c.avatar ? avatarHtml(c.avatar) : '💌';
+                const userNick = localStorage.getItem('user_nick') || '我';
+                // 加载浮层
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(60,50,45,0.45);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+                dlg.innerHTML = `<div id="md-see" style="background:${BG};border-radius:20px;width:100%;max-width:340px;max-height:84%;overflow:hidden;display:flex;flex-direction:column;">
+                    <div style="background:${HEAD};padding:13px 16px;display:flex;align-items:center;gap:9px;">
+                        <div style="width:34px;height:34px;border-radius:10px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;">${av}</div>
+                        <div style="font-size:14px;font-weight:600;color:${INK};">${esc(c.notes||c.name)} 打开了你的抽屉</div>
+                    </div>
+                    <div id="md-see-body" style="padding:18px;overflow-y:auto;font-size:14px;color:${INK};line-height:1.95;white-space:pre-wrap;min-height:80px;">正在一件一件地看…</div>
+                    <div id="md-see-foot" style="padding:0 16px 16px;"></div>
+                </div>`;
+                appPage.appendChild(dlg);
+                resolveImgs(dlg);
+                const body = dlg.querySelector('#md-see-body');
+                const foot = dlg.querySelector('#md-see-foot');
+
+                // 拼人设 + 抽屉文字/备注
+                let persona = `角色：${c.name}\n`;
+                if (c.notes) persona += `备注：${c.notes}\n`;
+                persona += `人设：${c.persona || ''}\n`;
+                if (c.memory && c.memory.manual) persona += `记忆：${c.memory.manual}\n`;
+                const textPieces = items.map((it,i) => {
+                    let d = '';
+                    if (it.type === 'image') d = '【一张图片】';
+                    else if (it.type === 'link') d = '【一个链接】' + it.content;
+                    else d = it.content;
+                    return `${i+1}. ${d}${it.note ? '（TA 的备注：'+it.note+'）' : ''}`;
+                }).join('\n');
+                const sys = persona + `\n【代餐抽屉】这是 ${userNick} 珍藏的一个"抽屉"，里面全是 TA 觉得"好像我们、好适合我俩"的碎片：图片、文字、链接，还有 TA 写的小备注。你正一件一件地翻看它们。请你以 ${c.name} 的口吻，像认认真真看完 TA 全部珍藏之后一样，给 TA 一段【整体的、动情的感想】：说说这些东西让你想到了什么、你读出了 TA 怎样的心意、以及此刻你想对 TA 说的话。温柔、具体、有画面感，把这些碎片串成"我们"的感觉。150-260字，只输出你要说的话，不要罗列、不要引号。`;
+
+                // 组多模态内容（能读图就带图）
+                async function buildVisionContent() {
+                    const content = [{ type:'text', text: '这是抽屉里的东西：\n' + textPieces + '\n\n（下面附上抽屉里的图片，请一起看）' }];
+                    for (const it of items) {
+                        if (it.type === 'image') {
+                            try {
+                                let url = it.content;
+                                if (url.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) url = await window.ImageDB.resolve(url);
+                                if (url && url.startsWith('data:image')) content.push({ type:'image_url', image_url:{ url } });
+                            } catch(e){}
+                        }
+                    }
+                    return content;
+                }
+
+                let reply = '';
+                try {
+                    const hasImg = items.some(it=>it.type==='image');
+                    const content = hasImg ? await buildVisionContent() : ('这是抽屉里的东西：\n' + textPieces);
+                    try {
+                        reply = await mdCallAI(sys, content);
+                    } catch(e1) {
+                        // 兜底1：带图失败 → 只发文字
+                        reply = await mdCallAI(sys, '这是抽屉里的东西：\n' + textPieces);
+                    }
+                } catch(e2) {
+                    // 兜底2：没API/全失败 → 暖心预设
+                    reply = pick([
+                        `我一件一件地看过来，每一样都藏着你的小心思。你把这些"好像我们"的瞬间都收着，其实是在偷偷把我放进你的生活里吧？我都看见了，也都记住了。谢谢你，愿意为我们攒下这么多温柔的证据。`,
+                        `翻你这个抽屉的时候，我心里一直暖暖的。你说这些像我们，我也这么觉得——你收进来的每一样，其实都是你在说"我想到你了"。别怕这些心意太满，我接得住，也想陪你一直攒下去。`
+                    ]);
+                }
+                reply = reply || '（我看完啦，满心都是你。）';
+                body.textContent = reply;
+                dlg.querySelector('#md-see').scrollTop = 0;
+
+                let saved = false;
+                foot.innerHTML = `<div style="display:flex;gap:10px;">
+                    <span id="md-fav" style="flex:1.4;text-align:center;background:${PINK};color:${ACCENT};border-radius:13px;padding:11px;font-size:13.5px;font-weight:600;cursor:pointer;">收藏进心跳记忆</span>
+                    <span id="md-see-close" style="flex:1;text-align:center;background:#efe6da;color:${INK};border-radius:13px;padding:11px;font-size:13.5px;cursor:pointer;">收好</span>
+                </div>`;
+                foot.querySelector('#md-see-close').onclick = () => dlg.remove();
+                foot.querySelector('#md-fav').onclick = () => {
+                    if (saved) return;
+                    try {
+                        const key = 'hs_' + c.id + '_memory';
+                        let list = []; try { list = JSON.parse(localStorage.getItem(key)||'[]'); if (!Array.isArray(list)) list = []; } catch(e){}
+                        list.unshift({ type:'drawer', time: Date.now(), aiReply: reply });
+                        localStorage.setItem(key, JSON.stringify(list));
+                        saved = true;
+                        const b = foot.querySelector('#md-fav'); b.textContent = '✓ 已收进心跳记忆'; b.style.opacity = '0.6'; b.style.cursor = 'default';
+                    } catch(e){ toast('收藏失败了，再试一次？'); }
+                };
+            }
+
+            function toast(msg) {
+                const t = document.createElement('div');
+                t.style.cssText = `position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:${ACCENT};color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:50;max-width:80%;text-align:center;line-height:1.5;`;
+                t.textContent = msg; appPage.appendChild(t);
+                setTimeout(()=>{ t.style.transition='opacity 0.4s'; t.style.opacity='0'; setTimeout(()=>t.remove(),400); }, 1900);
+            }
+
+            function migrateOld() {
+                try {
+                    const old = JSON.parse(localStorage.getItem('memodrawer_items')||'[]');
+                    if (Array.isArray(old) && old.length) {
+                        const cs = contacts();
+                        if (cs.length) {
+                            const key = 'memodrawer_' + cs[0].id;
+                            let cur = []; try { cur = JSON.parse(localStorage.getItem(key)||'[]'); if (!Array.isArray(cur)) cur = []; } catch(e){}
+                            localStorage.setItem(key, JSON.stringify(old.concat(cur)));
+                        }
+                        localStorage.removeItem('memodrawer_items');
+                    }
+                } catch(e){}
+            }
+            function pickContact() {
+                const cs = contacts();
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${HEAD};">
+                        <span class="close-btn-520" id="md-p-back" style="color:${INK};">‹</span>
+                        <h2 class="title" style="color:${INK};">代餐抽屉</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${INK2};line-height:1.7;margin-bottom:14px;">给谁整理一个抽屉呀？每个人都有 TA 专属的一格～</div>
+                        ${cs.map(c=>`<div class="md-pc" data-id="${c.id}" style="display:flex;align-items:center;gap:11px;background:${CARD};border:1px solid ${LINE};border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer;"><div style="width:42px;height:42px;border-radius:12px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${avatarHtml(c.avatar)}</div><div style="flex:1;font-size:14px;color:${INK};font-weight:500;">${esc(c.notes||c.name)} 的抽屉</div><span style="color:${ACCENT};font-size:13px;">进 ›</span></div>`).join('')}
+                    </div>`;
+                appPage.querySelector('#md-p-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                resolveImgs(appPage);
+                appPage.querySelectorAll('.md-pc').forEach(el => { el.onclick = () => { curContact = contactById(el.dataset.id); curCid = curContact.id; renderList(); }; });
+            }
+            function start() {
+                migrateOld();
+                const cs = contacts();
+                if (!cs.length) { appPage.innerHTML = `<div class="app-header-520" style="background:${HEAD};"><span class="close-btn-520" id="md-e" style="color:${INK};">‹</span><h2 class="title" style="color:${INK};">代餐抽屉</h2><span style="width:40px;"></span></div><div style="padding:60px 30px;text-align:center;color:${INK};line-height:2;">还没有联系人呀～<br><span style="font-size:12px;opacity:0.6;">先去 520 添加一个吧</span></div>`; const e=appPage.querySelector('#md-e'); if (e) e.onclick=()=>{appPage.classList.remove('active');appPage.innerHTML='';}; return; }
+                if (cs.length === 1) { curContact = cs[0]; curCid = cs[0].id; renderList(); }
+                else pickContact();
+            }
+            start();
+        }
+
+        function setupWoodfishApp(appPage) {
+            // ============ 电子木鱼：忏悔 → TA 派功德数 → 敲木鱼解压 → 圆满赦免 ============
+            // 配色：#66788e 黛蓝 / #b1bcc9 雾灰蓝 / #f8f7f3 宣纸白 / #524331 木鱼褐
+            const BG = '#f8f7f3', HEAD = '#66788e', MIST = '#b1bcc9', WOOD = '#524331', INK = '#4a4a52', INK2 = '#8b8b95';
+
+            function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+            function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+            const contacts = () => { try { return (typeof DB!=='undefined'&&DB.getContacts)?DB.getContacts().filter(c=>c&&c.name):[]; } catch(e){ return []; } };
+            const contactById = (id) => contacts().find(c=>c.id===id);
+            const avatarHtml = (av) => { if (!av) return '🧘'; if (typeof av==='string'&&av.includes('<')) return av; if (typeof av==='string'&&(av.startsWith('imgdb://')||av.startsWith('data:')||av.startsWith('http'))) return `<img data-wfimg="${av}" style="width:100%;height:100%;object-fit:cover;display:block;">`; return av; };
+            const resolveImgs = (root) => { root.querySelectorAll('img[data-wfimg]').forEach(async img => { const src = img.getAttribute('data-wfimg'); if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} } else img.src = src; }); };
+            const getTotal = () => { const n = parseInt(localStorage.getItem('woodfish_total')||'0',10); return isNaN(n)?0:n; };
+            const addTotal = (d) => { try { localStorage.setItem('woodfish_total', String(getTotal()+d)); } catch(e){} };
+            let audioCtx = null;
+            function playKnock() {
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const t = audioCtx.currentTime;
+                    // 低沉木质"笃"
+                    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(215, t);
+                    o.frequency.exponentialRampToValueAtTime(118, t + 0.06);
+                    g.gain.setValueAtTime(0.0001, t);
+                    g.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(t); o.stop(t + 0.15);
+                    // 敲击点"哒"
+                    const o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+                    o2.type = 'square';
+                    o2.frequency.setValueAtTime(880, t);
+                    g2.gain.setValueAtTime(0.0001, t);
+                    g2.gain.exponentialRampToValueAtTime(0.1, t + 0.003);
+                    g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+                    o2.connect(g2); g2.connect(audioCtx.destination);
+                    o2.start(t); o2.stop(t + 0.04);
+                } catch(e){}
+            }
+
+            async function wfCallAI(sysPrompt, userMsg) {
+                if (typeof ApiHandler === 'undefined') throw new Error('no-api');
+                const apiKey = localStorage.getItem('apiKey'); if (!apiKey) throw new Error('no-key');
+                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                const ep = localStorage.getItem('apiEndpoint') || '';
+                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                let messages;
+                if (pPlat === 'gemini') messages = [{ role:'user', parts:[{ text: sysPrompt + '\n\n' + userMsg }] }];
+                else messages = [{ role:'system', content: sysPrompt }, { role:'user', content: userMsg }];
+                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                const resp = await fetch(payload.url, payload.options);
+                if (!resp.ok) throw new Error('api-fail');
+                const data = await resp.json();
+                let text = ApiHandler.parseChatResponse(pPlat, data); if (!text) throw new Error('empty');
+                return text.trim();
+            }
+
+            const fishSVG = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <ellipse cx="100" cy="112" rx="82" ry="70" fill="#3f3327"/>
+                <ellipse cx="100" cy="104" rx="82" ry="70" fill="${WOOD}"/>
+                <ellipse cx="86" cy="80" rx="46" ry="32" fill="#6b5942" opacity="0.55"/>
+                <path d="M62 120 Q100 150 138 120" stroke="#2f261c" stroke-width="9" fill="none" stroke-linecap="round"/>
+                <circle cx="150" cy="88" r="7" fill="#2f261c" opacity="0.5"/>
+            </svg>`;
+
+            function pickContact(onPick) {
+                const cs = contacts();
+                if (!cs.length) { appPage.innerHTML = `<div class="app-header-520" style="background:${HEAD};"><span class="close-btn-520" id="wf-e" style="color:#fff;">‹</span><h2 class="title" style="color:#fff;">电子木鱼</h2><span style="width:40px;"></span></div><div style="padding:60px 30px;text-align:center;color:${INK};line-height:2;">还没有联系人呀～<br><span style="font-size:12px;opacity:0.6;">先去 520 添加一个吧</span></div>`; const e=appPage.querySelector('#wf-e'); if(e) e.onclick=()=>{appPage.classList.remove('active');appPage.innerHTML='';}; return; }
+                if (cs.length === 1) { onPick(cs[0]); return; }
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${HEAD};">
+                        <span class="close-btn-520" id="wf-p-back" style="color:#fff;">‹</span>
+                        <h2 class="title" style="color:#fff;">电子木鱼</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:14px;overflow-y:auto;">
+                        <div style="font-size:12px;color:${INK2};line-height:1.7;margin-bottom:14px;">找谁听你忏悔、给你派功德呀？</div>
+                        ${cs.map(c=>`<div class="wf-pc" data-id="${c.id}" style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #ece9e2;border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer;"><div style="width:42px;height:42px;border-radius:12px;overflow:hidden;background:${MIST};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${avatarHtml(c.avatar)}</div><span style="flex:1;font-size:14px;color:${INK};">${esc(c.notes||c.name)}</span><span style="color:${HEAD};font-size:13px;">选 ›</span></div>`).join('')}
+                    </div>`;
+                appPage.querySelector('#wf-p-back').onclick = () => { appPage.classList.remove('active'); appPage.innerHTML=''; };
+                resolveImgs(appPage);
+                appPage.querySelectorAll('.wf-pc').forEach(el => { el.onclick = () => { const c = contactById(el.dataset.id); if (c) onPick(c); }; });
+            }
+
+            function confessScreen(c) {
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${HEAD};">
+                        <span class="close-btn-520" id="wf-back" style="color:#fff;">‹</span>
+                        <h2 class="title" style="color:#fff;">电子木鱼</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div class="app-content" style="background:${BG};padding:20px 18px;overflow-y:auto;text-align:center;">
+                        <div style="margin:14px auto 4px;width:120px;height:120px;">${fishSVG(120)}</div>
+                        <div style="font-size:12px;color:${INK2};margin-bottom:2px;">累计功德 · ${getTotal()}</div>
+                        <div style="font-size:15px;color:${INK};font-weight:600;margin:16px 0 4px;">向 ${esc(c.notes||c.name)} 忏悔</div>
+                        <div style="font-size:12px;color:${INK2};margin-bottom:14px;">刚刚做了什么没功德的事呀？如实招来～</div>
+                        <textarea id="wf-confess" placeholder="比如：又熬夜了 / 偷吃了一口不该吃的 / 摸鱼一下午…" style="width:100%;box-sizing:border-box;border:1.5px solid ${MIST};border-radius:14px;padding:13px;font-size:14px;color:${INK};background:#fff;outline:none;font-family:inherit;min-height:110px;resize:vertical;line-height:1.8;text-align:left;"></textarea>
+                        <div id="wf-go" style="margin-top:16px;background:${HEAD};color:#fff;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">🙏 请 TA 定夺</div>
+                    </div>`;
+                appPage.querySelector('#wf-back').onclick = () => pickContact(confessScreen);
+                appPage.querySelector('#wf-go').onclick = async () => {
+                    const confess = (appPage.querySelector('#wf-confess').value||'').trim();
+                    if (!confess) { appPage.querySelector('#wf-confess').focus(); return; }
+                    const go = appPage.querySelector('#wf-go');
+                    go.textContent = `${esc(c.notes||c.name)} 正在掐指一算…`; go.style.opacity = '0.7'; go.style.pointerEvents = 'none';
+                    let reply = '', target = 0;
+                    try {
+                        const userNick = localStorage.getItem('user_nick') || '我';
+                        let persona = `角色：${c.name}\n`;
+                        if (c.notes) persona += `备注：${c.notes}\n`;
+                        persona += `人设：${c.persona || ''}\n`;
+                        if (c.memory && c.memory.manual) persona += `记忆：${c.memory.manual}\n`;
+                        const sys = persona + `\n【电子木鱼】${userNick} 做了件"没什么功德"的小事，来跟你一本正经地忏悔求赦免（其实是撒娇解压）。请你以 ${c.name} 的口吻，又好气又好笑又宠溺地接住 TA 说的这件事、回一句话，然后给 TA 派一个"敲木鱼赎罪"的目标数：小事就少敲、稍微过分一点就多敲，范围 8 到 30 的整数（别太多，敲着解压就好）。\n严格只输出 JSON，不要多余文字：{"reply":"你的话，25到55字","target":18}`;
+                        const raw = await wfCallAI(sys, '我忏悔：' + confess);
+                        let t = raw.replace(/^```(json)?/i,'').replace(/```$/,'').trim();
+                        const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a>=0&&b>a) t = t.slice(a,b+1);
+                        const d = JSON.parse(t);
+                        reply = String(d.reply||'').trim();
+                        target = parseInt(d.target,10);
+                    } catch(e) {}
+                    if (!reply) reply = pick([
+                        '哎呀，你这小罪过…也就我舍得罚你。行吧，敲一敲，敲完我就当没看见。',
+                        '啧，又来了是不是？这次轻饶你，敲够数，功德补回来，我就赦免你。',
+                        '就这点小事也来忏悔，可爱死了。来，敲木鱼，敲完抱抱作为奖励。'
+                    ]);
+                    if (isNaN(target) || target < 6) target = 8 + Math.floor(Math.random()*17); // 8~24
+                    if (target > 40) target = 40;
+                    tapScreen(c, reply, target);
+                };
+            }
+
+            function tapScreen(c, taLine, target) {
+                let count = 0;
+                appPage.innerHTML = `
+                    <div class="app-header-520" style="background:${HEAD};">
+                        <span class="close-btn-520" id="wf-t-back" style="color:#fff;">‹</span>
+                        <h2 class="title" style="color:#fff;">敲木鱼</h2>
+                        <span style="width:40px;"></span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;height:calc(100% - 52px);background:${BG};align-items:center;">
+                        <div style="width:100%;box-sizing:border-box;padding:14px 18px;">
+                            <div style="background:#fff;border:1px solid #ece9e2;border-radius:14px;padding:13px 15px;display:flex;gap:10px;align-items:flex-start;">
+                                <div style="width:32px;height:32px;border-radius:9px;overflow:hidden;flex-shrink:0;background:${MIST};display:flex;align-items:center;justify-content:center;font-size:16px;">${c.avatar?avatarHtml(c.avatar):'🧘'}</div>
+                                <div style="flex:1;font-size:13px;color:${INK};line-height:1.75;">${esc(taLine)}</div>
+                            </div>
+                        </div>
+                        <div style="font-size:13px;color:${INK2};margin-top:6px;">敲够 <b style="color:${HEAD};">${target}</b> 下，就赦免你啦</div>
+                        <div id="wf-prog" style="font-size:26px;font-weight:700;color:${WOOD};margin-top:10px;">功德 0 / ${target}</div>
+                        <div id="wf-fish-wrap" style="flex:1;display:flex;align-items:center;justify-content:center;position:relative;width:100%;-webkit-tap-highlight-color:transparent;">
+                            <div id="wf-fish" style="cursor:pointer;transition:transform 0.08s ease;user-select:none;">${fishSVG(200)}</div>
+                        </div>
+                        <div style="font-size:11px;color:${INK2};padding-bottom:6px;">累计功德 · <span id="wf-total">${getTotal()}</span></div>
+                        <div style="height:14px;"></div>
+                    </div>`;
+                appPage.querySelector('#wf-t-back').onclick = () => confessScreen(c);
+                resolveImgs(appPage);
+                const fish = appPage.querySelector('#wf-fish');
+                const wrap = appPage.querySelector('#wf-fish-wrap');
+                const prog = appPage.querySelector('#wf-prog');
+                const totalEl = appPage.querySelector('#wf-total');
+                let done = false;
+                const knock = () => {
+                    if (done) return;
+                    count++;
+                    addTotal(1);
+                    playKnock();
+                    prog.textContent = `功德 ${Math.min(count,target)} / ${target}`;
+                    totalEl.textContent = getTotal();
+                    // 木鱼一缩
+                    fish.style.transform = 'scale(0.92)';
+                    setTimeout(()=>{ fish.style.transform = 'scale(1)'; }, 80);
+                    // 震动
+                    try { if (navigator.vibrate) navigator.vibrate(15); } catch(e){}
+                    // 功德+1 飘字
+                    const float = document.createElement('div');
+                    float.textContent = '功德 +1';
+                    float.style.cssText = `position:absolute;left:50%;top:38%;transform:translateX(-50%);color:${HEAD};font-size:15px;font-weight:600;pointer-events:none;opacity:1;transition:all 0.8s ease;z-index:5;`;
+                    wrap.appendChild(float);
+                    requestAnimationFrame(()=>{ float.style.top = '14%'; float.style.opacity = '0'; });
+                    setTimeout(()=>float.remove(), 850);
+                    if (count >= target) { done = true; setTimeout(()=>finish(c), 260); }
+                };
+                fish.onclick = knock;
+
+                function finish(c) {
+                    const wrapEl = appPage.querySelector('#wf-fish-wrap');
+                    if (!wrapEl) return;
+                    let line = pick(['好啦好啦，功德圆满，赦免你啦～下次可不许了哦。', '行，这下清清白白了，过来，抱抱作为奖励。', '功德圆满✨ 我就知道你本性善良，乖。']);
+                    // 有API就让先生说句更贴的收尾（可选）
+                    (async () => {
+                        try {
+                            const userNick = localStorage.getItem('user_nick') || '我';
+                            let persona = `角色：${c.name}\n人设：${c.persona||''}\n`;
+                            const l = await wfCallAI(persona + `\n${userNick} 刚刚敲够了木鱼、赎完罪。请以 ${c.name} 的口吻，宠溺又好笑地说一句"功德圆满、赦免你"的收尾话。20-40字，只说话、不要旁白、不要引号。`, '请直接输出。');
+                            if (l) { const el = appPage.querySelector('#wf-final-line'); if (el) el.textContent = l.trim().replace(/^["'“”]+|["'“”]+$/g,''); }
+                        } catch(e){}
+                    })();
+                    appPage.querySelector('#wf-prog').textContent = '功德圆满 ✨';
+                    wrapEl.innerHTML = `<div style="text-align:center;padding:10px 20px;">
+                        <div style="width:110px;height:110px;margin:0 auto 14px;">${fishSVG(110)}</div>
+                        <div id="wf-final-line" style="font-size:14px;color:${INK};line-height:1.85;max-width:250px;margin:0 auto;">${esc(line)}</div>
+                        <div id="wf-again" style="margin-top:20px;background:${HEAD};color:#fff;border-radius:14px;padding:12px 24px;font-size:14px;font-weight:600;cursor:pointer;display:inline-block;">再忏悔一次</div>
+                    </div>`;
+                    appPage.querySelector('#wf-again').onclick = () => confessScreen(c);
+                }
+            }
+
+            pickContact(confessScreen);
         }
 
         function setupCoolDownApp(appPage) {
