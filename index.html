@@ -8135,6 +8135,51 @@
                 }
             }
             
+            // ===== 一起专注 · 食物掉落图鉴 =====
+            const HS_FOOD_POOL = [
+                {e:'🍙',n:'饭团'},{e:'🍜',n:'拉面'},{e:'🍰',n:'蛋糕'},{e:'🍓',n:'草莓'},
+                {e:'🍡',n:'团子'},{e:'🍮',n:'布丁'},{e:'🧋',n:'奶茶'},{e:'🍢',n:'关东煮'},
+                {e:'🍤',n:'天妇罗'},{e:'🍔',n:'汉堡'},{e:'🍟',n:'薯条'},{e:'🍩',n:'甜甜圈'},
+                {e:'🍪',n:'曲奇'},{e:'🥟',n:'饺子'},{e:'🍚',n:'白米饭'},{e:'🍣',n:'寿司'},
+                {e:'🍇',n:'葡萄'},{e:'🍑',n:'蜜桃'},
+                {e:'🎂',n:'生日蛋糕',rare:true},{e:'🍱',n:'豪华便当',rare:true},{e:'🧁',n:'纸杯蛋糕',rare:true},{e:'🍭',n:'棒棒糖',rare:true}
+            ];
+            function hsDropFood(cid, mins) {
+                const commons = HS_FOOD_POOL.filter(f=>!f.rare);
+                const rares = HS_FOOD_POOL.filter(f=>f.rare);
+                const rareChance = 0.10 + Math.min(0.16, (mins||0)/300);
+                const isRare = rares.length && Math.random() < rareChance;
+                const pool = isRare ? rares : commons;
+                const food = pool[Math.floor(Math.random()*pool.length)];
+                const dex = hsGet(cid, 'foodDex', {}) || {};
+                dex[food.e] = (dex[food.e]||0) + 1;
+                hsSet(cid, 'foodDex', dex);
+                return { food, isRare };
+            }
+            function hsOpenFoodDex(appPage, c) {
+                const dex = hsGet(c.id, 'foodDex', {}) || {};
+                const kinds = HS_FOOD_POOL.filter(f=>dex[f.e]).length;
+                const totalCount = Object.values(dex).reduce((a,b)=>a+(b||0),0);
+                const layer = hsOpenLayer(appPage, '食物图鉴', '');
+                const body = layer.querySelector('.hs-layer-body');
+                body.innerHTML = `
+                    <div style="text-align:center;margin-bottom:14px;">
+                        <div style="font-size:12px;color:#9A7872;">已集齐 <b style="color:#775C56;">${kinds}/${HS_FOOD_POOL.length}</b> 种 · 一共掉落 <b style="color:#775C56;">${totalCount}</b> 个</div>
+                        <div style="font-size:11px;color:#B89B95;margin-top:4px;">每完成一次专注，TA 就会给你掉一份小吃的～</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                        ${HS_FOOD_POOL.map(f=>{
+                            const got = dex[f.e]||0;
+                            return `<div style="background:${got?'#fff':'#f3efe8'};border:1px solid ${f.rare?(got?'#e6c98a':'#efe6d4'):'#f0e6d8'};border-radius:14px;padding:12px 6px 10px;text-align:center;position:relative;">
+                                <div style="font-size:30px;line-height:1.1;filter:${got?'none':'grayscale(1) opacity(0.3)'};">${got?f.e:'❔'}</div>
+                                <div style="font-size:10px;color:#9A7872;margin-top:5px;">${got?f.n:'???'}</div>
+                                ${got?`<div style="position:absolute;top:5px;right:7px;font-size:10px;color:#c77;font-weight:700;">×${got}</div>`:''}
+                                ${f.rare?`<div style="position:absolute;top:5px;left:6px;font-size:8px;color:#d8a94a;font-weight:700;">稀有</div>`:''}
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div style="height:20px;"></div>`;
+            }
             // ===== 一起专注 =====
             function hsOpenFocus(appPage, c, userNick, onStatsUpdate) {
                 const layer = hsOpenLayer(appPage, '一起专注', '');
@@ -8154,6 +8199,7 @@
                             </div>
                         </div>
                         <span class="hs-focus-start" style="display:inline-block;background:#FFD3D4;color:#775C56;padding:10px 36px;border-radius:16px;font-size:14px;cursor:pointer;font-weight:500;">开始专注 🍅</span>
+                        <div class="hs-focus-dex-entry" style="margin-top:18px;font-size:12px;color:#B89B95;cursor:pointer;text-decoration:underline;">🍱 我的食物图鉴</div>
                     </div>
                     <style>
                         .hs-fm { padding:8px 16px;border-radius:10px;background:#FBF6F0;color:#9A7872;font-size:12px;cursor:pointer;border:1px solid #f0e0dc; }
@@ -8170,6 +8216,7 @@
                     const task = body.querySelector('#hs-focus-task').value.trim() || '一件重要的事';
                     hsStartFocus(layer, body, c, userNick, mins, task, onStatsUpdate);
                 };
+                body.querySelector('.hs-focus-dex-entry').onclick = () => hsOpenFoodDex(appPage, c);
             }
             
             async function hsStartFocus(layer, body, c, userNick, mins, task, onStatsUpdate) {
@@ -8248,18 +8295,26 @@
             }
             
             async function hsFinishFocus(layer, body, c, userNick, mins, task, onStatsUpdate, isEarly) {
+                const drop = hsDropFood(c.id, mins);
                 body.innerHTML = `
                     <div style="text-align:center;padding:30px 20px;">
                         <div style="font-size:64px;margin-bottom:14px;">🍅</div>
                         <div style="font-size:18px;color:#775C56;font-weight:600;margin-bottom:6px;">${isEarly ? '提前结束' : '专注完成'}</div>
-                        <div style="font-size:13px;color:#9A7872;margin-bottom:18px;">这次专注了 ${mins} 分钟</div>
+                        <div style="font-size:13px;color:#9A7872;margin-bottom:14px;">这次专注了 ${mins} 分钟</div>
+                        <div style="background:#FFF7EC;border:1px dashed #e6c98a;border-radius:12px;padding:11px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+                            <span style="font-size:26px;">${drop.food.e}</span>
+                            <span style="font-size:13px;color:#775C56;">掉落了${drop.isRare?'<b style="color:#d8a94a;">稀有</b>食物 ':''}「${drop.food.n}」！</span>
+                        </div>
                         <div style="background:#fff;border-radius:14px;padding:14px;text-align:left;margin-bottom:18px;">
                             <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">这次做的事</div>
                             <div style="font-size:13px;color:#775C56;margin-bottom:14px;">${task}</div>
                             <div style="font-size:11px;color:#B89B95;margin-bottom:6px;">TA 的话</div>
                             <div id="hs-focus-cheer" style="font-size:13px;color:#775C56;line-height:1.7;font-style:italic;">${c.name} 想对你说……</div>
                         </div>
-                        <span class="hs-focus-back" style="background:#D5EBE4;color:#775C56;padding:8px 28px;border-radius:14px;font-size:13px;cursor:pointer;display:inline-block;">收下啦</span>
+                        <div style="display:flex;gap:10px;justify-content:center;">
+                            <span class="hs-focus-dex" style="background:#fff;color:#9A7872;padding:8px 20px;border-radius:14px;font-size:13px;cursor:pointer;border:1px solid #f0e0dc;">🍱 图鉴</span>
+                            <span class="hs-focus-back" style="background:#D5EBE4;color:#775C56;padding:8px 26px;border-radius:14px;font-size:13px;cursor:pointer;">收下啦</span>
+                        </div>
                     </div>
                 `;
                 
@@ -8280,6 +8335,7 @@
                 if (onStatsUpdate) onStatsUpdate();
                 
                 body.querySelector('.hs-focus-back').onclick = () => layer.remove();
+                const dexBtn = body.querySelector('.hs-focus-dex'); if (dexBtn) dexBtn.onclick = () => hsOpenFoodDex(layer.parentElement, c);
             }
             
             // ===== 情感问卷 =====
