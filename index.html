@@ -2148,7 +2148,7 @@
                     <div class="app-header"><span style="color:#775C56" class="cursor-pointer close-btn w-10 inline-block">‹</span><h2 class="font-bold" style="color:#775C56">API 设置</h2><span class="w-10"></span></div>
                     <div class="app-content p-5">
                         <div class="form-group"><label>模型平台</label><select id="api-platform" class="w-full p-2 border rounded-lg"><option value="openai">OpenAI</option><option value="gemini">Gemini</option><option value="MyAPI">MyAPI</option></select></div>
-                        <div class="form-group"><label>API 接口地址</label><input type="text" id="api-endpoint" placeholder="接口地址 (例如 https://api.openai.com/v1)"></div>
+                        <div class="form-group"><label>API 接口地址</label><input type="text" id="api-endpoint" placeholder="选 OpenAI / Gemini 会自动填官方地址"></div>
                         <div class="form-group"><label>API 密钥</label><input type="password" id="api-key" placeholder="API Key"></div>
                         <div class="form-group">
                             <label>模型</label>
@@ -7358,6 +7358,9 @@
                 
                 platform.value = localStorage.getItem('apiPlatform') || 'openai';
                 endpoint.value = localStorage.getItem('apiEndpoint') || '';
+                const OFFICIAL_API = { openai: 'https://api.openai.com', gemini: 'https://generativelanguage.googleapis.com' };
+                if (!endpoint.value && OFFICIAL_API[platform.value]) endpoint.value = OFFICIAL_API[platform.value];
+                platform.addEventListener('change', () => { endpoint.value = OFFICIAL_API[platform.value] || ''; });
                 key.value = localStorage.getItem('apiKey') || '';
                 modelCustom.value = localStorage.getItem('apiModel') || '';
 
