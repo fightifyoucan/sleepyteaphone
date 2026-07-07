@@ -4583,17 +4583,40 @@
                                                 } catch(e) { console.error('AI 表情包选择失败', e); }
                                             }
                                         }
-                                        // AI 随机拍一拍
-                                        if (Math.random() < 0.1) {
-                                            await new Promise(r => setTimeout(r, 1200));
-                                            const userNudge = localStorage.getItem('user_nudge') || '的脑袋';
-                                            const aiNudgeText = `「${c.notes || c.name}」拍了拍我${userNudge}`;
-                                            send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: aiNudgeText, time: new Date() });
-                                            await new Promise(r => setTimeout(r, 50));
-                                            box.querySelectorAll('[data-user-avatar="true"]').forEach(av => {
-                                                av.classList.remove('shake'); void av.offsetWidth; av.classList.add('shake');
-                                                setTimeout(()=>av.classList.remove('shake'), 700);
-                                            });
+                                        // AI 自己决定要不要拍一拍用户（不再靠概率）
+                                        if (finalMessages.length > 0) {
+                                            const lastMsgIsNudge = history.length && history[history.length-1] && history[history.length-1].type === 'nudge';
+                                            if (!lastMsgIsNudge) {
+                                                try {
+                                                    const apiKey = localStorage.getItem('apiKey');
+                                                    const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                                                    const ep = localStorage.getItem('apiEndpoint') || '';
+                                                    const m = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                                                    const recentReply = finalMessages.join(' ');
+                                                    const patPrompt = `你（${c.notes || c.name}）刚刚回复了对方：「${recentReply}」\n\n"拍一拍"是一种亲昵的小动作（像伸手拍拍对方的头/肩）。结合你的人设、此刻的心情和这段对话的氛围，你现在想不想伸手拍一拍对方？\n只有当拍一拍此刻真的自然、贴合情绪时才拍（比如宠溺、逗对方、安慰、亲密的时候）；不合适就别拍。\n请只回复一个字："拍"（想拍）或"否"（不想拍），除此之外不要输出任何内容。`;
+                                                    let patMsgs;
+                                                    if (pPlat === 'gemini') { patMsgs = [{ role: 'user', parts: [{ text: patPrompt }] }]; }
+                                                    else { patMsgs = [{ role: 'user', content: patPrompt }]; }
+                                                    const patPayload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, m, patMsgs);
+                                                    const patResp = await fetch(patPayload.url, patPayload.options);
+                                                    if (patResp.ok) {
+                                                        const patData = await patResp.json();
+                                                        let patText = ApiHandler.parseChatResponse(pPlat, patData);
+                                                        const t = (patText || '').trim();
+                                                        if (t && t.length <= 3 && t.charAt(0) === '拍') {
+                                                            await new Promise(r => setTimeout(r, 900));
+                                                            const userNudge = localStorage.getItem('user_nudge') || '的脑袋';
+                                                            const aiNudgeText = `「${c.notes || c.name}」拍了拍我${userNudge}`;
+                                                            send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: aiNudgeText, time: new Date() });
+                                                            await new Promise(r => setTimeout(r, 50));
+                                                            box.querySelectorAll('[data-user-avatar="true"]').forEach(av => {
+                                                                av.classList.remove('shake'); void av.offsetWidth; av.classList.add('shake');
+                                                                setTimeout(()=>av.classList.remove('shake'), 700);
+                                                            });
+                                                        }
+                                                    }
+                                                } catch(e) { console.error('AI 拍一拍决定失败', e); }
+                                            }
                                         }
                                     }
                                 } catch (e) {
