@@ -3823,7 +3823,7 @@
                             const msg = history[idx];
                             if (!msg) return;
 
-                            const startPress = (e) => { e.preventDefault(); timer = setTimeout(() => {
+                            const doQuoteLongPress = () => {
                                 navigator.vibrate(50);
                                 const qSender = msg.sender==='me'?(localStorage.getItem('user_nick')||'我'):(c.notes||c.name||'对方');
                                 let qText = msg.text||'[消息]';
@@ -3834,10 +3834,14 @@
                                 quotePreview.style.display = 'block';
                                 p.querySelector('#quote-text-content').textContent = qSender+': '+qText.substring(0,15);
                                 el.classList.add('quoting');
-                            }, 500); };
+                            };
+                            // 鼠标（桌面）：可以照常 preventDefault，桌面没有触摸滚动的问题
+                            const startPress = (e) => { e.preventDefault(); timer = setTimeout(doQuoteLongPress, 500); };
+                            // 触摸（手机）：绝不在 touchstart 里 preventDefault，否则 iOS 会把整次触摸判定为"不可滚动"
+                            const startPressTouch = () => { timer = setTimeout(doQuoteLongPress, 500); };
                             const endPress = () => clearTimeout(timer);
                             el.addEventListener('mousedown', startPress);
-                            el.addEventListener('touchstart', startPress);
+                            el.addEventListener('touchstart', startPressTouch, { passive: true });
                             el.addEventListener('mouseup', endPress);
                             el.addEventListener('touchend', endPress);
                             el.addEventListener('mouseleave', endPress);
@@ -16598,7 +16602,12 @@
                         <textarea id="wf-confess" placeholder="比如：又熬夜了 / 偷吃了一口不该吃的 / 摸鱼一下午…" style="width:100%;box-sizing:border-box;border:1.5px solid ${MIST};border-radius:14px;padding:13px;font-size:14px;color:${INK};background:#fff;outline:none;font-family:inherit;min-height:110px;resize:vertical;line-height:1.8;text-align:left;"></textarea>
                         <div id="wf-go" style="margin-top:16px;background:${HEAD};color:#fff;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;">🙏 请 TA 定夺</div>
                     </div>`;
-                appPage.querySelector('#wf-back').onclick = () => pickContact(confessScreen);
+                appPage.querySelector('#wf-back').onclick = () => {
+                    // 只有 1 个联系人时，pickContact 不会渲染选人页（会直接又跳回忏悔页自己，等于回不了桌面）
+                    // 所以这里要直接退出到桌面；有 2 个及以上联系人才去选人页
+                    if (contacts().length > 1) pickContact(confessScreen);
+                    else { appPage.classList.remove('active'); appPage.innerHTML = ''; }
+                };
                 appPage.querySelector('#wf-go').onclick = async () => {
                     const confess = (appPage.querySelector('#wf-confess').value||'').trim();
                     if (!confess) { appPage.querySelector('#wf-confess').focus(); return; }
