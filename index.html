@@ -3413,11 +3413,19 @@
 
                         // 异步加载 IndexedDB 中的图片（imgdb:// 前缀）
                         // 图片没设固定高度，加载前是0高度，加载完会把气泡撑高——如果撑高发生在下面几次贴底之后，
-                        // 就会停在"图片加载完之前"的旧底部。这里图片加载完再补滚一次，确保真的到最新消息。
+                        // 就会停在"图片加载完之前"的旧底部。这里图片真正 load 完成后再补滚一次，确保是真正的最新高度。
                         if (window.ImageDB) {
                             const shouldStickToBottom = hasNewMessage || wasAtBottom;
                             ImageDB.hydrateImages(box).then(() => {
-                                if (shouldStickToBottom) box.scrollTop = box.scrollHeight;
+                                if (!shouldStickToBottom) return;
+                                // hydrateImages 只是把 img.src 设上了，浏览器解码、真正撑开高度还需要一点时间
+                                // 等每张图片真的 load（或已经 complete）完，再做最后一次贴底
+                                const imgs = Array.from(box.querySelectorAll('img'));
+                                const waits = imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => {
+                                    img.addEventListener('load', res, { once: true });
+                                    img.addEventListener('error', res, { once: true });
+                                }));
+                                Promise.all(waits).then(() => { box.scrollTop = box.scrollHeight; });
                             }).catch(e => console.warn('图片加载失败:', e));
                         }
 
@@ -13664,7 +13672,8 @@
             }
 
             // —— 阅读计时 → 写进心跳同频「一起专注」 ——
-            let readStartTs = null, readTimerInt = null;
+            // readAccumSec：本次阅读会话已经累计的秒数（跨"切去讨论再回来"也会保留，只有真的离开书架才清零）
+            let readStartTs = null, readTimerInt = null, readAccumSec = 0;
             function crFocusWrite(cid, mins, bookName) {
                 if (!cid || mins < 1) return;
                 const k = (kk) => 'hs_' + cid + '_' + kk;
@@ -13684,19 +13693,22 @@
                     readTimerInt = setInterval(() => {
                         const el = appPage.querySelector('#cr-timer');
                         if (!el || readStartTs == null) return;
-                        const sec = Math.floor((Date.now() - readStartTs) / 1000);
+                        const sec = readAccumSec + Math.floor((Date.now() - readStartTs) / 1000);
                         const m = Math.floor(sec / 60), s = sec % 60;
                         el.textContent = '⏱ ' + m + ':' + String(s).padStart(2, '0');
                     }, 1000);
                 }
             }
-            function flushReadTime(stop) {
+            function flushReadTime(mode) {
+                // mode: 'stop'（真的离开阅读、回书架，会清零本次会话计时）｜ 'pause'（暂时切去讨论，之后回来接着数）
                 if (readStartTs != null) {
-                    const mins = Math.floor((Date.now() - readStartTs) / 60000);
-                    if (mins >= 1 && curContact && curContact.id) crFocusWrite(curContact.id, mins, curBook);
-                    readStartTs = stop ? null : Date.now();
+                    readAccumSec += Math.floor((Date.now() - readStartTs) / 1000);
+                    const mins = Math.floor(readAccumSec / 60);
+                    if (mins >= 1 && curContact && curContact.id) { crFocusWrite(curContact.id, mins, curBook); readAccumSec -= mins * 60; }
+                    readStartTs = null;
                 }
-                if (stop && readTimerInt != null) { clearInterval(readTimerInt); readTimerInt = null; }
+                if (readTimerInt != null) { clearInterval(readTimerInt); readTimerInt = null; }
+                if (mode === 'stop') readAccumSec = 0;
             }
 
             // —— 阅读器 ——
@@ -13713,7 +13725,7 @@
                         <h2 class="font-bold" style="color:${BROWN};font-size:15px;">《${esc(curBook)}》</h2>
                         <span id="cr-tochat" style="color:${BROWN};font-size:13px;cursor:pointer;width:auto;padding-right:6px;white-space:nowrap;">💬 聊天</span>
                     </div>
-                    <div id="cr-reader" class="chat-messages" style="background:${CREAM};padding:18px 18px 130px;font-size:16px;line-height:2;color:${BROWN};white-space:pre-wrap;word-break:break-word;">${missing ? '<div style="text-align:center;opacity:0.5;padding:40px 10px;line-height:2;">书的内容找不到了（可能换设备或清过数据）～<br>回书架删掉它、重新导入一次就好。</div>' : esc(_pages[readPage]||'')}</div>
+                    <div id="cr-reader" class="chat-messages" style="background:${CREAM};padding:18px 18px 130px;font-size:16px;line-height:2;color:${BROWN};white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text;-webkit-touch-callout:default;">${missing ? '<div style="text-align:center;opacity:0.5;padding:40px 10px;line-height:2;">书的内容找不到了（可能换设备或清过数据）～<br>回书架删掉它、重新导入一次就好。</div>' : esc(_pages[readPage]||'')}</div>
                     <div class="chat-footer" style="background:${CREAM};display:flex;flex-direction:column;gap:7px;padding:8px 12px calc(14px + env(safe-area-inset-bottom, 0px)) 12px;box-sizing:border-box;">
                         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">
                             <button id="cr-prev" style="background:#FBF3E8;color:${BROWN};border:1px solid #EAD9C2;border-radius:16px;padding:7px 14px;font-size:13px;cursor:pointer;${readPage<=0?'opacity:0.4;':''}">‹ 上一页</button>
@@ -13723,8 +13735,8 @@
                         <button id="cr-sel-chat" style="width:100%;background:${MINT};color:${BROWN};border:none;border-radius:18px;padding:10px;font-weight:600;font-size:14px;cursor:pointer;">💬 和 TA 聊选中的这段</button>
                     </div>
                 `;
-                wireBack(() => { flushReadTime(true); persist(); renderShelf(); });
-                appPage.querySelector('#cr-tochat').onclick = () => { flushReadTime(true); persist(); renderChat(); };
+                wireBack(() => { flushReadTime('stop'); persist(); renderShelf(); });
+                appPage.querySelector('#cr-tochat').onclick = () => { flushReadTime('pause'); persist(); renderChat(); };
                 const reader = appPage.querySelector('#cr-reader');
                 if (reader) requestAnimationFrame(() => { reader.scrollTop = 0; }); // 每页从头看
                 const prev = appPage.querySelector('#cr-prev');
@@ -13735,7 +13747,7 @@
                     const sel = (window.getSelection ? window.getSelection().toString() : '').trim();
                     if (!sel) { alert('先在上面用手指选中一段文字，再点这里和 TA 聊～'); return; }
                     pendingPassage = sel.length > 1200 ? sel.slice(0,1200) : sel;
-                    flushReadTime(true);
+                    flushReadTime('pause');
                     persist();
                     renderChat();
                 };
