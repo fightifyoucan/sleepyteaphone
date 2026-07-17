@@ -3412,8 +3412,13 @@
                         }
 
                         // 异步加载 IndexedDB 中的图片（imgdb:// 前缀）
+                        // 图片没设固定高度，加载前是0高度，加载完会把气泡撑高——如果撑高发生在下面几次贴底之后，
+                        // 就会停在"图片加载完之前"的旧底部。这里图片加载完再补滚一次，确保真的到最新消息。
                         if (window.ImageDB) {
-                            ImageDB.hydrateImages(box).catch(e => console.warn('图片加载失败:', e));
+                            const shouldStickToBottom = hasNewMessage || wasAtBottom;
+                            ImageDB.hydrateImages(box).then(() => {
+                                if (shouldStickToBottom) box.scrollTop = box.scrollHeight;
+                            }).catch(e => console.warn('图片加载失败:', e));
                         }
 
                         if(hasNewMessage || wasAtBottom) {
@@ -4587,17 +4592,25 @@
                                                 } catch(e) { console.error('AI 表情包选择失败', e); }
                                             }
                                         }
-                                        // AI 自己决定要不要拍一拍用户（不再靠概率）
+                                        // AI 自己决定要不要拍一拍用户（不再靠概率，但加了硬性冷却+更严格的门槛，避免句句都拍）
                                         if (finalMessages.length > 0) {
-                                            const lastMsgIsNudge = history.length && history[history.length-1] && history[history.length-1].type === 'nudge';
-                                            if (!lastMsgIsNudge) {
+                                            // 硬性冷却：从最近一条"拍一拍"往后数，至少要隔够 MIN_GAP 条真实消息，才有资格再问一次
+                                            const MIN_GAP = 6;
+                                            let msgsSinceLastNudge = 0;
+                                            for (let i = history.length - 1; i >= 0; i--) {
+                                                const hm = history[i];
+                                                if (hm && hm.type === 'nudge') break;
+                                                if (hm && hm.sender !== 'system' && hm.type !== 'timestamp') msgsSinceLastNudge++;
+                                            }
+                                            const cooldownOk = msgsSinceLastNudge >= MIN_GAP;
+                                            if (cooldownOk) {
                                                 try {
                                                     const apiKey = localStorage.getItem('apiKey');
                                                     const pPlat = localStorage.getItem('apiPlatform') || 'openai';
                                                     const ep = localStorage.getItem('apiEndpoint') || '';
                                                     const m = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
                                                     const recentReply = finalMessages.join(' ');
-                                                    const patPrompt = `你（${c.notes || c.name}）刚刚回复了对方：「${recentReply}」\n\n"拍一拍"是一种亲昵的小动作（像伸手拍拍对方的头/肩）。结合你的人设、此刻的心情和这段对话的氛围，你现在想不想伸手拍一拍对方？\n只有当拍一拍此刻真的自然、贴合情绪时才拍（比如宠溺、逗对方、安慰、亲密的时候）；不合适就别拍。\n请只回复一个字："拍"（想拍）或"否"（不想拍），除此之外不要输出任何内容。`;
+                                                    const patPrompt = `你（${c.notes || c.name}）刚刚回复了对方：「${recentReply}」\n\n"拍一拍"是一个偶尔才会有的、比较特别的亲昵小动作（伸手拍拍对方的头/肩），不是每次聊天都会做的事。\n绝大多数时候你是不会拍的——只有这一刻的心情明显超出平时的日常聊天（比如突然被逗得很开心、真的很想安慰对方、或者亲密感一下子涌上来），才会想拍；如果只是普通的关心、寻常的调侃或者正常聊天的语气，请不要拍。\n请只回复一个字："拍"（这次真的很想拍，比较少见）或"否"（大多数情况都该选这个），除此之外不要输出任何内容。`;
                                                     let patMsgs;
                                                     if (pPlat === 'gemini') { patMsgs = [{ role: 'user', parts: [{ text: patPrompt }] }]; }
                                                     else { patMsgs = [{ role: 'user', content: patPrompt }]; }
