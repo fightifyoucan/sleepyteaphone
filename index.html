@@ -22,6 +22,11 @@
         html { background: #ffeaf0; } /* 底部safe area填充色 */
         body { display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; min-height: -webkit-fill-available; background: linear-gradient(180deg, #fff5f7 0%, #ffeaf0 100%); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; user-select: none; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0; background-color: #ffeaf0;}
         .mobile-container { width: 330px; height: 620px; background-color: #FBF9F4; border-radius: 40px; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.3); position: relative; overflow: hidden; transform: scale(0.95); border: 10px solid #000000; }
+        /* 触屏设备（手指操作）去掉外壳的 scale 变形——iOS 长按选字这类原生手势，套在被 transform 过的祖先容器里很容易失灵。
+           鼠标操作的桌面端不受影响，缩放效果照常保留。*/
+        @media (pointer: coarse) {
+            .mobile-container { transform: none; }
+        }
         .screen { width: 100%; height: 100%; border-radius: 30px; background-color: transparent; background-size: cover; background-position: center; position: relative; display: flex; flex-direction: column; padding-bottom: 0; box-sizing: border-box; overflow: hidden; }
         .backdrop-blur { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
         .dynamic-island { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 25px; background-color: #000; border-radius: 0 0 15px 15px; z-index: 400; pointer-events: none; }
@@ -4602,15 +4607,17 @@
                                         }
                                         // AI 自己决定要不要拍一拍用户（不再靠概率，但加了硬性冷却+更严格的门槛，避免句句都拍）
                                         if (finalMessages.length > 0) {
-                                            // 硬性冷却：从最近一条"拍一拍"往后数，至少要隔够 MIN_GAP 条真实消息，才有资格再问一次
-                                            const MIN_GAP = 6;
-                                            let msgsSinceLastNudge = 0;
+                                            // 硬性冷却：按"聊了几轮"数，不按消息条数——
+                                            // 因为先生一轮回复常拆成好几条小气泡，按消息条数数很容易被轻松刷够，冷却形同虚设。
+                                            // 这里改成数"用户开口了几次"，先生这一轮不管拆成几条气泡都只算一轮，冷却才是真的隔了那么多轮对话。
+                                            const MIN_ROUNDS = 6;
+                                            let roundsSinceLastNudge = 0;
                                             for (let i = history.length - 1; i >= 0; i--) {
                                                 const hm = history[i];
                                                 if (hm && hm.type === 'nudge') break;
-                                                if (hm && hm.sender !== 'system' && hm.type !== 'timestamp') msgsSinceLastNudge++;
+                                                if (hm && hm.sender === 'me') roundsSinceLastNudge++;
                                             }
-                                            const cooldownOk = msgsSinceLastNudge >= MIN_GAP;
+                                            const cooldownOk = roundsSinceLastNudge >= MIN_ROUNDS;
                                             if (cooldownOk) {
                                                 try {
                                                     const apiKey = localStorage.getItem('apiKey');
@@ -13710,6 +13717,25 @@
                 if (readTimerInt != null) { clearInterval(readTimerInt); readTimerInt = null; }
                 if (mode === 'stop') readAccumSec = 0;
             }
+            function fmtReadDur(sec) {
+                if (sec < 60) return sec + ' 秒';
+                const m = Math.floor(sec / 60), s = sec % 60;
+                return s > 0 ? (m + ' 分 ' + s + ' 秒') : (m + ' 分钟');
+            }
+            function showReadingCongrats(sec, after) {
+                const dlg = document.createElement('div');
+                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(90,70,60,0.42);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+                dlg.innerHTML = `<div style="background:${CREAM};border-radius:20px;width:100%;max-width:290px;padding:26px 22px;text-align:center;box-shadow:0 8px 24px rgba(120,92,86,0.25);">
+                    <div style="font-size:34px;">📖</div>
+                    <div style="font-size:15px;font-weight:700;color:${BROWN};margin-top:10px;">这次读了《${esc(curBook)}》</div>
+                    <div style="font-size:24px;font-weight:700;color:${BROWN};margin-top:6px;">${fmtReadDur(sec)}</div>
+                    <div style="font-size:12px;color:${BROWN};opacity:0.65;margin-top:10px;line-height:1.7;">这段时间已经算进你和 TA 的「一起专注」里啦，慢慢读，TA 陪你～</div>
+                    <div id="cr-cg-ok" style="margin-top:18px;background:${MINT};color:${BROWN};border-radius:14px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;">好啦 · 回书架</div>
+                </div>`;
+                appPage.appendChild(dlg);
+                dlg.querySelector('#cr-cg-ok').onclick = () => { dlg.remove(); after(); };
+                dlg.onclick = (e) => { if (e.target === dlg) { dlg.remove(); after(); } };
+            }
 
             // —— 阅读器 ——
             function renderReader() {
@@ -13735,7 +13761,13 @@
                         <button id="cr-sel-chat" style="width:100%;background:${MINT};color:${BROWN};border:none;border-radius:18px;padding:10px;font-weight:600;font-size:14px;cursor:pointer;">💬 和 TA 聊选中的这段</button>
                     </div>
                 `;
-                wireBack(() => { flushReadTime('stop'); persist(); renderShelf(); });
+                wireBack(() => {
+                    const totalSec = readAccumSec + (readStartTs != null ? Math.floor((Date.now() - readStartTs) / 1000) : 0);
+                    flushReadTime('stop');
+                    persist();
+                    if (totalSec >= 10) showReadingCongrats(totalSec, () => renderShelf());
+                    else renderShelf();
+                });
                 appPage.querySelector('#cr-tochat').onclick = () => { flushReadTime('pause'); persist(); renderChat(); };
                 const reader = appPage.querySelector('#cr-reader');
                 if (reader) requestAnimationFrame(() => { reader.scrollTop = 0; }); // 每页从头看
