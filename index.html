@@ -13738,6 +13738,28 @@
             }
 
             // —— 阅读器 ——
+            function splitIntoSentences(text) {
+                // 按中文句末标点（。！？…）切句子；遇到紧跟在句末标点后面的右引号/右括号（”’」』)）会粘回前一句，
+                // 不会把引号单独劈成一截——拿实际书摘测过好几种对话/引用的情况。
+                if (!text) return [];
+                const enders = ['。', '！', '？', '…'];
+                const closers = ['"', '”', '’', '」', '』', "'", '）', ')'];
+                const sentences = [];
+                let buf = '';
+                for (let i = 0; i < text.length; i++) {
+                    const ch = text[i];
+                    buf += ch;
+                    if (enders.indexOf(ch) !== -1) {
+                        let j = i + 1;
+                        while (j < text.length && closers.indexOf(text[j]) !== -1) { buf += text[j]; j++; }
+                        i = j - 1;
+                        sentences.push(buf);
+                        buf = '';
+                    }
+                }
+                if (buf.trim()) sentences.push(buf);
+                return sentences;
+            }
             function renderReader() {
                 if (hasFile && !curFullText) curFullText = loadBookText(curId);
                 const missing = hasFile && !curFullText;
@@ -13745,13 +13767,21 @@
                 const total = _pages.length;
                 if (readPage >= total) readPage = total - 1;
                 if (readPage < 0) readPage = 0;
+                // 不依赖任何设备的原生选字手势——把这一页拆成一句句能点的小片段，鼠标点/手指点效果完全一致
+                const pageSentences = missing ? [] : splitIntoSentences(_pages[readPage] || '');
+                const selectedIdx = new Set();
                 appPage.innerHTML = `
                     <div class="app-header" style="border-bottom:1px solid #F0E8E2;">
                         <span class="close-btn w-10 inline-block" style="color:${BROWN};cursor:pointer;">‹</span>
                         <h2 class="font-bold" style="color:${BROWN};font-size:15px;">《${esc(curBook)}》</h2>
                         <span id="cr-tochat" style="color:${BROWN};font-size:13px;cursor:pointer;width:auto;padding-right:6px;white-space:nowrap;">💬 聊天</span>
                     </div>
-                    <div id="cr-reader" class="chat-messages" style="background:${CREAM};padding:18px 18px 130px;font-size:16px;line-height:2;color:${BROWN};white-space:pre-wrap;word-break:break-word;user-select:text;-webkit-user-select:text;-webkit-touch-callout:default;">${missing ? '<div style="text-align:center;opacity:0.5;padding:40px 10px;line-height:2;">书的内容找不到了（可能换设备或清过数据）～<br>回书架删掉它、重新导入一次就好。</div>' : esc(_pages[readPage]||'')}</div>
+                    <div id="cr-reader" class="chat-messages" style="background:${CREAM};padding:18px 18px 130px;font-size:16px;line-height:2;color:${BROWN};word-break:break-word;">
+                        ${missing ? '<div style="text-align:center;opacity:0.5;padding:40px 10px;line-height:2;">书的内容找不到了（可能换设备或清过数据）～<br>回书架删掉它、重新导入一次就好。</div>' : `
+                        <div style="font-size:11px;color:#B89B95;background:#FBF3E8;border:1px dashed #EAD9C2;border-radius:10px;padding:7px 10px;margin-bottom:12px;line-height:1.6;">👆 点一句或几句话，就能选中拿去跟 TA 聊</div>
+                        <div style="white-space:pre-wrap;">${pageSentences.map((s,i)=>`<span class="cr-sent" data-idx="${i}" style="cursor:pointer;border-radius:3px;transition:background 0.15s;">${esc(s)}</span>`).join('')}</div>
+                        `}
+                    </div>
                     <div class="chat-footer" style="background:${CREAM};display:flex;flex-direction:column;gap:7px;padding:8px 12px calc(14px + env(safe-area-inset-bottom, 0px)) 12px;box-sizing:border-box;">
                         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;">
                             <button id="cr-prev" style="background:#FBF3E8;color:${BROWN};border:1px solid #EAD9C2;border-radius:16px;padding:7px 14px;font-size:13px;cursor:pointer;${readPage<=0?'opacity:0.4;':''}">‹ 上一页</button>
@@ -13771,13 +13801,20 @@
                 appPage.querySelector('#cr-tochat').onclick = () => { flushReadTime('pause'); persist(); renderChat(); };
                 const reader = appPage.querySelector('#cr-reader');
                 if (reader) requestAnimationFrame(() => { reader.scrollTop = 0; }); // 每页从头看
+                appPage.querySelectorAll('.cr-sent').forEach(el => {
+                    el.onclick = () => {
+                        const idx = parseInt(el.dataset.idx, 10);
+                        if (selectedIdx.has(idx)) { selectedIdx.delete(idx); el.style.background = 'transparent'; }
+                        else { selectedIdx.add(idx); el.style.background = MINT; }
+                    };
+                });
                 const prev = appPage.querySelector('#cr-prev');
                 const next = appPage.querySelector('#cr-next');
                 if (prev) prev.onclick = () => { if (readPage > 0) { readPage--; persist(); renderReader(); } };
                 if (next) next.onclick = () => { if (readPage < total - 1) { readPage++; persist(); renderReader(); } };
                 appPage.querySelector('#cr-sel-chat').onclick = () => {
-                    const sel = (window.getSelection ? window.getSelection().toString() : '').trim();
-                    if (!sel) { alert('先在上面用手指选中一段文字，再点这里和 TA 聊～'); return; }
+                    if (!selectedIdx.size) { alert('先点一句或几句话选中，再点这里和 TA 聊～'); return; }
+                    const sel = Array.from(selectedIdx).sort((a,b)=>a-b).map(i => pageSentences[i]).join('');
                     pendingPassage = sel.length > 1200 ? sel.slice(0,1200) : sel;
                     flushReadTime('pause');
                     persist();
