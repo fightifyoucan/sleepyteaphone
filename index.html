@@ -10303,6 +10303,71 @@
                         };
 
                         // ===== 数据备份 / 导入 =====
+                        // 通用 IndexedDB 备份：不管是哪个数据库（图片仓库、联系人+聊天记录的库，或者以后任何新加的），
+                        // 都用浏览器自带的"列出所有数据库"接口整体扫一遍，不用一个个去猜表名，保证不漏。
+                        async function exportAllIndexedDB() {
+                            const result = {};
+                            if (!(window.indexedDB && indexedDB.databases)) return result;
+                            let dbInfos = [];
+                            try { dbInfos = await indexedDB.databases(); } catch(e) { return result; }
+                            for (const info of dbInfos) {
+                                if (!info || !info.name) continue;
+                                try {
+                                    const dbConn = await new Promise((resolve, reject) => {
+                                        const req = indexedDB.open(info.name);
+                                        req.onsuccess = () => resolve(req.result);
+                                        req.onerror = () => reject(req.error);
+                                    });
+                                    const storeNames = Array.from(dbConn.objectStoreNames);
+                                    const dbDump = { stores: {} };
+                                    for (const storeName of storeNames) {
+                                        const dump = await new Promise((resolve, reject) => {
+                                            const tx = dbConn.transaction(storeName, 'readonly');
+                                            const store = tx.objectStore(storeName);
+                                            const keyPath = store.keyPath;
+                                            const items = [];
+                                            const cursorReq = store.openCursor();
+                                            cursorReq.onsuccess = (e) => {
+                                                const cursor = e.target.result;
+                                                if (cursor) { items.push({ key: cursor.primaryKey, value: cursor.value }); cursor.continue(); }
+                                                else resolve({ keyPath, items });
+                                            };
+                                            cursorReq.onerror = () => reject(cursorReq.error);
+                                        });
+                                        dbDump.stores[storeName] = dump;
+                                    }
+                                    result[info.name] = dbDump;
+                                    dbConn.close();
+                                } catch(e) { console.warn('导出数据库失败:', info.name, e); }
+                            }
+                            return result;
+                        }
+                        async function importAllIndexedDB(data) {
+                            if (!data) return;
+                            for (const dbName of Object.keys(data)) {
+                                const dbDump = data[dbName];
+                                try {
+                                    const dbConn = await new Promise((resolve, reject) => {
+                                        const req = indexedDB.open(dbName);
+                                        req.onsuccess = () => resolve(req.result);
+                                        req.onerror = () => reject(req.error);
+                                    });
+                                    for (const storeName of Object.keys(dbDump.stores || {})) {
+                                        if (!dbConn.objectStoreNames.contains(storeName)) continue; // 这台设备暂时还没这张表，跳过不强求
+                                        const { keyPath, items } = dbDump.stores[storeName];
+                                        await new Promise((resolve, reject) => {
+                                            const tx = dbConn.transaction(storeName, 'readwrite');
+                                            const store = tx.objectStore(storeName);
+                                            store.clear();
+                                            for (const it of items) { if (keyPath) store.put(it.value); else store.put(it.value, it.key); }
+                                            tx.oncomplete = () => resolve();
+                                            tx.onerror = () => reject(tx.error);
+                                        });
+                                    }
+                                    dbConn.close();
+                                } catch(e) { console.warn('导入数据库失败:', dbName, e); }
+                            }
+                        }
                         const backupBtn = appPage.querySelector('#backup-data-btn');
                         if (backupBtn) backupBtn.onclick = async () => {
                             const orig = backupBtn.textContent;
@@ -10310,9 +10375,10 @@
                                 backupBtn.textContent = '正在打包…'; backupBtn.style.pointerEvents = 'none';
                                 const ls = {};
                                 for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); ls[k] = localStorage.getItem(k); }
-                                let images = [];
-                                try { if (window.ImageDB && ImageDB.list) { await ImageDB.readyPromise; images = await ImageDB.list(); } } catch(e){}
-                                const backup = { app: 'MianChaJi', version: 1, exportedAt: new Date().toISOString(), localStorage: ls, images: images };
+                                const idbDump = await exportAllIndexedDB();
+                                let recordCount = 0;
+                                Object.values(idbDump).forEach(d => Object.values(d.stores||{}).forEach(s => recordCount += (s.items||[]).length));
+                                const backup = { app: 'MianChaJi', version: 2, exportedAt: new Date().toISOString(), localStorage: ls, indexedDB: idbDump };
                                 const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
                                 const url = URL.createObjectURL(blob);
                                 const d = new Date();
@@ -10320,8 +10386,8 @@
                                 const a = document.createElement('a'); a.href = url; a.download = `眠茶机备份_${stamp}.json`;
                                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                                 setTimeout(() => URL.revokeObjectURL(url), 2000);
-                                backupBtn.textContent = `✅ 已备份（含 ${images.length} 张图）`;
-                                setTimeout(() => { backupBtn.textContent = orig; backupBtn.style.pointerEvents = ''; }, 2600);
+                                backupBtn.textContent = `✅ 已备份（含联系人/聊天/图片共 ${recordCount} 条）`;
+                                setTimeout(() => { backupBtn.textContent = orig; backupBtn.style.pointerEvents = ''; }, 2800);
                             } catch(e) {
                                 alert('备份失败：' + (e.message || e));
                                 backupBtn.textContent = orig; backupBtn.style.pointerEvents = '';
@@ -10338,17 +10404,17 @@
                                     let data;
                                     try { data = JSON.parse(ev.target.result); } catch(e) { alert('这个文件读不出来，可能不是备份文件哦'); importFile.value = ''; return; }
                                     if (!data || !data.localStorage) { alert('这个文件里没有备份数据哦'); importFile.value = ''; return; }
-                                    const imgN = (data.images && data.images.length) || 0;
-                                    if (!confirm(`确定用这个备份覆盖现在的数据吗？\n（含 ${imgN} 张图片，现有数据会被整个替换、不可撤销）`)) { importFile.value = ''; return; }
+                                    const isOld = !data.indexedDB;
+                                    if (!confirm(`确定用这个备份覆盖现在的数据吗？\n${isOld?'（这是旧版备份，只含设置和图片，不含联系人/聊天记录）':'（含联系人、聊天记录、图片等全部数据）'}\n现有数据会被整个替换、不可撤销`)) { importFile.value = ''; return; }
                                     try {
                                         importBtn.textContent = '正在导入…'; importBtn.style.pointerEvents = 'none';
-                                        // 先清空现有图片，再塞回备份里的
-                                        if (window.ImageDB && ImageDB.list && ImageDB.remove && ImageDB.save) {
+                                        if (data.indexedDB) {
+                                            await importAllIndexedDB(data.indexedDB);
+                                        } else if (window.ImageDB && ImageDB.list && ImageDB.remove && ImageDB.save) {
                                             await ImageDB.readyPromise;
                                             try { const cur = await ImageDB.list(); for (const r of cur) { if (r && r.id) await ImageDB.remove(r.id); } } catch(e){}
                                             if (data.images) { for (const rec of data.images) { if (rec && rec.id) { try { await ImageDB.save(rec.id, rec.data); } catch(e){} } } }
                                         }
-                                        // 整体覆盖 localStorage
                                         localStorage.clear();
                                         Object.keys(data.localStorage).forEach(k => { try { localStorage.setItem(k, data.localStorage[k]); } catch(e){} });
                                         alert('导入完成啦～马上帮你刷新页面💗');
