@@ -3454,8 +3454,10 @@
                         });
                         
 
-                        // Re-bind long press on every render (DOM is replaced each time)
+                        // 注意：只更新变化部分的老气泡会被保留复用，不是每次都重建，所以要防止重复绑定监听器
                         box.querySelectorAll('.message-bubble[data-idx]').forEach(bbl => {
+                            if (bbl.dataset.ctxBound) return;
+                            bbl.dataset.ctxBound = '1';
                             bbl.addEventListener('contextmenu', (e) => {
                                 e.preventDefault();
                                 if(selectMode){const i=parseInt(bbl.dataset.idx);if(selectedIdxs.has(i))selectedIdxs.delete(i);else selectedIdxs.add(i);selectCount.textContent=`已选${selectedIdxs.size}条`;render();}
@@ -3469,6 +3471,7 @@
                         // 多选模式：点勾选圆圈、或点整条消息都能勾选
                         if (selectMode) {
                             box.querySelectorAll('.msg-checkbox[data-selidx]').forEach(cb => {
+                                if (cb.dataset.ckBound) return; cb.dataset.ckBound = '1';
                                 cb.addEventListener('click', (e) => {
                                     e.stopPropagation();
                                     const i = parseInt(cb.dataset.selidx);
@@ -3478,6 +3481,7 @@
                                 });
                             });
                             box.querySelectorAll('.message.select-mode .message-bubble[data-idx]').forEach(bbl => {
+                                if (bbl.dataset.selBound) return; bbl.dataset.selBound = '1';
                                 bbl.addEventListener('click', (e) => {
                                     e.preventDefault(); e.stopPropagation();
                                     const i = parseInt(bbl.dataset.idx);
@@ -3491,6 +3495,7 @@
 
                         // 파일/음악 카드 클릭 팝업
                         box.querySelectorAll('.file-card[data-fidx], .music-card[data-midx]').forEach(card => {
+                            if (card.dataset.cardBound) return; card.dataset.cardBound = '1';
                             const isMusic = card.classList.contains('music-card');
                             const getIdx = () => parseInt(isMusic ? card.dataset.midx : card.dataset.fidx);
                             card.addEventListener('contextmenu',(e)=>{e.preventDefault();const i=getIdx();if(i<0)return;if(selectMode){if(selectedIdxs.has(i))selectedIdxs.delete(i);else selectedIdxs.add(i);selectCount.textContent=`已选${selectedIdxs.size}条`;render();}else showCtxMenu(e.clientX,e.clientY,i);});
@@ -3616,6 +3621,7 @@
                             ...box.querySelectorAll('.gift-card[data-gidx]'),
                         ];
                         box.querySelectorAll('.message-bubble[data-idx]').forEach(bubble => {
+                            if (bubble.dataset.bubBound2) return; bubble.dataset.bubBound2 = '1';
                             // Desktop: right-click shows context menu
                             bubble.addEventListener('contextmenu', (e) => {
                                 e.preventDefault();
@@ -3678,6 +3684,7 @@
 
                         // AI撤回消息长按查看（不再是单击）
                         box.querySelectorAll('.revoked-clickable, .revoked-peeked').forEach(el => {
+                            if (el.dataset.rvkBound) return; el.dataset.rvkBound = '1';
                             const toggle = (e) => {
                                 e.stopPropagation();
                                 e.preventDefault();
@@ -3718,10 +3725,12 @@
                         // Transfer card click → dialog
                         // Transfer card click → bottom sheet
                         box.querySelectorAll('.transfer-card[data-tx]').forEach(card => {
+                            if (card.dataset.txBound) return;
                             const tidx = parseInt(card.dataset.tx);
                             const msg = history[tidx];
                             // 只有AI发来的转账才能点击接收/退还
                             if(!msg || msg.sender === 'me' || msg.claimed || msg.status==='returned') return;
+                            card.dataset.txBound = '1';
                             card.style.cursor = 'pointer';
                             const openSheet = (e) => {
                                 if(e&&e.stopPropagation)e.stopPropagation();
@@ -3763,10 +3772,12 @@
 
                         // Gift card click → bottom sheet
                         box.querySelectorAll('.gift-card[data-gidx]').forEach(card => {
+                            if (card.dataset.giftBound) return;
                             const gidx = parseInt(card.dataset.gidx);
                             const gmsg = history[gidx];
                             // 只有AI发来的礼物才能点击接收/退还
                             if(!gmsg || gmsg.sender === 'me' || gmsg.claimed || gmsg.status==='returned') return;
+                            card.dataset.giftBound = '1';
                             card.style.cursor = 'pointer';
                             const openGift = (e) => {
                                 if(e&&e.stopPropagation)e.stopPropagation();
@@ -3806,6 +3817,7 @@
 
                         // Click on select-row to toggle
                         box.querySelectorAll('.select-row[data-sidx]').forEach(row => {
+                            if (row.dataset.rowBound) return; row.dataset.rowBound = '1';
                             row.addEventListener('click', (e) => {
                                 const idx = parseInt(row.dataset.sidx);
                                 if(selectedIdxs.has(idx)) selectedIdxs.delete(idx);
@@ -3840,6 +3852,10 @@
                             if (idx === undefined) return;
                             const msg = history[idx];
                             if (!msg) return;
+                            // 防止每次 render() 都在同一条老气泡上重复叠加监听器——聊得越久、旧气泡越多，
+                            // 不加这个标记的话监听器会无限累加，越聊越卡，最后页面被判定"反复出问题"而崩溃。
+                            if (el.dataset.qlpBound) return;
+                            el.dataset.qlpBound = '1';
 
                             const doQuoteLongPress = () => {
                                 navigator.vibrate(50);
