@@ -4845,7 +4845,7 @@
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement('a');
                             a.href = url;
-                            a.download = `聊天记录_${oppName}_${new Date().toISOString().slice(0,10)}.txt`;
+                            a.download = `聊天记录_${oppName}_${localDateStr()}.txt`;
                             document.body.appendChild(a);
                             a.click();
                             document.body.removeChild(a);
@@ -7484,6 +7484,15 @@
 
             // ============== 心跳同频中 ==============
             // 工具：取/存数据（按联系人分开存）
+            // 【修复时区bug】按"本地时间"取 YYYY-MM-DD，不要用 toISOString()（那是 UTC 时间，
+            // 在西半球时区会导致晚上看到的日期比本地实际日期多了一天）
+            function localDateStr(d) {
+                d = d ? new Date(d) : new Date();
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
             function hsKey(contactId, k) { return 'hs_' + contactId + '_' + k; }
             function hsGet(contactId, k, defVal) {
                 try { const v = localStorage.getItem(hsKey(contactId, k)); return v ? JSON.parse(v) : defVal; } catch(e) { return defVal; }
@@ -7757,7 +7766,7 @@
                 const el = appPage.querySelector('#hs-target-status');
                 if (!el || !c) return;
                 // 缓存：同一小时内不重复请求
-                const hourKey = new Date().toISOString().slice(0, 13); // 精确到小时
+                const hourKey = localDateStr() + '-' + new Date().getHours(); // 按本地时间精确到小时
                 const cached = hsGet(c.id, 'liveStatus', null);
                 if (cached && cached.hour === hourKey && cached.text) {
                     el.innerHTML = `<span>${cached.text}</span>`;
@@ -8807,7 +8816,7 @@
             function hsOpenHealth(appPage, c, userNick) {
                 // 取当前数据用于显示徽标
                 const habits = hsGet(c.id, 'healthHabits', []);
-                const todayStr = new Date().toISOString().slice(0,10);
+                const todayStr = localDateStr();
                 const todayChecked = habits.filter(h => (h.history || []).includes(todayStr)).length;
                 const period = hsGet(c.id, 'periodData', null);
                 const periodInfo = hsGetPeriodInfo(period);
@@ -8903,7 +8912,7 @@
                 
                 const renderList = () => {
                     const habits = hsGet(c.id, 'healthHabits', []);
-                    const todayStr = new Date().toISOString().slice(0,10);
+                    const todayStr = localDateStr();
                     
                     if (habits.length === 0) {
                         body.innerHTML = `
@@ -8929,7 +8938,7 @@
                         const todayInHist = hist.includes(todayStr);
                         if (!todayInHist) cur.setDate(cur.getDate() - 1);
                         for (let i = 0; i < 365; i++) {
-                            const s = cur.toISOString().slice(0,10);
+                            const s = localDateStr(cur);
                             if (hist.includes(s)) { streak++; cur.setDate(cur.getDate() - 1); }
                             else break;
                         }
@@ -8982,7 +8991,7 @@
                             const h = habits[idx];
                             if (!h) return;
                             h.history = h.history || [];
-                            const todayStr = new Date().toISOString().slice(0,10);
+                            const todayStr = localDateStr();
                             if (h.history.includes(todayStr)) {
                                 // 取消打卡
                                 h.history = h.history.filter(d => d !== todayStr);
@@ -9090,7 +9099,7 @@
             function hsBuildPeriodCalendarDays(period, year, month) {
                 const daysInMonth = new Date(year, month + 1, 0).getDate();
                 const firstWeekday = new Date(year, month, 1).getDay();
-                const todayStr = new Date().toISOString().slice(0, 10);
+                const todayStr = localDateStr();
                 const history = (period && period.history) || [];
 
                 const actualSet = new Set();
@@ -9099,7 +9108,7 @@
                     const s = new Date(h.start);
                     const e = h.end ? new Date(h.end) : (i === 0 && period.inPeriod ? new Date() : s);
                     for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-                        actualSet.add(d.toISOString().slice(0, 10));
+                        actualSet.add(localDateStr(d));
                     }
                 });
 
@@ -9113,7 +9122,7 @@
                     while (cursor <= monthEnd && guard < 60) {
                         for (let i = 0; i < periodLen; i++) {
                             const d = new Date(cursor); d.setDate(d.getDate() + i);
-                            predictedSet.add(d.toISOString().slice(0, 10));
+                            predictedSet.add(localDateStr(d));
                         }
                         cursor = new Date(cursor.getTime() + cycleLen * 86400000);
                         guard++;
@@ -9123,7 +9132,7 @@
                 const days = [];
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateObj = new Date(year, month, d);
-                    const dateStr = dateObj.toISOString().slice(0, 10);
+                    const dateStr = localDateStr(dateObj);
                     days.push({
                         day: d, dateStr,
                         isToday: dateStr === todayStr,
@@ -9143,7 +9152,7 @@
                 const render = () => {
                     const period = hsGet(c.id, 'periodData', null);
                     const info = hsGetPeriodInfo(period);
-                    const todayStr = new Date().toISOString().slice(0,10);
+                    const todayStr = localDateStr();
                     const inPeriod = period && period.inPeriod;
                     const history = (period && period.history) || [];
                     const cal = hsBuildPeriodCalendarDays(period, calYear, calMonth);
@@ -9639,7 +9648,7 @@
                     period.history = period.history || [];
                     if (!period.history[0]) {
                         // 没有进行中的记录，创建一个
-                        period.history.unshift({ start: new Date().toISOString().slice(0,10), end: null, symptoms: syms });
+                        period.history.unshift({ start: localDateStr(), end: null, symptoms: syms });
                     } else {
                         period.history[0].symptoms = syms;
                     }
@@ -10985,7 +10994,7 @@
                     const raw = localStorage.getItem(hsKL('healthHabits'));
                     const habits = raw ? JSON.parse(raw) : [];
                     let h = habits.find(x => x._lullaby || x.name === '晚安');
-                    const today = new Date().toISOString().slice(0,10);
+                    const today = localDateStr();
                     if (!h) { h = { id: 'h_' + Date.now(), emoji: '🌙', name: '晚安', history: [], created: new Date().toISOString(), _lullaby: true }; habits.push(h); }
                     else if (h.emoji === '🌛') { h.emoji = '🌙'; }
                     if (!h.history) h.history = [];
@@ -11994,7 +12003,7 @@
                     const raw = localStorage.getItem(hsK(cid, 'healthHabits'));
                     const habits = raw ? JSON.parse(raw) : [];
                     let h = habits.find(x => x._guard || x.name === '夜晚守护');
-                    const today = new Date().toISOString().slice(0,10);
+                    const today = localDateStr();
                     if (!h) { h = { id: 'h_' + Date.now(), emoji: '🌙', name: '夜晚守护', history: [], created: new Date().toISOString(), _guard: true }; habits.push(h); }
                     if (!h.history) h.history = [];
                     if (!h.history.includes(today)) h.history.push(today);
@@ -13639,7 +13648,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `夸夸本_${new Date().toISOString().slice(0,10)}.txt`;
+                a.download = `夸夸本_${localDateStr()}.txt`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -14558,7 +14567,7 @@
                 const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url; a.download = `好好吃饭_${new Date().toISOString().slice(0,10)}.txt`;
+                a.href = url; a.download = `好好吃饭_${localDateStr()}.txt`;
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             }
@@ -14934,7 +14943,7 @@
                 let curCat = it0.cat || '蔬菜';
                 let curZone = it0.zone || 'fridge';
                 const curAmount = it0.amount || (it0.qty!=null ? (it0.qty+'个') : '');
-                const dateStr = it0.addedAt ? new Date(it0.addedAt).toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
+                const dateStr = it0.addedAt ? localDateStr(it0.addedAt) : localDateStr();
                 const dlg = document.createElement('div');
                 dlg.className = 'fr-sheet';
                 dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.28);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
@@ -17593,7 +17602,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `梦境笔记_${new Date().toISOString().slice(0,10)}.txt`;
+                a.download = `梦境笔记_${localDateStr()}.txt`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -18009,7 +18018,7 @@
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `番外_${oppName}_${new Date().toISOString().slice(0,10)}.txt`;
+                        a.download = `番外_${oppName}_${localDateStr()}.txt`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
