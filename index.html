@@ -9459,8 +9459,10 @@
                                 </div>
                                 <div style="font-size:10px;color:#9A7872;">${streak > 0 ? `🔥 连续 ${streak} 天` : '今天开始呀'}${h.aiReply && done ? ' · TA 也打卡了' : ''}</div>
                             </div>
-                            <span class="hs-habit-edit" data-idx="${idx}" style="font-size:11px;color:#8AA9C4;cursor:pointer;padding:4px 8px;">编辑</span>
-                            <span class="hs-habit-del" data-idx="${idx}" style="font-size:11px;color:#B89B95;cursor:pointer;padding:4px 8px;">删除</span>
+                            <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+                                <span class="hs-habit-edit" data-idx="${idx}" style="font-size:11px;color:#8AA9C4;cursor:pointer;padding:4px 6px;">编辑</span>
+                                <span class="hs-habit-del" data-idx="${idx}" style="font-size:11px;color:#B89B95;cursor:pointer;padding:4px 6px;">删除</span>
+                            </div>
                         `;
                         listEl.appendChild(card);
                     });
