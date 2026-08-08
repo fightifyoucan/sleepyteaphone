@@ -8572,9 +8572,40 @@
             }
 
             // ===== 一起专注 =====
+            // ===== 一起专注 · 会话持久化（防止切后台/锁屏/页面被系统回收导致计时丢失）=====
+            function hsSaveActiveFocus(session) {
+                try { localStorage.setItem('hs_active_focus_session', JSON.stringify(session)); } catch(e) {}
+            }
+            function hsGetActiveFocusSession() {
+                try { const v = localStorage.getItem('hs_active_focus_session'); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+            }
+            function hsClearActiveFocusSession(token) {
+                const cur = hsGetActiveFocusSession();
+                if (!cur || !token || cur.token === token) {
+                    try { localStorage.removeItem('hs_active_focus_session'); } catch(e) {}
+                }
+            }
+
             function hsOpenFocus(appPage, c, userNick, onStatsUpdate) {
                 const layer = hsOpenLayer(appPage, '一起专注', '');
                 const body = layer.querySelector('.hs-layer-body');
+
+                // 打开页面时先检查有没有一场还没结算的专注（可能是切后台/锁屏/被系统回收之后重新打开的）
+                const active = hsGetActiveFocusSession();
+                if (active && active.contactId === c.id) {
+                    const elapsed = Math.floor((Date.now() - active.startTime) / 1000);
+                    if (elapsed >= active.totalSeconds) {
+                        // 离开期间已经跑完了：直接补记这次专注的结果，不让它悄悄消失
+                        hsClearActiveFocusSession(active.token);
+                        hsFinishFocus(layer, body, c, active.userNick || userNick, active.mins, active.task, onStatsUpdate, false, active.category);
+                        return;
+                    } else {
+                        // 还没跑完：恢复倒计时界面，接着算
+                        hsRunFocusTimer(layer, body, c, active.userNick || userNick, active.startTime, active.totalSeconds, active.mins, active.task, active.category, active.token, onStatsUpdate);
+                        return;
+                    }
+                }
+
                 let mins = 25;
                 let usingCustom = false;
                 let selectedCat = null;
@@ -8671,7 +8702,7 @@
                 renderForm();
             }
             
-            async function hsStartFocus(layer, body, c, userNick, mins, task, onStatsUpdate, category) {
+            function hsRunFocusTimer(layer, body, c, userNick, startTime, total, mins, task, category, token, onStatsUpdate) {
                 // 进入专注模式
                 body.innerHTML = `
                     <div style="text-align:center;padding:10px 14px;">
@@ -8694,17 +8725,16 @@
                         </div>
                     </div>
                 `;
-                
-                const total = mins * 60;
+
                 let remain = total;
                 let companionTimer = null;
                 let mainTimer = null;
-                const startTime = Date.now();
+                let finalized = false;
                 const progEl = body.querySelector('#hs-focus-prog');
                 const timeEl = body.querySelector('#hs-focus-time');
                 const msgEl = body.querySelector('#hs-focus-msg');
                 const CIRC = 276.46;
-                
+
                 // 先生成 TA 现在在做什么作为陪伴文案
                 async function genCompanion() {
                     try {
@@ -8717,13 +8747,32 @@
                 }
                 genCompanion();
                 companionTimer = setInterval(genCompanion, 5 * 60 * 1000); // 每 5 分钟刷新
-                
+
+                // 页面从后台切回前台时，立刻用真实时间校正一次显示，不用等下一个 tick
+                function onVisible() { if (document.visibilityState === 'visible') tick(); }
+                document.addEventListener('visibilitychange', onVisible);
+
+                // 保证无论是正常倒计时结束、手动结束、还是重开页面时发现已经跑完，都只结算一次
+                function finalizeOnce(isEarly, overrideMins) {
+                    if (finalized) return;
+                    finalized = true;
+                    clearInterval(mainTimer);
+                    clearInterval(companionTimer);
+                    document.removeEventListener('visibilitychange', onVisible);
+                    const cur = hsGetActiveFocusSession();
+                    if (!cur || cur.token !== token) return; // 已经在别处（比如重新打开页面时）结算过了
+                    hsClearActiveFocusSession(token);
+                    const finalMins = overrideMins != null ? overrideMins : mins;
+                    hsFinishFocus(layer, body, c, userNick, finalMins, task, onStatsUpdate, !!isEarly, category);
+                }
+
                 function tick() {
-                    remain--;
+                    // 用「当前时间 - 开始时间」换算剩余时间，而不是单纯把 remain 减一——
+                    // 这样即使切后台/锁屏导致 setInterval 被浏览器节流、少跑了几次，重新恢复时也能自动校正回正确的剩余时间
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    remain = total - elapsed;
                     if (remain <= 0) {
-                        clearInterval(mainTimer);
-                        clearInterval(companionTimer);
-                        hsFinishFocus(layer, body, c, userNick, mins, task, onStatsUpdate, false, category);
+                        finalizeOnce(false);
                         return;
                     }
                     const m = Math.floor(remain / 60), s = remain % 60;
@@ -8731,19 +8780,26 @@
                     progEl.style.strokeDashoffset = (CIRC * (1 - remain / total)).toFixed(2);
                 }
                 mainTimer = setInterval(tick, 1000);
-                
+                tick(); // 立刻算一次，恢复中断的专注时不会先短暂闪一下旧数字
+
                 body.querySelector('.hs-focus-stop').onclick = () => {
-                    if (!confirm('提前结束这次专注？\n（已专注 ' + Math.floor((Date.now() - startTime) / 60000) + ' 分钟）')) return;
-                    clearInterval(mainTimer);
-                    clearInterval(companionTimer);
-                    const actualMins = Math.max(1, Math.floor((Date.now() - startTime) / 60000));
-                    // 只有专注满至少1分钟才计入
-                    if (actualMins >= 1) {
-                        hsFinishFocus(layer, body, c, userNick, actualMins, task, onStatsUpdate, true, category);
-                    } else {
-                        layer.remove();
-                    }
+                    const livedMins = Math.max(1, Math.floor((Date.now() - startTime) / 60000));
+                    if (!confirm('提前结束这次专注？\n（已专注 ' + livedMins + ' 分钟）')) return;
+                    finalizeOnce(true, livedMins);
                 };
+
+                // 专注进行中点左上角"‹"返回：以前会让计时器在后台孤立运行、完成时用户根本看不到结果，
+                // 现在统一走"结束"那套确认逻辑，不会再悄悄跑丢
+                const backBtn = layer.querySelector('.hs-layer-back');
+                if (backBtn) backBtn.onclick = () => body.querySelector('.hs-focus-stop').click();
+            }
+
+            async function hsStartFocus(layer, body, c, userNick, mins, task, onStatsUpdate, category) {
+                const total = mins * 60;
+                const startTime = Date.now();
+                const token = 'focus_' + startTime + '_' + Math.random().toString(36).slice(2, 8);
+                hsSaveActiveFocus({ token, contactId: c.id, userNick, startTime, totalSeconds: total, mins, task, category });
+                hsRunFocusTimer(layer, body, c, userNick, startTime, total, mins, task, category, token, onStatsUpdate);
             }
             
             async function hsFinishFocus(layer, body, c, userNick, mins, task, onStatsUpdate, isEarly, category) {
