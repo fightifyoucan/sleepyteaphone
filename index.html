@@ -3900,11 +3900,17 @@
                         box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
                             avatarEl.onclick = () => {
                                 if (avatarEl.disabled) return;
-                                // 改成快速点两次才触发拍一拍：第一次点先记时间，400ms 内点第二次才算成功
+                                // 改成快速点两次才触发拍一拍：第一次点先记时间，600ms 内点第二次才算成功
                                 const now = Date.now();
                                 const lastTap = avatarEl._patLastTap || 0;
                                 avatarEl._patLastTap = now;
-                                if (now - lastTap > 400) return; // 只点了一次，等待第二次点击
+                                if (now - lastTap > 600) {
+                                    // 只点了一次：给个小反馈，让人知道点到了、正等第二下
+                                    avatarEl.style.transition = 'transform 0.15s';
+                                    avatarEl.style.transform = 'scale(1.15)';
+                                    setTimeout(() => { avatarEl.style.transform = 'scale(1)'; }, 150);
+                                    return;
+                                }
                                 avatarEl._patLastTap = 0; // 触发后重置，防止连续三次点被误判成两次双击
 
                                 avatarEl.disabled = true;
@@ -3913,14 +3919,19 @@
                                 const contactLabel = c.notes || c.name;
                                 const nudgeText = `我拍了拍「${contactLabel}」${nudgeSuffix}`;
                                 send({ id: `nudge_${Date.now()}`, sender: 'system', type: 'nudge', text: nudgeText, time: new Date() });
-                                setTimeout(() => {
-                                    box.querySelectorAll('.message.received .message-avatar').forEach(av => {
-                                        av.classList.remove('shake');
-                                        void av.offsetWidth;
-                                        av.classList.add('shake');
-                                        setTimeout(() => av.classList.remove('shake'), 700);
+                                // send() 里的 render() 是靠 requestAnimationFrame 排队异步执行的，
+                                // 用 setTimeout(0) 去加抖动样式跟它谁先谁后没有保证，很容易抓到马上要被换掉的旧头像节点。
+                                // 用两层 requestAnimationFrame，保证是在渲染真正跑完、头像元素定下来之后再触发抖动。
+                                requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                        box.querySelectorAll('.message.received .message-avatar').forEach(av => {
+                                            av.classList.remove('shake');
+                                            void av.offsetWidth;
+                                            av.classList.add('shake');
+                                            setTimeout(() => av.classList.remove('shake'), 700);
+                                        });
                                     });
-                                }, 0);
+                                });
                             };
                         });
 
@@ -9337,14 +9348,33 @@
 
                     if (history.length > 0) {
                         const histEl = body.querySelector('#hs-period-history');
-                        history.slice(0, 10).forEach(h => {
+                        history.slice(0, 10).forEach((h, hIdx) => {
                             const d = parseLocalDate(h.start);
                             const dateStr = (d.getMonth()+1) + '月' + d.getDate() + '日';
                             const dur = h.end ? Math.round((parseLocalDate(h.end) - d) / 86400000) + 1 : null;
                             const card = document.createElement('div');
-                            card.style.cssText = 'background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #f0e0dc;display:flex;justify-content:space-between;align-items:center;';
-                            card.innerHTML = `<div style="font-size:12px;color:#775C56;">${dateStr} 开始${dur ? ` · ${dur} 天` : ' · 未记结束'}</div>${h.symptoms && h.symptoms.length ? `<div style="font-size:11px;color:#9A7872;">${h.symptoms.join('、')}</div>` : ''}`;
+                            card.style.cssText = 'background:#fff;border-radius:10px;padding:10px 12px;border:1px solid #f0e0dc;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+                            card.innerHTML = `<div style="flex:1;min-width:0;"><div style="font-size:12px;color:#775C56;">${dateStr} 开始${dur ? ` · ${dur} 天` : ' · 未记结束'}</div>${h.symptoms && h.symptoms.length ? `<div style="font-size:11px;color:#9A7872;margin-top:2px;">${h.symptoms.join('、')}</div>` : ''}</div><span class="hs-period-hist-del" data-idx="${hIdx}" style="flex-shrink:0;color:#C99;font-size:11px;padding:4px 8px;cursor:pointer;">删除</span>`;
                             histEl.appendChild(card);
+                        });
+                        histEl.querySelectorAll('.hs-period-hist-del').forEach(delBtn => {
+                            delBtn.onclick = () => {
+                                const realIdx = parseInt(delBtn.dataset.idx, 10);
+                                if (!confirm('删除这条记录？如果这是误操作产生的多余记录（比如把一次连续经期拆成了两条），删掉后日历会重新连起来。')) return;
+                                const period = hsGet(c.id, 'periodData', { history: [] });
+                                period.history = period.history || [];
+                                period.history.splice(realIdx, 1);
+                                if (period.history[0]) {
+                                    period.lastStart = period.history[0].start;
+                                    period.inPeriod = !period.history[0].end;
+                                } else {
+                                    period.lastStart = null;
+                                    period.inPeriod = false;
+                                }
+                                hsSet(c.id, 'periodData', period);
+                                if (window.hsRefreshPeriodWidget) window.hsRefreshPeriodWidget();
+                                render();
+                            };
                         });
                     }
 
@@ -10213,6 +10243,12 @@
                 });
                 // 同一页面内修改经期数据时 storage 事件不会触发，暴露一个刷新方法给记录页主动调用
                 window.hsRefreshPeriodWidget = refresh;
+
+                // 首次加载时 DB（IndexedDB）可能还没读取完成，此时读联系人列表会是空的，
+                // 导致明明有数据也误判成"还没有记录"。等 DB 真正就绪后再刷新一次。
+                if (typeof DB !== 'undefined' && DB.readyPromise) {
+                    DB.readyPromise.then(refresh).catch(() => {});
+                }
 
                 refresh();
                 updatePeriodWidgetPhoto();
