@@ -3098,13 +3098,45 @@
                                 backgroundColor: null,
                             });
                             document.body.removeChild(container);
-                            const a = document.createElement('a');
-                            a.href = canvas.toDataURL('image/png');
-                            a.download = `聊天截图_${contactName}.png`;
-                            a.click();
+
+                            // iOS Safari 等移动端浏览器不支持 <a download> 触发保存，
+                            // 优先用 Web Share API 弹出系统分享面板（可直接"存储图像"）
+                            const dataUrl = canvas.toDataURL('image/png');
+                            const filename = `聊天截图_${contactName}.png`;
+                            let sharedOk = false;
+                            try {
+                                const blob = await (await fetch(dataUrl)).blob();
+                                const file = new File([blob], filename, { type: 'image/png' });
+                                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                    await navigator.share({ files: [file], title: filename });
+                                    sharedOk = true;
+                                }
+                            } catch(shareErr) {
+                                // 用户取消分享也会走到这里，不当作失败
+                                if (shareErr && shareErr.name === 'AbortError') sharedOk = true;
+                            }
+
+                            if (!sharedOk) {
+                                // 回退方案：桌面浏览器走原来的下载逻辑；
+                                // 不支持分享/下载的移动浏览器则在新标签页打开图片，提示手动长按保存
+                                const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                if (!isMobile) {
+                                    const a = document.createElement('a');
+                                    a.href = dataUrl;
+                                    a.download = filename;
+                                    a.click();
+                                } else {
+                                    const win = window.open(dataUrl, '_blank');
+                                    if (!win) {
+                                        alert('图片已生成，但浏览器拦截了新窗口。请允许弹出窗口后重试，或长按下方提示区域保存。');
+                                    } else {
+                                        alert('图片已在新标签页打开，长按图片选择"存储图像"即可保存～');
+                                    }
+                                }
+                            }
                         } catch(e) {
                             if(document.body.contains(container)) document.body.removeChild(container);
-                            alert('截图失败: ' + e.message);
+                            alert('截图失败: ' + (e && e.message ? e.message : e) + '\n（如果选的消息很多、截图很长，可以试试分批截取）');
                         }
                         cancelSelect();
                     };
@@ -3868,6 +3900,13 @@
                         box.querySelectorAll('.message.received .message-avatar').forEach(avatarEl => {
                             avatarEl.onclick = () => {
                                 if (avatarEl.disabled) return;
+                                // 改成快速点两次才触发拍一拍：第一次点先记时间，400ms 内点第二次才算成功
+                                const now = Date.now();
+                                const lastTap = avatarEl._patLastTap || 0;
+                                avatarEl._patLastTap = now;
+                                if (now - lastTap > 400) return; // 只点了一次，等待第二次点击
+                                avatarEl._patLastTap = 0; // 触发后重置，防止连续三次点被误判成两次双击
+
                                 avatarEl.disabled = true;
                                 setTimeout(() => { avatarEl.disabled = false; }, 1000);
                                 const nudgeSuffix = c.nudge || "的脑袋";
