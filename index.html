@@ -580,7 +580,7 @@
                     <div style="grid-column: span 2; text-align: center;">
                         <div id="tea-widget" class="love-widget" style="position: relative; overflow: hidden; cursor: pointer; background: rgba(255, 255, 255, 0.3); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
                             <div id="widget-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center;"></div>
-                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.15);">
+                            <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 10px; color: white; text-shadow: 0 1px 4px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);">
                                <div class="flex flex-row items-center justify-center mb-2 gap-3">
                                    <img id="widget-avatar-me" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
                                    <img id="widget-avatar-lover" src="" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid white; object-fit: cover; background-color: rgba(255,255,255,0.3);">
@@ -589,21 +589,22 @@
                                <div id="love-days-text" class="days-count">...</div>
                             </div>
                         </div>
-                        <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 3px rgba(0,0,0,0.15);">Tea Widget</span>
+                        <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 4px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);">Tea Widget</span>
                     </div>
                 </div>
-                <div id="period-reminder-widget" style="margin:2px 8.55px 0 8.55px;cursor:pointer;position:relative;overflow:hidden;border-radius:22px;background:rgba(255,255,255,0.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);">
+                <div style="text-align: center;">
+                <div id="period-reminder-widget" style="margin:0 8.55px 0 8.55px;cursor:pointer;position:relative;overflow:hidden;border-radius:20px;background:rgba(255,255,255,0.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);">
                     <div id="period-widget-bg" style="position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;"></div>
-                    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:14px;padding:14px 16px;color:white;text-shadow:0 1px 3px rgba(0,0,0,0.15);">
-                    <div style="flex-shrink:0;position:relative;width:82px;box-sizing:border-box;background:#fff;border-radius:16px;box-shadow:0 3px 10px rgba(0,0,0,0.2);padding:8px 6px 7px 6px;text-align:center;">
+                    <div style="position:relative;z-index:1;display:flex;align-items:center;gap:12px;padding:10px 16px;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);">
+                    <div style="flex-shrink:0;position:relative;width:76px;box-sizing:border-box;background:#fff;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.2);padding:6px 5px 6px 5px;text-align:center;margin-left:10px;">
                         <div style="position:absolute;left:-7px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:8px solid #fff;filter:drop-shadow(-1px 1px 1px rgba(0,0,0,0.1));"></div>
-                        <div style="position:relative;width:42px;height:42px;margin:0 auto;">
-                            <div id="period-widget-photo" style="width:42px;height:42px;border-radius:50%;background-color:#F6E9E7;background-size:cover;background-position:center;background-repeat:no-repeat;">
-                                <svg id="period-widget-photo-fallback" width="19" height="19" viewBox="0 0 24 24" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-3.31 0-8 1.79-8 4v2h16v-2c0-2.21-4.69-4-8-4Z" fill="#B08984" fill-opacity="0.85"/></svg>
+                        <div style="position:relative;width:50px;height:50px;margin:0 auto;">
+                            <div id="period-widget-photo" style="width:50px;height:50px;border-radius:50%;background-color:#F6E9E7;background-size:cover;background-position:center;background-repeat:no-repeat;box-sizing:border-box;border:1.5px solid #E2DCD7;">
+                                <svg id="period-widget-photo-fallback" width="22" height="22" viewBox="0 0 24 24" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Zm0 2c-3.31 0-8 1.79-8 4v2h16v-2c0-2.21-4.69-4-8-4Z" fill="#B08984" fill-opacity="0.85"/></svg>
                             </div>
                             <div style="position:absolute;top:-2px;right:-2px;width:13px;height:13px;border-radius:50%;background:#FFD3D4;border:2px solid #ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.15);"></div>
                         </div>
-                        <div id="period-widget-caption" style="margin-top:5px;font-size:9.5px;line-height:1.25;color:#775C56;text-shadow:none;word-break:break-word;">...</div>
+                        <div id="period-widget-caption" style="margin-top:2px;font-size:8px;line-height:1.15;color:#775C56;text-shadow:none;white-space:nowrap;">Send a message.</div>
                     </div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:11px;opacity:0.85;margin-bottom:2px;">月经提醒</div>
@@ -611,6 +612,8 @@
                         <div id="period-widget-hint" style="font-size:11px;opacity:0.8;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
                     </div>
                     </div>
+                </div>
+                <span class="text-xs mt-1 text-center widget-label" style="color:white;text-shadow: 0 1px 4px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);">Tea Widget</span>
                 </div>
             </div>
             <div class="page-dots" id="page-dots">
@@ -2012,6 +2015,11 @@
                     sc.style.paddingTop = 'env(safe-area-inset-top, 0px)';
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
+                }
+                const pw0 = document.getElementById('period-reminder-widget');
+                if (pw0) {
+                    pw0.style.transform = 'scale(0.95)';
+                    pw0.style.transformOrigin = 'center top';
                 }
 
 
@@ -10076,13 +10084,6 @@
                 if (!id) return null;
                 return hsGet(id, 'periodData', null);
             }
-            // 根据周期数据计算头像下方气泡里的提示语——经期中固定显示"记得好好休息。"，否则显示倒计时
-            function hsGetPeriodWidgetCaption(period, daysToNext, inPeriodNow) {
-                if (!period || !period.lastStart) return '去心跳同频中记录';
-                if (inPeriodNow) return '记得好好休息。';
-                if (daysToNext <= 0) return '是不是要来了？';
-                return `还有${daysToNext}天`;
-            }
             function setupPeriodWidget() {
                 const widget = document.getElementById('period-reminder-widget');
                 if (!widget) return;
@@ -10134,7 +10135,6 @@
                     if (!period || !period.lastStart) {
                         statusEl.textContent = '还没有记录';
                         hintEl.textContent = '去心跳同频中记录';
-                        if (captionEl) captionEl.textContent = '去心跳同频中记录';
                         return;
                     }
                     const last = parseLocalDate(period.lastStart); last.setHours(0, 0, 0, 0);
@@ -10156,7 +10156,6 @@
                         const pred = hsGetPeriodPrediction(period);
                         hintEl.textContent = pred ? `预计 ${pred.nextStartStr}` : '距离预测经期开始';
                     }
-                    if (captionEl) captionEl.textContent = hsGetPeriodWidgetCaption(period, daysToNext, inPeriodNow);
                 }
 
                 // 点击小组件：不再自己填写记录，而是跳转到"心跳同频中"里查看/记录真实的月经记录
@@ -10858,6 +10857,7 @@
                         const homeContent = document.querySelector('.home-content');
 
                         function setImmersive(on) {
+                            const periodWidget = document.getElementById('period-reminder-widget');
                             if (on) {
                                 // 取当前壁纸
                                 const wallpaperBg = screenEl.style.backgroundImage;
@@ -10879,6 +10879,12 @@
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
+                                // 补偿：沉浸模式去掉了 mobile-container 的 scale(0.95)，会让整体（包括月经小组件）变大约5.3%
+                                // 这里给小组件本身反向缩放抵消掉，保证开关沉浸模式前后小组件视觉大小一致
+                                if (periodWidget) {
+                                    periodWidget.style.transform = 'scale(0.95)';
+                                    periodWidget.style.transformOrigin = 'center top';
+                                }
                             } else {
                                 mobileContainer.style.cssText = '';
                                 document.documentElement.style.cssText = '';
@@ -10892,6 +10898,10 @@
                                 if (dynamicIsland) dynamicIsland.style.display = '';
                                 immersiveTrack.style.background = '#ddd';
                                 immersiveThumb.style.transform = 'translateX(0)';
+                                if (periodWidget) {
+                                    periodWidget.style.transform = '';
+                                    periodWidget.style.transformOrigin = '';
+                                }
                             }
                             localStorage.setItem('immersive_mode', on ? '1' : '0');
                         }
