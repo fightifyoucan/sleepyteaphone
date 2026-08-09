@@ -85,7 +85,9 @@
         .love-widget { transition: transform 0.2s; }
         .love-widget:active, #tea-widget:active { transform: scale(0.92); }
         #period-reminder-widget { transition: transform 0.2s; }
-        #period-reminder-widget:active { transform: scale(0.97); }
+        #period-reminder-widget.pw-pressed { transform: scale(0.97); }
+        #period-widget-bubble { transition: transform 0.15s; }
+        #period-widget-bubble.pw-bubble-pressed { transform: scale(0.9); }
         .app-icon-img { width: 60px; height: 60px; background-color: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 16px; box-shadow: 0 4px 10px rgba(255,182,193,0.1); aspect-ratio: 1 / 1; flex-shrink: 0; object-fit: cover; overflow: hidden; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
         .dock .app-icon-img { background-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -596,7 +598,7 @@
                 <div id="period-reminder-widget" style="margin:0 8.55px 0 8.55px;cursor:pointer;position:relative;overflow:hidden;border-radius:20px;background:rgba(255,255,255,0.3);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);">
                     <div id="period-widget-bg" style="position:absolute;top:0;left:0;width:100%;height:100%;background-size:cover;background-position:center;"></div>
                     <div style="position:relative;z-index:1;display:flex;align-items:center;gap:12px;padding:10px 16px;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.35);">
-                    <div style="flex-shrink:0;position:relative;width:76px;box-sizing:border-box;background:#fff;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.2);padding:6px 5px 6px 5px;text-align:center;margin-left:10px;">
+                    <div id="period-widget-bubble" style="flex-shrink:0;position:relative;width:76px;box-sizing:border-box;background:#fff;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.2);padding:6px 5px 6px 5px;text-align:center;margin-left:10px;cursor:pointer;">
                         <div style="position:absolute;left:-7px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:8px solid #fff;filter:drop-shadow(-1px 1px 1px rgba(0,0,0,0.1));"></div>
                         <div style="position:relative;width:50px;height:50px;margin:0 auto;">
                             <div id="period-widget-photo" style="width:50px;height:50px;border-radius:50%;background-color:#F6E9E7;background-size:cover;background-position:center;background-repeat:no-repeat;box-sizing:border-box;border:1.5px solid #E2DCD7;">
@@ -2206,14 +2208,17 @@
                 'settings': `
                     <div class="app-header"><span style="color:#775C56" class="cursor-pointer close-btn w-10 inline-block">‹</span><h2 class="font-bold" style="color:#775C56">系统设置</h2><span class="w-10"></span></div>
                     <div class="app-content p-5 pt-0">
-                        <div class="settings-item"><div><h3 class="font-bold" style="margin-top: 10px;">更换壁纸</h3><div class="wallpaper-options" style="margin-top: 8px;"><label for="wallpaper-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center bg-white"><div id="wallpaper-preview-container" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div></label><input type="file" id="wallpaper-upload" accept="image/*" class="hidden"></div><button id="save-wallpaper-btn" class="save-btn" style="margin-top: 16px;">确认修改</button></div></div>
+                        <div class="settings-item"><div><h3 class="font-bold" style="margin-top: 10px;">更换壁纸</h3><div class="wallpaper-options" style="margin-top: 8px;"><label for="wallpaper-upload" class="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg w-16 h-20 flex items-center justify-center bg-white"><div id="wallpaper-preview-container" class="wallpaper-preview w-full h-full bg-cover bg-center rounded-lg">+</div></label><input type="file" id="wallpaper-upload" accept="image/*" class="hidden"></div><div style="display:flex;gap:8px;margin-top:16px;"><button id="save-wallpaper-btn" class="save-btn" style="margin-top:0;">确认修改</button><button id="reset-wallpaper-btn" class="save-btn" style="margin-top:0;background-color:#FFD3D4;">恢复默认</button></div></div></div>
                         <div class="settings-item">
                             <div>
                                 <h3 class="font-bold">更换应用图标</h3>
                                 <div class="grid grid-cols-4 gap-4 p-4" id="app-icon-list">
                                     <!-- Icons will be rendered here by initSettingsApp -->
                                 </div>
-                                <button id="save-icons-btn" class="save-btn" style="margin-top: -4px;">确认修改</button>
+                                <div style="display:flex;gap:8px;margin-top:-4px;">
+                                    <button id="save-icons-btn" class="save-btn" style="margin-top:0;">确认修改</button>
+                                    <button id="reset-icons-btn" class="save-btn" style="margin-top:0;background-color:#FFD3D4;">恢复默认</button>
+                                </div>
                             </div>
                         </div>
                         <div class="settings-item">
@@ -2222,7 +2227,10 @@
                                 <div class="grid grid-cols-3 gap-4 p-4" id="widget-config-list">
                                     <!-- Widget config UI will be rendered here -->
                                 </div>
-                                <button id="save-widget-config-btn" class="save-btn" style="margin-top: -4px;">确认修改</button>
+                                <div style="display:flex;gap:8px;margin-top:-4px;">
+                                    <button id="save-widget-config-btn" class="save-btn" style="margin-top:0;">确认修改</button>
+                                    <button id="reset-widget-config-btn" class="save-btn" style="margin-top:0;background-color:#FFD3D4;">恢复默认</button>
+                                </div>
                             </div>
                         </div>
                         <div class="settings-item">
@@ -2231,7 +2239,10 @@
                                 <div class="grid grid-cols-3 gap-4 p-4" id="period-widget-config-list">
                                     <!-- Period widget config UI will be rendered here -->
                                 </div>
-                                <button id="save-period-widget-config-btn" class="save-btn" style="margin-top: -4px;">确认修改</button>
+                                <div style="display:flex;gap:8px;margin-top:-4px;">
+                                    <button id="save-period-widget-config-btn" class="save-btn" style="margin-top:0;">确认修改</button>
+                                    <button id="reset-period-widget-config-btn" class="save-btn" style="margin-top:0;background-color:#FFD3D4;">恢复默认</button>
+                                </div>
                             </div>
                         </div>
                         <div class="settings-item">
@@ -2260,7 +2271,7 @@
                             <button id="import-data-btn" class="w-full" style="box-sizing:border-box;background-color:#ffffff;color:#775C56;font-weight:600;padding:13px;border:1.5px solid #A9D4C3;border-radius:12px;font-size:15px;">📩 导入备份文件</button>
                             <input type="file" id="import-data-file" accept="application/json,.json" style="display:none;">
                         </div>
-                        <div class="settings-item"><button id="restore-default-btn" class="w-full py-2 rounded-lg" style="background-color:#FFD3D4;color:#775C56;font-weight:500;">恢复默认</button></div>
+                        <div class="settings-item"><button id="restore-default-btn" class="w-full py-2 rounded-lg" style="background-color:#FFD3D4;color:#775C56;font-weight:500;">全局恢复默认</button></div>
                         <div class="settings-item"><button id="reset-settings-btn" class="w-full bg-red-500 text-white py-2 rounded-lg">重置所有设置</button></div>
                     </div>
                 `,
@@ -10715,10 +10726,45 @@
                     }
                 }
 
-                // 点击小组件：不再自己填写记录，而是跳转到"心跳同频中"里查看/记录真实的月经记录
-                widget.addEventListener('click', () => {
+                // 按压反馈：点气泡只让气泡缩放，点卡片其他地方才让整卡缩放，两者不会同时触发
+                const bubbleEl = document.getElementById('period-widget-bubble');
+                const pressOn = (e) => {
+                    if (e.target.closest('#period-widget-bubble')) {
+                        bubbleEl.classList.add('pw-bubble-pressed');
+                    } else {
+                        widget.classList.add('pw-pressed');
+                    }
+                };
+                const pressOff = () => {
+                    widget.classList.remove('pw-pressed');
+                    if (bubbleEl) bubbleEl.classList.remove('pw-bubble-pressed');
+                };
+                widget.addEventListener('pointerdown', pressOn);
+                widget.addEventListener('pointerup', pressOff);
+                widget.addEventListener('pointercancel', pressOff);
+                widget.addEventListener('pointerleave', pressOff);
+
+                // 点击小组件：默认跳转到"心跳同频中"主页；点白色气泡（头像+文字）则直接跳进月经记录页
+                widget.addEventListener('click', (e) => {
+                    const isBubble = !!e.target.closest('#period-widget-bubble');
                     const coupleIcon = document.querySelector('.app-icon[data-app="couple-space"]');
-                    if (coupleIcon) coupleIcon.click();
+                    if (!coupleIcon) return;
+                    coupleIcon.click(); // 打开/切到"心跳同频中"，appPage 会被同步创建好
+
+                    if (isBubble) {
+                        try {
+                            const appPage = document.getElementById('couple-space-page');
+                            if (!appPage) { console.warn('[period-widget] couple-space-page 未找到'); return; }
+                            const contacts = (window.DB && DB.getContacts) ? DB.getContacts().filter(x => x && x.name) : [];
+                            if (!contacts.length) { console.warn('[period-widget] 没有联系人，跳过跳转'); return; }
+                            const id = hsGetActiveContactId();
+                            const c = contacts.find(x => x.id === id) || contacts[0];
+                            const userNick = localStorage.getItem('user_nick') || '我';
+                            hsOpenPeriod(appPage, c, userNick);
+                        } catch(err) {
+                            console.error('[period-widget] 跳转月经记录页失败:', err);
+                        }
+                    }
                 });
 
                 window.addEventListener('storage', (e) => {
@@ -11276,6 +11322,41 @@
                             localStorage.removeItem('period_widget_bg');
                             localStorage.removeItem('period_widget_photo');
                             alert('已恢复默认，页面将刷新');
+                            location.reload();
+                        };
+                        // 各个分区自己的"恢复默认"——只清对应那一块，不影响其他设置
+                        const resetWallpaperBtn = appPage.querySelector('#reset-wallpaper-btn');
+                        if (resetWallpaperBtn) resetWallpaperBtn.onclick = () => {
+                            if (!confirm('确定恢复默认壁纸？')) return;
+                            localStorage.removeItem('customWallpaper');
+                            localStorage.removeItem('wallpaper');
+                            alert('壁纸已恢复默认，页面将刷新');
+                            location.reload();
+                        };
+                        const resetIconsBtn = appPage.querySelector('#reset-icons-btn');
+                        if (resetIconsBtn) resetIconsBtn.onclick = () => {
+                            if (!confirm('确定恢复所有 app 图标为默认？')) return;
+                            const iconKeys = Object.keys(localStorage).filter(k => k.startsWith('icon_'));
+                            iconKeys.forEach(k => localStorage.removeItem(k));
+                            localStorage.removeItem('icon_settings');
+                            alert('图标已恢复默认，页面将刷新');
+                            location.reload();
+                        };
+                        const resetWidgetConfigBtn = appPage.querySelector('#reset-widget-config-btn');
+                        if (resetWidgetConfigBtn) resetWidgetConfigBtn.onclick = () => {
+                            if (!confirm('确定恢复纪念日小组件为默认（背景、双方头像）？')) return;
+                            localStorage.removeItem('widget_bg');
+                            localStorage.removeItem('widget_avatar_me');
+                            localStorage.removeItem('widget_avatar_lover');
+                            alert('纪念日小组件已恢复默认，页面将刷新');
+                            location.reload();
+                        };
+                        const resetPeriodWidgetConfigBtn = appPage.querySelector('#reset-period-widget-config-btn');
+                        if (resetPeriodWidgetConfigBtn) resetPeriodWidgetConfigBtn.onclick = () => {
+                            if (!confirm('确定恢复月经提醒小组件为默认（背景、照片）？')) return;
+                            localStorage.removeItem('period_widget_bg');
+                            localStorage.removeItem('period_widget_photo');
+                            alert('月经提醒小组件已恢复默认，页面将刷新');
                             location.reload();
                         };
                         
