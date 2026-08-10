@@ -7732,6 +7732,15 @@
                 }
                 
                 renderAll();
+
+                // 消费"待跳转"标记：如果是从首页月经提醒小组件的气泡点进来的，这里加载完就自动帮忙打开月经记录页
+                if (window.hsPendingNav === 'period') {
+                    window.hsPendingNav = null;
+                    const targetC = contacts.find(x => x.id === currentId);
+                    if (targetC) {
+                        setTimeout(() => hsOpenPeriod(appPage, targetC, userNick), 0);
+                    }
+                }
                 
                 // 切换同频对象
                 appPage.querySelector('#hs-contact-switch').onclick = () => {
@@ -10748,22 +10757,38 @@
                 widget.addEventListener('click', (e) => {
                     const isBubble = !!e.target.closest('#period-widget-bubble');
                     const coupleIcon = document.querySelector('.app-icon[data-app="couple-space"]');
-                    if (!coupleIcon) return;
-                    coupleIcon.click(); // 打开/切到"心跳同频中"，appPage 会被同步创建好
+                    if (!coupleIcon) { console.warn('[period-widget] 找不到心跳同频中的图标'); return; }
 
                     if (isBubble) {
-                        try {
-                            const appPage = document.getElementById('couple-space-page');
-                            if (!appPage) { console.warn('[period-widget] couple-space-page 未找到'); return; }
-                            const contacts = (window.DB && DB.getContacts) ? DB.getContacts().filter(x => x && x.name) : [];
-                            if (!contacts.length) { console.warn('[period-widget] 没有联系人，跳过跳转'); return; }
-                            const id = hsGetActiveContactId();
-                            const c = contacts.find(x => x.id === id) || contacts[0];
-                            const userNick = localStorage.getItem('user_nick') || '我';
-                            hsOpenPeriod(appPage, c, userNick);
-                        } catch(err) {
-                            console.error('[period-widget] 跳转月经记录页失败:', err);
-                        }
+                        // 设一个"待跳转"标记：如果心跳同频中是第一次打开、会重新走 setupCoupleSpaceApp，
+                        // 那边 renderAll() 之后会检查这个标记并自动打开月经记录页、然后清掉标记
+                        window.hsPendingNav = 'period';
+                    }
+                    coupleIcon.click(); // 打开/切到"心跳同频中"
+
+                    if (isBubble) {
+                        // 兜底：如果心跳同频中之前已经打开过（缓存着，不会重新触发 setupCoupleSpaceApp），
+                        // 上面的标记就没人消费——这里检查一下，如果标记还留着，就自己直接打开
+                        setTimeout(() => {
+                            if (window.hsPendingNav !== 'period') return; // 已经被 renderAll() 那边消费掉了，不用再处理
+                            window.hsPendingNav = null;
+                            try {
+                                const appPage = document.getElementById('couple-space-page');
+                                if (!appPage) { console.warn('[period-widget] couple-space-page 未找到，中止'); return; }
+                                if (typeof DB === 'undefined' || !DB.getContacts) {
+                                    console.warn('[period-widget] window.DB 或 DB.getContacts 不存在，中止');
+                                    return;
+                                }
+                                const contacts = (DB.getContacts() || []).filter(x => x && x.name);
+                                if (!contacts.length) { console.warn('[period-widget] 过滤后没有联系人，中止'); return; }
+                                const id = hsGetActiveContactId();
+                                const c = contacts.find(x => x.id === id) || contacts[0];
+                                const userNick = localStorage.getItem('user_nick') || '我';
+                                hsOpenPeriod(appPage, c, userNick);
+                            } catch(err) {
+                                console.error('[period-widget] 跳转月经记录页失败:', err);
+                            }
+                        }, 80);
                     }
                 });
 
