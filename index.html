@@ -2003,6 +2003,34 @@
                 });
             }
 
+            // 沉浸模式专用：实时量出"图标 + 纪念日小组件"那一行的真实左右边界，
+            // 让月经提醒小组件的左右边距跟着对齐——因为沉浸模式下 mobile-container 从 330px 缩放变成了 100vw，
+            // 原来针对固定 330px 算出来的 8.55px 边距在不同宽度的屏幕下就不再准确了。
+            function hsAlignPeriodWidgetToIconRow() {
+                const grid = document.querySelector('.app-grid');
+                const widget = document.getElementById('period-reminder-widget');
+                if (!grid || !widget) return;
+                const parent = widget.parentElement;
+                if (!parent) return;
+                const teaWidgetEl = document.getElementById('tea-widget');
+                const rightRefEl = teaWidgetEl ? teaWidgetEl.parentElement : grid;
+                const parentRect = parent.getBoundingClientRect();
+                const gridRect = grid.getBoundingClientRect();
+                const rightRefRect = rightRefEl.getBoundingClientRect();
+                const marginLeft = Math.max(0, gridRect.left - parentRect.left);
+                const marginRight = Math.max(0, parentRect.right - rightRefRect.right);
+                widget.style.marginLeft = marginLeft.toFixed(2) + 'px';
+                widget.style.marginRight = marginRight.toFixed(2) + 'px';
+            }
+            window.hsAlignPeriodWidgetToIconRow = hsAlignPeriodWidgetToIconRow;
+            // 退出沉浸模式时，恢复成原来针对非沉浸模式（330px 缩放容器）量出来的固定边距
+            function hsResetPeriodWidgetMargin() {
+                const widget = document.getElementById('period-reminder-widget');
+                if (!widget) return;
+                widget.style.marginLeft = '8.55px';
+                widget.style.marginRight = '8.55px';
+            }
+
             // 启动时恢复沉浸模式
             if (localStorage.getItem('immersive_mode') === '1') {
                 const mc = document.querySelector('.mobile-container');
@@ -2018,12 +2046,10 @@
                     sc.style.boxSizing = 'border-box';
                     sc.style.height = '100%';
                 }
-                const pw0 = document.getElementById('period-reminder-widget');
-                if (pw0) {
-                    pw0.style.transform = 'scale(0.95)';
-                    pw0.style.transformOrigin = 'center top';
-                }
-
+                // 注：不再用 scale(0.95) 补偿小组件的绝对视觉大小——
+                // 因为现在小组件宽度要跟着图标行动态对齐，而图标行本身在沉浸模式下也会跟着容器一起变大，
+                // 两个目标（"大小不变" vs "宽度对齐"）互相矛盾，对齐优先。
+                requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
 
                 if (di) di.style.display = 'none';
             }
@@ -11550,12 +11576,14 @@
                                 if (dynamicIsland) dynamicIsland.style.display = 'none';
                                 immersiveTrack.style.background = '#FFD3D4';
                                 immersiveThumb.style.transform = 'translateX(24px)';
-                                // 补偿：沉浸模式去掉了 mobile-container 的 scale(0.95)，会让整体（包括月经小组件）变大约5.3%
-                                // 这里给小组件本身反向缩放抵消掉，保证开关沉浸模式前后小组件视觉大小一致
+                                // 注：不再用 scale(0.95) 补偿小组件的绝对视觉大小——
+                                // 因为现在小组件宽度要跟着图标行动态对齐，图标行本身在沉浸模式下也会跟着容器一起变大，
+                                // "大小不变" 和 "宽度对齐" 这两个目标互相矛盾，对齐优先。
                                 if (periodWidget) {
-                                    periodWidget.style.transform = 'scale(0.95)';
-                                    periodWidget.style.transformOrigin = 'center top';
+                                    periodWidget.style.transform = '';
+                                    periodWidget.style.transformOrigin = '';
                                 }
+                                requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
                             } else {
                                 mobileContainer.style.cssText = '';
                                 document.documentElement.style.cssText = '';
@@ -11573,6 +11601,7 @@
                                     periodWidget.style.transform = '';
                                     periodWidget.style.transformOrigin = '';
                                 }
+                                hsResetPeriodWidgetMargin();
                             }
                             localStorage.setItem('immersive_mode', on ? '1' : '0');
                         }
@@ -11585,6 +11614,13 @@
                             const current = localStorage.getItem('immersive_mode') === '1';
                             setImmersive(!current);
                         };
+
+                        // 窗口尺寸变化时（比如旋转屏幕），沉浸模式下重新对齐一次
+                        window.addEventListener('resize', () => {
+                            if (localStorage.getItem('immersive_mode') === '1') {
+                                requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
+                            }
+                        });
 
                         // 棕色字体开关
                         const brownTrack = appPage.querySelector('#brownfont-toggle-track');
