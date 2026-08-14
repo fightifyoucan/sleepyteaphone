@@ -40,7 +40,8 @@ const ApiHandler = {
                 .filter(id => id.includes('gpt') || id.includes('text-') || !id.includes('embed') && !id.includes('vision'))
                 .sort();
         } else if (platform === 'gemini') {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+            const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
+            const url = `${cleanedEndpoint}/v1beta/models?key=${apiKey}`;
             const response = await fetch(url);
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
@@ -67,11 +68,18 @@ const ApiHandler = {
             const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
             url = `${cleanedEndpoint}/v1beta/models/${model}:generateContent?key=${apiKey}`;
             // Gemini expects the 'contents' field to be the array of messages.
+            // 注意：Gemini 2.5 系列是推理模型，"思考"消耗的 token 也算在 maxOutputTokens 总预算里。
+            // 预算给太低（比如旧版的 2048），思考本身就可能把预算耗光，导致正文被截断甚至完全空白。
+            // 这里把预算提高，并且给 thinkingBudget 设一个上限，避免思考无限制地把预算全部吃掉。
             body = JSON.stringify({
                 contents: messages,
-                generationConfig: { maxOutputTokens: 2048, temperature: 1 }
+                generationConfig: {
+                    maxOutputTokens: 8192,
+                    temperature: 1,
+                    thinkingConfig: { thinkingBudget: 1024 }
+                }
             });
-            return { url, options: { method: 'POST', headers, body } };
+            return { url, options: { method: 'POST', headers, body, signal: AbortSignal.timeout(60000) } };
         }
         
         // Handles 'openai' and 'MyAPI' (OpenAI-like)
@@ -86,10 +94,10 @@ const ApiHandler = {
         body = JSON.stringify({
             model: model,
             messages: messages,
-            max_tokens: 2048,
+            max_tokens: 8192,
             temperature: 1
         });
-        return { url, options: { method: 'POST', headers, body } };
+        return { url, options: { method: 'POST', headers, body, signal: AbortSignal.timeout(60000) } };
     },
 
     /**
