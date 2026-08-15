@@ -4390,7 +4390,7 @@
                                         systemPrompt += "【语气词】：想用语气词（唔、嗯、哎呀、那个）就用，不想用就不用，全凭当下感觉，不用刻意。\n";
                                         systemPrompt += "【语音消息·特殊能力】：当你想用'声音'对我说话时（比如撒娇、哄我、说一句很想让我听到语气的话、或慵懒地随口说说），可以把那条消息发成语音。用法：把整条消息写成 [你的名字的语音：要说的话] 这种格式，单独成一条，系统会自动渲染成语音气泡。例如：[" + (c.notes||c.name) + "的语音：我好想你呀]。请自然地用——想用声音表达时就用，不是每条都要变语音，普通文字消息照常发就好。\n";
                                         systemPrompt += "【转账·特殊能力】：当你想给我转一笔钱时——可能是我跟你撒娇、开口要、或者你单纯想宠我、想给我买点什么——就在回复里单独写一行 [" + (c.notes||c.name) + "的转账：金额元；备注：想说的话] 这种格式，系统会自动渲染成转账卡片，金额和备注都由你自己定。例如：[" + (c.notes||c.name) + "的转账：100元；备注：拿去花，不够再跟我说]。请按你的人设和我们的关系自然地决定：如果你是会宠我、舍得给我花钱的人，那我撒娇要钱、或你想哄我开心的时候，大大方方转给我就好，别为难自己也别为难我；当然要不要给、给多少由你的真心和当下情景决定。关键是——这是你自己愿意给，不是系统替你做的决定。\n";
-                                        systemPrompt += "【礼物·特殊能力】：你拥有「送礼物」这个能力，但用不用、什么时候用，完全由你自己决定。请读懂我发的消息、当下的情景和心情，自己判断此刻送礼物合不合适。想送的时候，就在回复里单独写一行 [" + (c.notes||c.name) + "的礼物：礼物名；附言：想说的话]，系统会渲染成礼物卡片，礼物名和附言都由你自己定。例如：[" + (c.notes||c.name) + "的礼物：一束向日葵；附言：今天也要开开心心的呀]。\n";
+                                        systemPrompt += "【礼物·特殊能力】：你拥有「送礼物」这个能力，但用不用、什么时候用，完全由你自己决定。请读懂我发的消息、当下的情景和心情，自己判断此刻送礼物合不合适。想送的时候，就在回复里单独写一行 [" + (c.notes||c.name) + "的礼物：礼物名；价格：xx元；附言：想说的话]，系统会渲染成礼物卡片，礼物名、价格和附言都由你自己定（价格这一项可以省略）。例如：[" + (c.notes||c.name) + "的礼物：一束向日葵；价格：99元；附言：今天也要开开心心的呀]。\n";
                                         systemPrompt += "【撤回消息·特殊能力】：只有当你说了一句不合时宜、害羞了、后悔了、或者一时冲动说漏嘴的话时，你才可以\"说出口又立刻收回\"。用法：在回复里单独加一行 [撤回：那句你后悔说出口的话]，系统会先把它显示出来再撤回。这是展现你真实、可爱、有小情绪一面的特殊行为，请克制使用——绝大多数正常聊天都不需要撤回，只在真的有'啊说错了/好害羞/不该说'的情境下偶尔用一次。普通的、正常的回复绝对不要撤回。\n";
                                     }
                                     if (!isOffline) {
@@ -4556,6 +4556,12 @@
                                                 SEGMENTS.push(m);
                                                 return '\u0001SEG_'+(SEGMENTS.length-1)+'\u0001';
                                             });
+                                            // 【礼物】把 [xx的礼物：礼物名；价格：xx元；附言：xx] 整体保护，不被句中标点切断
+                                            // （礼物的附言是自由文本，很容易带上句号/感叹号，不保护的话经常被从中间切成两条气泡）
+                                            safe = safe.replace(/[\[【][^\[\]【】]*?的礼物[:：][^\[\]【】]*?[\]】]/g, function(m){
+                                                SEGMENTS.push(m);
+                                                return '\u0001SEG_'+(SEGMENTS.length-1)+'\u0001';
+                                            });
                                             // 匹配中文括号 () 和半角括号 () 的动作
                                             safe = safe.replace(/[（(][^（()）]*[）)]/g, function(m){
                                                 SEGMENTS.push(m);
@@ -4641,6 +4647,7 @@
                                         const hasMoneyIntent = moneyKeywords.some(k=>fullText.includes(k));
                                         const hasGiftIntent = giftKeywords.some(k=>fullText.includes(k));
                                         
+                                        let giftSentExplicit = false;
                                         for (let i = 0; i < finalMessages.length; i++) {
                                             let msgText = finalMessages[i];
                                             const delay = (i === 0) ? 400 : (msgText.length * 80 + 200);
@@ -4658,8 +4665,8 @@
                                             const voiceMatch = trimmedMsg.match(/^[\[【].*?的语音[:：]([\s\S]*?)[\]】]$/);
                                             // 【转账】先生在回复里主动写 [xx的转账：金额元；备注：xx] 才发转账卡片，金额和备注都由他自己定
                                             const transferMatch = trimmedMsg.match(/^[\[【].*?的转账[:：]\s*([\d.]+)\s*元(?:[；;,，]\s*备注[:：]\s*([^\]】]*))?\s*[\]】]$/);
-                                            // 【礼物】先生主动写 [xx的礼物：礼物名；附言：xx] 才发礼物卡片，名称和附言都由他自己定
-                                            const giftMatch = trimmedMsg.match(/^[\[【].*?的礼物[:：]\s*([^；;,，\]】]+?)(?:[；;,，]\s*(?:附言|备注)[:：]\s*([^\]】]*))?\s*[\]】]$/);
+                                            // 【礼物】先生主动写 [xx的礼物：礼物名；价格：xx元；附言：xx] 才发礼物卡片，名称、价格、附言都由他自己定（价格可省略）
+                                            const giftMatch = trimmedMsg.match(/^[\[【].*?的礼物[:：]\s*([^；;,，\]】]+?)(?:[；;,，]\s*价格[:：]\s*([\d.]+)\s*元)?(?:[；;,，]\s*(?:附言|备注)[:：]\s*([^\]】]*))?\s*[\]】]$/);
                                             if (voiceMatch && !isThoughtMsg && !isActionMsg) {
                                                 const voiceText = voiceMatch[1].trim();
                                                 const dur = Math.max(1, Math.ceil(voiceText.length / 4));
@@ -4670,15 +4677,21 @@
                                                 send({id:`r_transfer_${Date.now()}_${i}`,sender:'ai',type:'transfer',amount:(isNaN(amt)?'520.00':amt.toFixed(2)),note:note,time:new Date()});
                                             } else if (giftMatch && !isThoughtMsg && !isActionMsg) {
                                                 const gName = (giftMatch[1]||'').trim() || '小礼物';
-                                                const gDesc = (giftMatch[2]||'').trim() || '送给你的～❤️';
-                                                send({id:`r_gift_${Date.now()}_${i}`,sender:'ai',type:'gift',name:gName,desc:gDesc,time:new Date()});
-                                            } else if (isLast && hasGiftIntent) {
+                                                const gPrice = (giftMatch[2]||'').trim();
+                                                const gDesc = (giftMatch[3]||'').trim() || '送给你的～❤️';
+                                                send({id:`r_gift_${Date.now()}_${i}`,sender:'ai',type:'gift',name:gName,desc:gDesc,price:gPrice,time:new Date()});
+                                                giftSentExplicit = true; // 已经按明确格式发过一次礼物卡，后面兜底逻辑不再重复发
+                                            } else if (isLast && !giftSentExplicit && giftKeywords.some(k=>trimmedMsg.includes(k))) {
                                                 send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:msgText, time:new Date() });
                                                 const giftName = giftNameInFull ? giftNameInFull[1].trim() : '小礼物';
                                                 await new Promise(r=>setTimeout(r,800));
                                                 send({id:`r_gift_${Date.now()}`,sender:'ai',type:'gift',name:giftName,desc:'送给你的～❤️',time:new Date()});
                                             } else {
-                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:msgText, time:new Date() });
+                                                // 兜底清理：AI 偶尔会"照猫画虎"生成没教过的系统占位符
+                                                // （比如格式错误的 [消息]、[撤回消息：xxx]），这类内容不该原样展示给用户，检测到就整段清掉
+                                                const cleanedMsgText = msgText.replace(/[\[【][^\[\]【】]*?(?:消息|撤回|语音|转账|礼物|剧情|系统指令|占位)[^\[\]【】]*?[\]】]/g, '').trim();
+                                                if (!cleanedMsgText) continue;
+                                                send({ id:`r_${Date.now()}_${i}`, sender:'ai', type:'text', text:cleanedMsgText, time:new Date() });
                                             }
                                         }
                                         // 【AI自主撤回】只有 AI 在回复里主动发了 [撤回：...] 指令才触发
