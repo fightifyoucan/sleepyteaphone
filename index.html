@@ -2193,6 +2193,20 @@
                                         <div style="font-size:10px;color:#9A7872;margin-top:1px;">一起兑现的小事</div>
                                     </div>
                                 </div>
+                                <div class="hs-tab" data-tab="countup" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">📈</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">正数日</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">在一起第几天</div>
+                                    </div>
+                                </div>
+                                <div class="hs-tab" data-tab="countdown" style="padding:14px 12px;background:rgba(255,255,255,0.7);border-radius:14px;cursor:pointer;display:flex;align-items:center;gap:10px;">
+                                    <div style="font-size:22px;flex-shrink:0;">⏳</div>
+                                    <div style="min-width:0;">
+                                        <div style="font-size:13px;color:#775C56;font-weight:600;">倒数日</div>
+                                        <div style="font-size:10px;color:#9A7872;margin-top:1px;">还有多少天</div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- 数据小角 -->
@@ -6757,6 +6771,20 @@
                 { id: 'dad', name: '爸爸', emoji: '👨' },
                 { id: 'mom', name: '妈妈', emoji: '👩' }
             ];
+
+            // 检测人设/记忆/备注里是否提到养宠物
+            function hsDetectPet(c) {
+                const text = (c.persona || '') + ' ' + (c.memory?.manual || '') + ' ' + (c.notes || '');
+                const petWords = /宠物|猫咪|猫猫|小猫|养猫|铲屎官|金毛|拉布拉多|柯基|泰迪|比熊|哈士奇|萨摩耶|柴犬|边牧|博美|吉娃娃|布偶猫|英短|美短|狸花猫|橘猫|奶牛猫|蓝猫|仓鼠|兔兔|养兔|龙猫|鹦鹉|乌龟|狗狗|小狗|养狗|猫粮|狗粮|遛狗|猫砂/;
+                return petWords.test(text);
+            }
+
+            // 根据 AI 的人设动态生成这个 AI 的虚拟联系人列表：如果检测到养宠物，就多一个"宠物医生"
+            function hsGetVirtualContacts(c) {
+                const list = AI_VIRTUAL_CONTACTS.slice();
+                if (c && hsDetectPet(c)) list.push({ id: 'vet', name: '宠物医生', emoji: '🐾' });
+                return list;
+            }
             
             // AI 的 520：跟用户和虚拟联系人的聊天列表
             function openAI520(appPage, contactId) {
@@ -6768,7 +6796,7 @@
                 const vChats = c.virtualChats || {};
                 
                 // 构造聊天列表
-                const items = AI_VIRTUAL_CONTACTS.map(v => {
+                const items = hsGetVirtualContacts(c).map(v => {
                     let last = '点进去让 TA 聊几句', time = '', name = v.name, emoji = v.emoji, avatar = '';
                     if (v.id === 'user') {
                         name = userNick;
@@ -6909,7 +6937,7 @@
             // 打开虚拟聊天（朋友/爸爸/妈妈）
             function openAIVirtualChat(appPage, contactId, vid) {
                 const c = DB.getContact(contactId);
-                const vConfig = AI_VIRTUAL_CONTACTS.find(x => x.id === vid);
+                const vConfig = hsGetVirtualContacts(c).find(x => x.id === vid);
                 const vChats = c.virtualChats || {};
                 const msgs = vChats[vid] || [];
                 
@@ -6948,7 +6976,7 @@
             // 调 AI 生成虚拟聊天
             async function generateVirtualChat(appPage, contactId, vid, replace) {
                 const c = DB.getContact(contactId);
-                const vConfig = AI_VIRTUAL_CONTACTS.find(x => x.id === vid);
+                const vConfig = hsGetVirtualContacts(c).find(x => x.id === vid);
                 
                 const apiKey = localStorage.getItem('apiKey');
                 if (!apiKey) {
@@ -6980,7 +7008,8 @@
                         friend: '一个关系不错的朋友（同龄人、平辈、性别不限，可以是闺蜜也可以是哥们儿）',
                         colleague: '一个关系还可以的同事（年龄相仿，聊工作八卦、吐槽老板、午饭去哪吃，公私分明但不疏远）',
                         dad: '亲生爸爸（长辈，关心 TA 的生活但有点笨拙）',
-                        mom: '亲生妈妈（长辈，唠叨、关心吃饭睡觉、唠各种家长里短）'
+                        mom: '亲生妈妈（长辈，唠叨、关心吃饭睡觉、唠各种家长里短）',
+                        vet: 'TA 家宠物固定看诊的兽医（专业但亲切，相处久了像熟人朋友，会关心宠物近况）'
                     };
                     
                     // 判断 AI 的人设里是否显示"和用户是伴侣关系"（非单身关键词 + 提到用户）
@@ -7021,6 +7050,12 @@
                         } else {
                             sysPrompt += `\n【重要背景】：根据 ${c.name} 的人设，TA 已经和 ${userNick} 在一起了。${vConfig.name}作为同事，可能知道 ${c.name} 有对象（同事之间会随口聊到家事），但不会像好朋友那样深入。${c.name}在同事面前会比较克制，偶尔会自然带出${userNick}：比如说"等下要回去陪我对象吃饭"、"我对象昨天怎么怎么了"，但不会像跟好朋友那样秀恩爱。对话主要还是工作/同事八卦，1-2处带出有伴侣的状态就够了。\n`;
                         }
+                    }
+
+                    // 如果是宠物医生，整段对话都围绕 TA 家的宠物展开
+                    if (vid === 'vet') {
+                        sysPrompt += `\n【重要背景】：根据 ${c.name} 的人设/记忆，TA 养着宠物。${vConfig.name}是这只宠物固定看诊的兽医，请你先根据人设推断出宠物的种类（猫/狗/其他），如果人设里提到了具体名字或品种就直接用，没提到的话就自然地帮忙起一个符合语境的名字。对话要整体围绕这只宠物展开，比如：预约体检/疫苗提醒、最近的小毛病或复诊反馈、驱虫/喂养上的专业建议、${c.name}汇报宠物今天的趣事或状态、兽医夸宠物乖或提醒注意事项等等。\n`;
+                        sysPrompt += `语气上，${vConfig.name}要专业但不生硬，像相处久了、彼此熟悉的社区兽医，会记得这只宠物的小习惯；${c.name}对着兽医会很自然地流露出对宠物的疼爱和一点点为宠物操心的样子。\n`;
                     }
                     sysPrompt += `\n`;
                     
@@ -7832,6 +7867,8 @@
                         else if (t === 'period') hsOpenPeriod(appPage, c, userNick);
                         else if (t === 'mood') hsOpenMood(appPage, c, userNick);
                         else if (t === 'wishlist') hsOpenWishlist(appPage, c, userNick);
+                        else if (t === 'countup') hsOpenDaysList(appPage, c, userNick, 'up');
+                        else if (t === 'countdown') hsOpenDaysList(appPage, c, userNick, 'down');
                     };
                 });
             }
@@ -10108,7 +10145,7 @@
                             if (e.replying) {
                                 replyBlock = `<div style="margin-top:8px;padding:8px 10px;background:rgba(213,235,228,0.5);border-radius:10px;font-size:12px;color:#9A7872;font-style:italic;">${c.name} 正在写回信...</div>`;
                             } else if (e.reply) {
-                                replyBlock = `<div style="margin-top:8px;padding:10px 12px;background:#D5EBE4;border-radius:10px;font-size:12px;color:#5D6D6A;line-height:1.6;">💌 ${c.name}：${e.reply}</div>`;
+                                replyBlock = `<div style="margin-top:8px;padding:10px 12px;background:#D5EBE4;border-radius:10px;font-size:12px;color:#775C56;line-height:1.6;">💌 ${c.name}：${e.reply}</div>`;
                             }
                             const moodLabel = e.mood ? `<span style="font-size:12px;background:#FFE4E6;padding:2px 8px;border-radius:8px;color:#775C56;margin-right:6px;">${e.mood}</span>` : '';
                             return `<div style="background:rgba(255,255,255,0.7);border-radius:12px;padding:12px;margin-bottom:10px;">
@@ -10232,6 +10269,635 @@
                     });
                 };
                 renderList();
+            }
+
+            // ===== 正数日 / 倒数日（拆成两个独立功能，配色跟随本项目主题）=====
+            // 没上传照片之前的默认底色（不作为可选项展示，只是空状态的占位）
+            const HS_DAY_DEFAULT_BG = 'linear-gradient(135deg, #FFE3E6 0%, #FBF6EC 100%)';
+
+            function hsDayStorageKey(mode) { return mode === 'up' ? 'countUpDates' : 'countDownDates'; }
+
+            // 计算一条记录的天数：正数日 = 距起始日过了几天；倒数日 = 距目标日还有几天（支持每年重复）
+            function hsCalcDayInfo(item, mode) {
+                const today = new Date(); today.setHours(0,0,0,0);
+                let target = parseLocalDate(item.date); target.setHours(0,0,0,0);
+                if (mode === 'down' && item.repeatYearly) {
+                    target = new Date(today.getFullYear(), target.getMonth(), target.getDate());
+                    if (target < today) target = new Date(today.getFullYear() + 1, target.getMonth(), target.getDate());
+                }
+                const diffDays = Math.round((target - today) / 86400000);
+                if (mode === 'up') {
+                    if (diffDays > 0) return { days: diffDays, note: '还没开始', isToday: false };
+                    if (diffDays === 0) return { days: 0, note: '就是今天', isToday: true };
+                    return { days: Math.abs(diffDays) + 1, note: '', isToday: false }; // 第1天 = 起始当天
+                } else {
+                    if (diffDays === 0) return { days: 0, note: '就是今天', isToday: true };
+                    if (diffDays > 0) return { days: diffDays, note: '', isToday: false };
+                    return { days: Math.abs(diffDays), note: '已经过了', isToday: false };
+                }
+            }
+
+            // —— 列表页 ——
+            function hsOpenDaysList(appPage, c, userNick, mode) {
+                const isUp = mode === 'up';
+                const key = hsDayStorageKey(mode);
+                const layer = hsOpenLayer(appPage, isUp ? '正数日' : '倒数日', '');
+                const headerBar = layer.querySelector('div');
+                const addHeaderBtn = document.createElement('span');
+                addHeaderBtn.textContent = '＋ 添加';
+                addHeaderBtn.style.cssText = 'position:absolute;right:15px;bottom:9px;font-size:14px;color:#775C56;font-weight:600;cursor:pointer;';
+                headerBar.appendChild(addHeaderBtn);
+                const body = layer.querySelector('.hs-layer-body');
+                const circleBg = isUp ? '#FFD3D4' : '#D5EBE4';
+                const circleText = '#775C56';
+
+                const renderList = () => {
+                    const list = hsGet(c.id, key, []);
+                    body.innerHTML = `
+                        <div style="text-align:center;margin-bottom:16px;">
+                            <div style="font-size:12px;color:#9A7872;">${isUp ? '在一起的每一天，都数着呢～' : '期待的日子，一起倒数～'}</div>
+                        </div>
+                        <div id="hs-day-list"></div>
+                    `;
+                    addHeaderBtn.onclick = () => hsOpenDayEditModal(layer, c, mode, null, renderList);
+
+                    const listEl = body.querySelector('#hs-day-list');
+                    if (list.length === 0) {
+                        listEl.innerHTML = `<div style="text-align:center;padding:30px;color:#B89B95;font-size:12px;opacity:0.7;">还没有${isUp?'正数日':'倒数日'}～<br>点右上角加一个吧</div>`;
+                        return;
+                    }
+                    // 置顶的排最前面，其余按离今天的天数从近到远
+                    const sorted = list.slice().sort((a, b) => {
+                        if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                        return hsCalcDayInfo(a, mode).days - hsCalcDayInfo(b, mode).days;
+                    });
+                    const pinnedItem = sorted.find(x => x.pinned);
+                    const restItems = sorted.filter(x => x !== pinnedItem);
+
+                    const pinnedHtml = pinnedItem ? (() => {
+                        const item = pinnedItem;
+                        const info = hsCalcDayInfo(item, mode);
+                        const d = parseLocalDate(item.date);
+                        const dateStr = `${isUp ? '起始日' : '目标日'}：${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                        return `
+                            <div class="hs-day-card" data-id="${item.id}" style="background:rgba(255,255,255,0.9);border-radius:16px;padding:18px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;">
+                                <div style="min-width:0;flex:1;">
+                                    <div style="font-size:14px;color:#775C56;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${(item.title||'未命名').replace(/</g,'&lt;')}${info.isToday ? '' : (info.note || (isUp ? '第' : '还有'))}</div>
+                                    <div style="font-size:11px;color:#B89B95;margin-top:6px;white-space:nowrap;">${dateStr}</div>
+                                </div>
+                                <div style="display:flex;align-items:baseline;gap:6px;flex-shrink:0;">
+                                    ${info.isToday
+                                        ? `<div style="font-size:20px;color:#FF9EB5;font-weight:800;">就是今天 🎉</div>`
+                                        : `<div style="font-size:44px;color:#775C56;font-weight:800;line-height:1;">${info.days}</div><span style="font-size:11px;font-weight:700;color:#fff;background:#FF9EB5;padding:3px 8px;border-radius:8px;">天</span>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    })() : '';
+
+                    const restHtml = restItems.map(item => {
+                        const info = hsCalcDayInfo(item, mode);
+                        const numColor = '#FF9EB5';
+                        return `
+                            <div class="hs-day-card" data-id="${item.id}" style="background:rgba(255,255,255,0.85);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;position:relative;">
+                                <div style="flex:1;min-width:0;">
+                                    <div style="font-size:13px;color:#775C56;font-weight:600;">${(item.title||'未命名').replace(/</g,'&lt;')}${info.isToday ? '' : `<span style="font-size:11px;color:#9A7872;font-weight:400;">${info.note || (isUp ? '第' : '还有')}</span>`}</div>
+                                </div>
+                                <div style="text-align:right;flex-shrink:0;">
+                                    ${info.isToday
+                                        ? `<div style="font-size:14px;color:${numColor};font-weight:700;">就是今天 🎉</div>`
+                                        : `<div style="font-size:20px;color:${numColor};font-weight:700;line-height:1.2;">${info.days}<span style="font-size:11px;color:#775C56;font-weight:400;"> 天</span></div>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    listEl.innerHTML = pinnedHtml + restHtml;
+
+                    listEl.querySelectorAll('.hs-day-card').forEach(el => {
+                        el.onclick = () => {
+                            const item = list.find(x => x.id === el.dataset.id);
+                            if (item) hsOpenDayDetail(appPage, layer, c, mode, item, renderList);
+                        };
+                    });
+                };
+                renderList();
+            }
+
+            // —— 滚轮式日期选择器（年/月/日三列滑动，手机上比原生日期输入更好操作）——
+            function hsOpenWheelDatePicker(parentLayer, initialDateStr, onConfirm) {
+                const initD = parseLocalDate(initialDateStr);
+                const now = new Date();
+                const initYear = isNaN(initD) ? now.getFullYear() : initD.getFullYear();
+                const initMonth = isNaN(initD) ? now.getMonth() + 1 : initD.getMonth() + 1;
+                const initDay = isNaN(initD) ? now.getDate() : initD.getDate();
+
+                const YEAR_MIN = 1970, YEAR_MAX = now.getFullYear() + 10;
+                const ITEM_H = 38;
+                const years = []; for (let y = YEAR_MIN; y <= YEAR_MAX; y++) years.push(y);
+                const months = []; for (let m = 1; m <= 12; m++) months.push(m);
+                const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+
+                const mask = document.createElement('div');
+                mask.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1200;display:flex;align-items:flex-end;justify-content:center;';
+                mask.innerHTML = `
+                    <div style="background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:340px;padding:14px 10px 18px;box-sizing:border-box;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 6px;">
+                            <span id="hs-wdp-cancel" style="font-size:14px;color:#9A7872;cursor:pointer;padding:4px 8px;">取消</span>
+                            <span style="font-size:13px;color:#775C56;font-weight:600;">选择日期</span>
+                            <span id="hs-wdp-ok" style="font-size:14px;color:#FF9EB5;font-weight:700;cursor:pointer;padding:4px 8px;">确定</span>
+                        </div>
+                        <div style="position:relative;height:${ITEM_H * 5}px;">
+                            <div style="position:absolute;left:0;right:0;top:${ITEM_H * 2}px;height:${ITEM_H}px;background:#FBF9F4;border-radius:10px;pointer-events:none;"></div>
+                            <div style="position:absolute;inset:0;display:flex;">
+                                <div class="hs-wdp-col" data-role="year" style="flex:1.2;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;padding:${ITEM_H*2}px 0;"></div>
+                                <div class="hs-wdp-col" data-role="month" style="flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;padding:${ITEM_H*2}px 0;"></div>
+                                <div class="hs-wdp-col" data-role="day" style="flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;padding:${ITEM_H*2}px 0;"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                parentLayer.appendChild(mask);
+
+                const colYear = mask.querySelector('[data-role="year"]');
+                const colMonth = mask.querySelector('[data-role="month"]');
+                const colDay = mask.querySelector('[data-role="day"]');
+
+                const renderCol = (col, list, unit, selected) => {
+                    col.innerHTML = list.map(v => `<div class="hs-wdp-item" style="height:${ITEM_H}px;line-height:${ITEM_H}px;text-align:center;font-size:16px;color:#775C56;scroll-snap-align:center;">${v}${unit}</div>`).join('');
+                    const idx = list.indexOf(selected);
+                    col.scrollTop = Math.max(0, idx) * ITEM_H;
+                };
+
+                let curYear = initYear, curMonth = initMonth, curDay = initDay;
+                renderCol(colYear, years, '年', curYear);
+                renderCol(colMonth, months, '月', curMonth);
+                const refreshDays = (y, m, keepDay) => {
+                    const dim = daysInMonth(y, m);
+                    const days = []; for (let d = 1; d <= dim; d++) days.push(d);
+                    const sel = Math.min(keepDay, dim);
+                    renderCol(colDay, days, '日', sel);
+                    return sel;
+                };
+                curDay = refreshDays(curYear, curMonth, curDay);
+
+                const bindColScroll = (col, list, onPick) => {
+                    let t = null;
+                    col.addEventListener('scroll', () => {
+                        clearTimeout(t);
+                        t = setTimeout(() => {
+                            const idx = Math.round(col.scrollTop / ITEM_H);
+                            const clamped = Math.max(0, Math.min(list.length - 1, idx));
+                            col.scrollTop = clamped * ITEM_H;
+                            onPick(list[clamped]);
+                        }, 90);
+                    });
+                };
+                bindColScroll(colYear, years, (v) => { curYear = v; curDay = refreshDays(curYear, curMonth, curDay); });
+                bindColScroll(colMonth, months, (v) => { curMonth = v; curDay = refreshDays(curYear, curMonth, curDay); });
+                colDay.addEventListener('scroll', () => {
+                    clearTimeout(colDay._t);
+                    colDay._t = setTimeout(() => {
+                        const dim = daysInMonth(curYear, curMonth);
+                        const idx = Math.round(colDay.scrollTop / ITEM_H);
+                        const clamped = Math.max(0, Math.min(dim - 1, idx));
+                        colDay.scrollTop = clamped * ITEM_H;
+                        curDay = clamped + 1;
+                    }, 90);
+                });
+
+                mask.querySelector('#hs-wdp-cancel').onclick = () => mask.remove();
+                mask.querySelector('#hs-wdp-ok').onclick = () => {
+                    const pad = (n) => String(n).padStart(2, '0');
+                    onConfirm(`${curYear}-${pad(curMonth)}-${pad(curDay)}`);
+                    mask.remove();
+                };
+            }
+
+            // —— 添加/编辑弹窗 ——
+            function hsOpenDayEditModal(parentLayer, c, mode, editing, onSaved) {
+                const isUp = mode === 'up';
+                const key = hsDayStorageKey(mode);
+                const isEdit = !!editing;
+                const cur = editing || { id: 'd_' + Date.now(), title: '', date: localDateStr(), iconText: '', bg: HS_DAY_DEFAULT_BG, repeatYearly: false, pinned: false, textWhite: false, note: '', photos: [] };
+                let repeatYearly = !!cur.repeatYearly;
+                let pinned = !!cur.pinned;
+                const mask = document.createElement('div');
+                mask.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;';
+                const toggleRow = (id, label, active) => `
+                    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#775C56;margin-bottom:12px;cursor:pointer;">
+                        <span id="${id}" style="width:36px;height:20px;border-radius:10px;background:${active?'#FFD3D4':'#e5dcd8'};position:relative;transition:background 0.2s;flex-shrink:0;">
+                            <span style="position:absolute;top:2px;left:${active?'18px':'2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 2px rgba(0,0,0,0.2);"></span>
+                        </span>
+                        ${label}
+                    </label>`;
+                mask.innerHTML = `
+                    <div style="background:#fff;border-radius:18px;padding:18px;width:100%;max-width:300px;max-height:80vh;overflow-y:auto;">
+                        <h4 style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:12px;">${isEdit?'编辑':'添加'}${isUp?'正数日':'倒数日'}</h4>
+                        <input id="hs-day-title" type="text" maxlength="16" placeholder="名字，比如 ${isUp?'在一起纪念日':'先生的生日'}" value="${(cur.title||'').replace(/"/g,'&quot;')}" style="width:100%;border:1px solid #f0e0dc;border-radius:10px;padding:9px 11px;font-size:13px;color:#775C56;outline:none;margin-bottom:10px;box-sizing:border-box;">
+                        <div style="font-size:11px;color:#9A7872;margin-bottom:6px;">${isUp?'起始日':'目标日'}</div>
+                        <div id="hs-day-value" data-date="${cur.date}" style="width:100%;border:1px solid #f0e0dc;border-radius:10px;padding:9px 11px;font-size:13px;color:#775C56;margin-bottom:12px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                            <span id="hs-day-value-text"></span><span style="color:#B89B95;font-size:12px;">选择 ›</span>
+                        </div>
+                        ${toggleRow('hs-day-pin-toggle', '置顶', pinned)}
+                        ${!isUp ? toggleRow('hs-day-repeat-toggle', '每年重复（生日适用）', repeatYearly) : ''}
+                        <div style="display:flex;gap:8px;margin-top:6px;">
+                            <button id="hs-day-cancel" style="flex:1;border:none;border-radius:10px;padding:9px;font-size:13px;cursor:pointer;background:#D5EBE4;color:#775C56;font-weight:500;">取消</button>
+                            <button id="hs-day-ok" style="flex:1;border:none;border-radius:10px;padding:9px;font-size:13px;cursor:pointer;background:#FFD3D4;color:#775C56;font-weight:600;">${isEdit?'保存':'添加'}</button>
+                        </div>
+                    </div>
+                `;
+                parentLayer.appendChild(mask);
+                const titleInput = mask.querySelector('#hs-day-title');
+
+                // 日期显示 + 滚轮选择器（比原生日期输入在手机上更好滑）
+                const dateBox = mask.querySelector('#hs-day-value');
+                const dateText = mask.querySelector('#hs-day-value-text');
+                const fmtDateDisplay = (str) => {
+                    const d = parseLocalDate(str);
+                    if (isNaN(d)) return str;
+                    return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+                };
+                dateText.textContent = fmtDateDisplay(dateBox.dataset.date);
+                dateBox.onclick = () => {
+                    hsOpenWheelDatePicker(parentLayer, dateBox.dataset.date, (newDate) => {
+                        dateBox.dataset.date = newDate;
+                        dateText.textContent = fmtDateDisplay(newDate);
+                    });
+                };
+
+                const pinToggle = mask.querySelector('#hs-day-pin-toggle');
+                pinToggle.onclick = () => {
+                    pinned = !pinned;
+                    pinToggle.style.background = pinned ? '#FFD3D4' : '#e5dcd8';
+                    pinToggle.querySelector('span').style.left = pinned ? '18px' : '2px';
+                };
+                const repeatToggle = mask.querySelector('#hs-day-repeat-toggle');
+                if (repeatToggle) repeatToggle.onclick = () => {
+                    repeatYearly = !repeatYearly;
+                    repeatToggle.style.background = repeatYearly ? '#FFD3D4' : '#e5dcd8';
+                    repeatToggle.querySelector('span').style.left = repeatYearly ? '18px' : '2px';
+                };
+                mask.querySelector('#hs-day-cancel').onclick = () => mask.remove();
+                mask.onclick = (e) => { if (e.target === mask) mask.remove(); };
+                const delBtn = mask.querySelector('#hs-day-del');
+                if (delBtn) delBtn.onclick = () => {
+                    if (!confirm('删除这条记录？')) return;
+                    const list = hsGet(c.id, key, []).filter(x => x.id !== cur.id);
+                    hsSet(c.id, key, list);
+                    mask.remove();
+                    if (onSaved) onSaved();
+                };
+                mask.querySelector('#hs-day-ok').onclick = () => {
+                    const title = titleInput.value.trim();
+                    const dateVal = mask.querySelector('#hs-day-value').dataset.date;
+                    if (!title) { titleInput.focus(); return; }
+                    if (!dateVal) return;
+                    const list = hsGet(c.id, key, []);
+                    const item = {
+                        id: cur.id,
+                        title: title.slice(0,16),
+                        date: dateVal,
+                        iconText: cur.iconText || '',
+                        bg: cur.bg || HS_DAY_DEFAULT_BG,
+                        repeatYearly: isUp ? false : repeatYearly,
+                        pinned,
+                        textWhite: !!cur.textWhite,
+                        note: cur.note || '',
+                        photos: cur.photos || [],
+                    };
+                    const idx = list.findIndex(x => x.id === cur.id);
+                    if (idx >= 0) list[idx] = item; else list.unshift(item);
+                    hsSet(c.id, key, list);
+                    mask.remove();
+                    if (onSaved) onSaved();
+                };
+                setTimeout(() => titleInput.focus(), 50);
+            }
+
+            // 背景是自定义照片时，用 ImageDB 存取；否则就是普通 CSS 背景值（渐变/纯色）
+            async function hsResolveDayBg(bg) {
+                if (bg && (bg.startsWith('imgdb://')) && window.ImageDB && window.ImageDB.resolve) {
+                    try { return await window.ImageDB.resolve(bg); } catch(e) { return ''; }
+                }
+                return bg;
+            }
+
+            // —— 详情卡片页（大数字 + 背景 + 底部功能按钮，卡片居中显示，配色只用薄荷绿+粉色）——
+            function hsOpenDayDetail(appPage, listLayer, c, mode, item, onListChanged) {
+                const isUp = mode === 'up';
+                const key = hsDayStorageKey(mode);
+                const circleBg = isUp ? '#FFD3D4' : '#D5EBE4';
+                const circleText = '#775C56';
+                const layer = document.createElement('div');
+                layer.style.cssText = 'position:absolute;inset:0;background:#FBF9F4;z-index:300;display:flex;flex-direction:column;border-radius:30px;overflow:hidden;';
+
+                const renderCard = async () => {
+                    const curItem = hsGet(c.id, key, []).find(x => x.id === item.id) || item;
+                    const info = hsCalcDayInfo(curItem, mode);
+                    const d = parseLocalDate(curItem.date);
+                    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}${curItem.repeatYearly ? '（每年）' : ''}`;
+                    const topLine = isUp ? `${curItem.title || '未命名'}的第` : `距离${curItem.title || '未命名'}还有`;
+                    const bottomLabel = isUp ? '起始日' : '目标日';
+                    const iconText = (curItem.iconText || curItem.title || '').slice(0, 2);
+                    const isPhotoBg = curItem.bg && curItem.bg.startsWith('imgdb://');
+                    const resolvedBg = isPhotoBg ? await hsResolveDayBg(curItem.bg) : curItem.bg;
+                    const cardBgStyle = isPhotoBg
+                        ? `background-image:url(${resolvedBg});background-size:cover;background-position:center;`
+                        : `background:${resolvedBg || HS_DAY_DEFAULT_BG};`;
+                    const textColor = curItem.textWhite ? '#ffffff' : '#775C56';
+                    const textShadow = curItem.textWhite ? 'text-shadow:0 1px 4px rgba(0,0,0,0.35);' : '';
+
+                    layer.innerHTML = `
+                        <div style="padding:22px 15px 10px;display:flex;align-items:center;background:#FBF9F4;border-bottom:1.5px solid #e8e0d0;position:relative;flex-shrink:0;">
+                            <span id="hs-day-detail-back" style="font-size:28px;cursor:pointer;color:#775C56;line-height:1;margin-top:8px;width:40px;">‹</span>
+                            <div style="position:absolute;left:50%;bottom:9px;transform:translateX(-50%);font-size:17px;font-weight:600;color:#775C56;">${isUp?'正数日':'倒数日'}</div>
+                            <span id="hs-day-detail-edit" style="position:absolute;right:15px;bottom:9px;font-size:13px;color:#775C56;cursor:pointer;">编辑</span>
+                        </div>
+                        <div style="flex:1;overflow-y:auto;padding:72px 16px 20px;display:flex;flex-direction:column;justify-content:flex-start;">
+                            <div id="hs-day-card" style="${cardBgStyle}border-radius:22px;padding:34px 20px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,0.08);position:relative;">
+                                <div style="font-size:15px;color:${textColor};${textShadow}font-weight:500;margin-bottom:16px;">${topLine.replace(/</g,'&lt;')}</div>
+                                <div style="font-size:64px;color:${textColor};${textShadow}font-weight:700;line-height:1;margin-bottom:16px;letter-spacing:1px;">${info.days}<span style="font-size:20px;font-weight:500;"> 天</span></div>
+                                ${info.isToday ? `<div style="font-size:14px;color:${curItem.textWhite?'#fff':'#775C56'};${textShadow}font-weight:600;margin-bottom:10px;">就是今天 🎉</div>` : ''}
+                                <div style="font-size:12px;color:${textColor};${textShadow}opacity:0.85;">${bottomLabel}：${dateStr}</div>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;gap:6px;margin-top:22px;">
+                                <span class="hs-day-action" data-act="toggle-color" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">切换</span>
+                                <span class="hs-day-action" data-act="save-img" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">存为图片</span>
+                                <span class="hs-day-action" data-act="bg" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">换背景</span>
+                                <span class="hs-day-action" data-act="del" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">删除</span>
+                            </div>
+                        </div>
+                        <div style="position:absolute;right:16px;bottom:16px;display:flex;gap:10px;">
+                            <span class="hs-day-action" data-act="note" style="background:#FFD3D4;color:#775C56;padding:9px 16px;border-radius:14px;font-size:12px;cursor:pointer;font-weight:500;box-shadow:0 3px 8px rgba(0,0,0,0.1);">便签</span>
+                            <span class="hs-day-action" data-act="album" style="background:#D5EBE4;color:#775C56;padding:9px 16px;border-radius:14px;font-size:12px;cursor:pointer;font-weight:500;box-shadow:0 3px 8px rgba(0,0,0,0.1);">相册</span>
+                        </div>
+                    `;
+
+                    layer.querySelector('#hs-day-detail-back').onclick = () => { layer.remove(); if (onListChanged) onListChanged(); };
+                    layer.querySelector('#hs-day-detail-edit').onclick = () => {
+                        hsOpenDayEditModal(layer, c, mode, curItem, () => { renderCard(); if (onListChanged) onListChanged(); });
+                    };
+
+                    const updateItem = (patch) => {
+                        const list = hsGet(c.id, key, []);
+                        const idx = list.findIndex(x => x.id === curItem.id);
+                        if (idx < 0) return false;
+                        const backup = JSON.stringify(list[idx]);
+                        Object.assign(list[idx], patch);
+                        try {
+                            localStorage.setItem(hsKey(c.id, key), JSON.stringify(list));
+                            Object.assign(curItem, patch);
+                            return true;
+                        } catch (e) {
+                            // 存储空间不够，回滚这一条，提醒一下而不是悄悄丢失
+                            list[idx] = JSON.parse(backup);
+                            alert('保存失败啦，可能是存储空间不够了～可以试试删掉一些旧照片再存');
+                            return false;
+                        }
+                    };
+
+                    layer.querySelectorAll('.hs-day-action').forEach(btn => {
+                        btn.onclick = async () => {
+                            const act = btn.dataset.act;
+                            if (act === 'del') {
+                                if (!confirm('删除这条记录？')) return;
+                                const list = hsGet(c.id, key, []).filter(x => x.id !== curItem.id);
+                                hsSet(c.id, key, list);
+                                layer.remove();
+                                if (onListChanged) onListChanged();
+                                return;
+                            }
+                            if (act === 'toggle-color') {
+                                updateItem({ textWhite: !curItem.textWhite });
+                                renderCard();
+                                return;
+                            }
+                            if (act === 'bg') {
+                                openBgPicker();
+                                return;
+                            }
+                            if (act === 'note') {
+                                openNoteEditor();
+                                return;
+                            }
+                            if (act === 'album') {
+                                openAlbum();
+                                return;
+                            }
+                            if (act === 'save-img') {
+                                try {
+                                    if (!window.html2canvas) {
+                                        await new Promise((res, rej) => {
+                                            const s = document.createElement('script');
+                                            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                                            s.onload = res; s.onerror = rej;
+                                            document.head.appendChild(s);
+                                        });
+                                    }
+                                    const cardEl = layer.querySelector('#hs-day-card');
+                                    const canvas = await html2canvas(cardEl, { useCORS: true, backgroundColor: null });
+                                    const dataUrl = canvas.toDataURL('image/png');
+                                    const filename = `${curItem.title || '重要日子'}.png`;
+                                    let sharedOk = false;
+                                    try {
+                                        const blob = await (await fetch(dataUrl)).blob();
+                                        const file = new File([blob], filename, { type: 'image/png' });
+                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                            await navigator.share({ files: [file], title: filename });
+                                            sharedOk = true;
+                                        }
+                                    } catch(shareErr) { if (shareErr && shareErr.name === 'AbortError') sharedOk = true; }
+                                    if (!sharedOk) {
+                                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+                                        if (!isMobile) {
+                                            const a = document.createElement('a');
+                                            a.href = dataUrl; a.download = filename; a.click();
+                                        } else {
+                                            const win = window.open(dataUrl, '_blank');
+                                            if (win) alert('图片已在新标签页打开，长按图片选择"存储图像"即可保存～');
+                                        }
+                                    }
+                                } catch(e) {
+                                    alert('生成图片失败：' + (e.message || e));
+                                }
+                                return;
+                            }
+                        };
+                    });
+
+                    // 换背景：直接触发上传照片，不给颜色选项
+                    function openBgPicker() {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.style.display = 'none';
+                        layer.appendChild(input);
+                        input.onchange = async (e) => {
+                            const file = e.target.files[0];
+                            input.remove();
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = async (ev) => {
+                                let ref = ev.target.result;
+                                try {
+                                    if (window.ImageDB && window.ImageDB.saveAndRef) ref = await window.ImageDB.saveAndRef(ev.target.result);
+                                } catch(err) {}
+                                updateItem({ bg: ref });
+                                renderCard();
+                            };
+                            reader.readAsDataURL(file);
+                        };
+                        input.click();
+                    }
+
+                    // 便签：按时间记录一条条小心情，不覆盖，可以一直往下加
+                    function openNoteEditor() {
+                        const mask = document.createElement('div');
+                        mask.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;';
+                        layer.appendChild(mask);
+
+                        const fmtTime = (ts) => {
+                            const d = new Date(ts);
+                            return `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                        };
+
+                        const renderNoteBody = () => {
+                            const latest = hsGet(c.id, key, []).find(x => x.id === curItem.id) || curItem;
+                            // 旧数据兼容：以前是单条 note 字符串，迁移成列表里的第一条
+                            let notes = latest.notes;
+                            if (!notes) {
+                                notes = latest.note ? [{ id: 'n' + Date.now(), text: latest.note, time: latest.noteTime || Date.now() }] : [];
+                            }
+                            mask.innerHTML = `
+                                <div style="background:#fff;border-radius:18px;padding:18px;width:100%;max-width:290px;max-height:78vh;display:flex;flex-direction:column;">
+                                    <h4 style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:12px;">📝 便签</h4>
+                                    <div style="flex:1;overflow-y:auto;margin-bottom:12px;${notes.length ? '' : 'display:none;'}">
+                                        ${notes.slice().reverse().map(n => `
+                                            <div style="background:#FBF9F4;border-radius:10px;padding:10px 12px;margin-bottom:8px;position:relative;">
+                                                <div style="font-size:13px;color:#775C56;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${(n.text||'').replace(/</g,'&lt;')}</div>
+                                                <div style="font-size:10px;color:#B89B95;margin-top:6px;">${fmtTime(n.time)}</div>
+                                                <span class="hs-day-note-del" data-id="${n.id}" style="position:absolute;top:8px;right:8px;font-size:11px;color:#c99;cursor:pointer;">✕</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    ${notes.length === 0 ? '<div style="text-align:center;color:#B89B95;font-size:12px;padding:10px 0 16px;">还没有便签，写第一条吧～</div>' : ''}
+                                    <textarea id="hs-day-note-text" maxlength="200" placeholder="写点关于这个日子的小心情吧～" style="width:100%;height:70px;border:1px solid #f0e0dc;border-radius:10px;padding:10px;font-size:13px;color:#775C56;outline:none;box-sizing:border-box;resize:none;font-family:inherit;margin-bottom:12px;flex-shrink:0;"></textarea>
+                                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                                        <button id="hs-day-note-cancel" style="flex:1;border:none;border-radius:10px;padding:9px;font-size:13px;cursor:pointer;background:#D5EBE4;color:#775C56;">关闭</button>
+                                        <button id="hs-day-note-save" style="flex:1;border:none;border-radius:10px;padding:9px;font-size:13px;cursor:pointer;background:#FFD3D4;color:#775C56;font-weight:600;">添加</button>
+                                    </div>
+                                </div>
+                            `;
+                            mask.querySelector('#hs-day-note-cancel').onclick = () => mask.remove();
+                            mask.querySelectorAll('.hs-day-note-del').forEach(btn => btn.onclick = () => {
+                                const id = btn.dataset.id;
+                                const newNotes = notes.filter(n => n.id !== id);
+                                if (updateItem({ notes: newNotes, note: undefined })) renderNoteBody();
+                            });
+                            mask.querySelector('#hs-day-note-save').onclick = () => {
+                                const ta = mask.querySelector('#hs-day-note-text');
+                                const text = ta.value.trim().slice(0, 200);
+                                if (!text) { ta.focus(); return; }
+                                const newNotes = notes.concat([{ id: 'n' + Date.now() + Math.random().toString(36).slice(2,6), text, time: Date.now() }]);
+                                if (updateItem({ notes: newNotes, note: undefined })) renderNoteBody();
+                            };
+                        };
+                        mask.onclick = (e) => { if (e.target === mask) mask.remove(); };
+                        renderNoteBody();
+                    }
+
+                    // 纪念日相册：为这个日子单独存一批照片，每张都记着上传的时间
+                    function openAlbum() {
+                        const mask = document.createElement('div');
+                        mask.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+                        // 兼容旧数据：以前 photos 里存的是纯字符串，现在统一成 {ref, time}
+                        const normalizePhoto = (p) => (typeof p === 'string') ? { ref: p, time: null } : p;
+                        const fmtDate = (ts) => {
+                            if (!ts) return '';
+                            const d = new Date(ts);
+                            return `${d.getMonth()+1}/${d.getDate()}`;
+                        };
+                        // 直接写 localStorage，失败（比如空间不够）就回滚并提醒，而不是悄悄丢失
+                        const trySaveList = (list) => {
+                            try {
+                                localStorage.setItem(hsKey(c.id, key), JSON.stringify(list));
+                                return true;
+                            } catch (e) {
+                                alert('保存失败啦，可能是存储空间不够了～可以试试删掉一些旧照片再存');
+                                return false;
+                            }
+                        };
+
+                        const renderAlbumBody = async () => {
+                            const latest = hsGet(c.id, key, []).find(x => x.id === curItem.id) || curItem;
+                            const photos = (latest.photos || []).map(normalizePhoto);
+                            const resolved = await Promise.all(photos.map(p => hsResolveDayBg(p.ref)));
+                            mask.innerHTML = `
+                                <div style="background:#fff;border-radius:18px;padding:18px;width:100%;max-width:320px;max-height:78vh;display:flex;flex-direction:column;">
+                                    <h4 style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:12px;">🖼️ 纪念日相册</h4>
+                                    <div style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+                                        ${resolved.map((src, i) => `
+                                            <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#f5efe9;">
+                                                <img src="${src}" style="width:100%;height:100%;object-fit:cover;">
+                                                ${photos[i].time ? `<span style="position:absolute;left:3px;bottom:3px;font-size:9px;color:#fff;background:rgba(0,0,0,0.45);padding:1px 5px;border-radius:6px;">${fmtDate(photos[i].time)}</span>` : ''}
+                                                <span class="hs-day-album-del" data-i="${i}" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.5);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;">×</span>
+                                            </div>
+                                        `).join('')}
+                                        <label for="hs-day-album-upload" style="aspect-ratio:1;border-radius:10px;border:2px dashed #e0d3c8;display:flex;align-items:center;justify-content:center;font-size:22px;color:#c9b8ae;cursor:pointer;">＋</label>
+                                    </div>
+                                    <input type="file" id="hs-day-album-upload" accept="image/*" multiple style="display:none;">
+                                    <span id="hs-day-album-close" style="display:block;text-align:center;background:#D5EBE4;color:#775C56;padding:9px;border-radius:10px;font-size:13px;cursor:pointer;">关闭</span>
+                                </div>
+                            `;
+                            mask.querySelector('#hs-day-album-close').onclick = () => mask.remove();
+                            mask.querySelectorAll('.hs-day-album-del').forEach(btn => btn.onclick = async () => {
+                                const i = parseInt(btn.dataset.i, 10);
+                                const list = hsGet(c.id, key, []);
+                                const idx = list.findIndex(x => x.id === curItem.id);
+                                if (idx >= 0) {
+                                    const backup = list[idx].photos;
+                                    const newPhotos = (list[idx].photos || []).map(normalizePhoto).filter((_, pi) => pi !== i);
+                                    list[idx].photos = newPhotos;
+                                    if (!trySaveList(list)) { list[idx].photos = backup; return; }
+                                }
+                                renderAlbumBody();
+                            });
+                            mask.querySelector('#hs-day-album-upload').onchange = async (e) => {
+                                const files = Array.from(e.target.files || []);
+                                if (!files.length) return;
+                                const list = hsGet(c.id, key, []);
+                                const idx = list.findIndex(x => x.id === curItem.id);
+                                if (idx < 0) return;
+                                const backup = list[idx].photos ? list[idx].photos.slice() : [];
+                                const existing = (list[idx].photos || []).map(normalizePhoto);
+                                const added = [];
+                                for (const file of files) {
+                                    const dataUrl = await new Promise((res) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (ev) => res(ev.target.result);
+                                        reader.readAsDataURL(file);
+                                    });
+                                    let ref = dataUrl;
+                                    try {
+                                        if (window.ImageDB && window.ImageDB.saveAndRef) ref = await window.ImageDB.saveAndRef(dataUrl);
+                                    } catch(err) {}
+                                    added.push({ ref, time: Date.now() });
+                                }
+                                list[idx].photos = existing.concat(added);
+                                if (!trySaveList(list)) { list[idx].photos = backup; }
+                                renderAlbumBody();
+                            };
+                        };
+                        mask.onclick = (e) => { if (e.target === mask) mask.remove(); };
+                        layer.appendChild(mask);
+                        renderAlbumBody();
+                    }
+                };
+                renderCard();
+                appPage.appendChild(layer);
             }
 
             function hsOpenSymptom(appPage, c, userNick, onDone) {
@@ -13345,6 +14011,11 @@
                 <div class="bc-shelf" id="bc-shelf-skin"></div>
                 <div class="bc-shelf-title"><span>💄 彩妆区</span><span class="bc-shelf-add" data-shelf="makeup">＋</span></div>
                 <div class="bc-shelf" id="bc-shelf-makeup"></div>
+                <div class="bc-shelf-title"><span>🌸 香水柜</span><span class="bc-shelf-add" id="bc-shelf-add-perfume">＋</span></div>
+                <div class="bc-shelf" id="bc-shelf-perfume"></div>
+
+                <div class="bc-sec-label" style="margin-top:14px;">🌸 香调偏好报告</div>
+                <div id="bc-perfume-report" style="margin:0 20px 14px;"></div>
 
                 <div class="bc-sec-label" style="margin-top:14px;">💬 和 TA 聊聊护肤</div>
                 <div class="bc-chat" id="bc-chat"><div class="bc-chat-empty" id="bc-chat-empty">选好 TA，就能问问护肤品怎么搭、能不能一起用、适不适合你～</div></div>
@@ -13352,11 +14023,12 @@
             </div>`;
 
             const KEY = 'beauty_cabinet_data';
-            const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{"skin":[],"makeup":[]}'); } catch(e) { return {skin:[],makeup:[]}; } };
+            const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{"skin":[],"makeup":[],"perfume":[]}'); } catch(e) { return {skin:[],makeup:[],perfume:[]}; } };
             const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} };
             let data = load();
             if (!data.skin) data.skin = [];
             if (!data.makeup) data.makeup = [];
+            if (!data.perfume) data.perfume = [];
             let selectedNarrator = null;
             let convo = [], sceneLabel = '';
             const resultEl = appPage.querySelector('.bc-result');
@@ -13378,10 +14050,41 @@
                 });
             };
 
+            // 香调大分类（标准香水轮盘常见分类）
+            const PERFUME_FAMILIES = [
+                { key: 'floral',  label: '花香', emoji: '🌸', color: '#E88FA5' },
+                { key: 'woody',   label: '木质', emoji: '🌳', color: '#A67C52' },
+                { key: 'oriental',label: '东方/琥珀', emoji: '🕌', color: '#C9862E' },
+                { key: 'citrus',  label: '柑橘', emoji: '🍊', color: '#F2A93B' },
+                { key: 'fresh',   label: '清新水生', emoji: '💧', color: '#5FBFD9' },
+                { key: 'fruity',  label: '果香', emoji: '🍑', color: '#E56C8C' },
+                { key: 'gourmand',label: '美食香', emoji: '🍮', color: '#C98A5B' },
+                { key: 'fougere', label: '馥奇', emoji: '🌿', color: '#6FA86C' },
+                { key: 'leather', label: '皮革/烟草', emoji: '🚬', color: '#7A5C4E' },
+            ];
+            const pfFamilyInfo = (key) => PERFUME_FAMILIES.find(f => f.key === key) || { key:'other', label:'其他', emoji:'🌫️', color:'#B9AFAF' };
+
             // —— 收纳柜 ——
             const renderShelf = (type) => {
                 const el = appPage.querySelector('#bc-shelf-' + type);
                 const items = data[type] || [];
+                if (type === 'perfume') {
+                    if (items.length === 0) { el.innerHTML = `<div class="bc-empty">还没有香水，点 ＋ 添加</div>`; return; }
+                    el.innerHTML = '';
+                    items.forEach((it, idx) => {
+                        const fam = pfFamilyInfo(it.family);
+                        const wrap = document.createElement('div');
+                        wrap.className = 'bc-item';
+                        wrap.innerHTML = `<div class="bc-item-img">${fam.emoji}</div>
+                            <div class="bc-item-name">${(it.name||'未命名').replace(/</g,'&lt;')}</div>
+                            <div class="bc-item-type">${(it.brand||'').replace(/</g,'&lt;')}</div>
+                            <span class="bc-item-del">−</span>`;
+                        wrap.querySelector('.bc-item-del').onclick = (e) => { e.stopPropagation(); data.perfume.splice(idx,1); save(data); renderShelf('perfume'); renderPerfumeReport(); };
+                        wrap.querySelector('.bc-item-img').onclick = wrap.querySelector('.bc-item-name').onclick = () => openPerfumeModal(idx);
+                        el.appendChild(wrap);
+                    });
+                    return;
+                }
                 if (items.length === 0) { el.innerHTML = `<div class="bc-empty">还没有${type==='skin'?'护肤':'彩妆'}品，点 ＋ 添加</div>`; return; }
                 el.innerHTML = '';
                 items.forEach((it, idx) => {
@@ -13432,6 +14135,176 @@
             }
 
             appPage.querySelectorAll('.bc-shelf-add').forEach(btn => btn.onclick = () => openItemModal(btn.dataset.shelf, null));
+            const pfAddBtn = appPage.querySelector('#bc-shelf-add-perfume');
+            if (pfAddBtn) pfAddBtn.onclick = () => openPerfumeModal(null);
+
+            // 添加/编辑香水的弹窗（品牌 + 名称 + 香调大类 + 前中后调，全部手动填写）
+            function openPerfumeModal(editIdx) {
+                const editing = (editIdx != null);
+                const cur = editing ? data.perfume[editIdx] : { brand:'', name:'', family:'', top:'', middle:'', base:'', note:'' };
+                let pickedFamily = cur.family || '';
+                const mask = document.createElement('div');
+                mask.className = 'bc-modal-mask';
+                mask.innerHTML = `<div class="bc-modal" style="max-height:80vh;overflow-y:auto;">
+                    <h4>${editing?'编辑':'添加'}一瓶香水</h4>
+                    <input type="text" id="bc-pf-brand" maxlength="14" placeholder="品牌，比如 祖玛珑 / Dior" value="${(cur.brand||'').replace(/"/g,'&quot;')}">
+                    <input type="text" id="bc-pf-name" maxlength="20" placeholder="名称，比如 青柠罗勒迷迭香" value="${(cur.name||'').replace(/"/g,'&quot;')}">
+                    <div style="font-size:11px;color:#9c87b8;margin:-6px 0 6px;">香调大类</div>
+                    <div class="bc-type-chips" id="bc-pf-family-chips">${PERFUME_FAMILIES.map(f=>`<span class="bc-type-chip${f.key===pickedFamily?' sel':''}" data-f="${f.key}">${f.emoji} ${f.label}</span>`).join('')}</div>
+                    <div style="font-size:11px;color:#9c87b8;margin:-6px 0 6px;">前调（可多个，用顿号或逗号分开）</div>
+                    <input type="text" id="bc-pf-top" maxlength="60" placeholder="比如 佛手柑、柠檬、黑醋栗" value="${(cur.top||'').replace(/"/g,'&quot;')}">
+                    <div style="font-size:11px;color:#9c87b8;margin:-6px 0 6px;">中调</div>
+                    <input type="text" id="bc-pf-middle" maxlength="60" placeholder="比如 茉莉、玫瑰、鸢尾" value="${(cur.middle||'').replace(/"/g,'&quot;')}">
+                    <div style="font-size:11px;color:#9c87b8;margin:-6px 0 6px;">后调</div>
+                    <input type="text" id="bc-pf-base" maxlength="60" placeholder="比如 雪松、麝香、龙涎香" value="${(cur.base||'').replace(/"/g,'&quot;')}">
+                    <input type="text" id="bc-pf-note" maxlength="20" placeholder="小备注（可选，比如 约会用/秋冬款）" value="${(cur.note||'').replace(/"/g,'&quot;')}">
+                    <div class="bc-modal-btns"><button class="bc-cancel">取消</button><button class="bc-ok">${editing?'保存':'添加'}</button></div>
+                </div>`;
+                appPage.querySelector('.bc-page').appendChild(mask);
+                const brandInput = mask.querySelector('#bc-pf-brand');
+                mask.querySelectorAll('#bc-pf-family-chips .bc-type-chip').forEach(c => c.onclick = () => {
+                    pickedFamily = (pickedFamily === c.dataset.f) ? '' : c.dataset.f;
+                    mask.querySelectorAll('#bc-pf-family-chips .bc-type-chip').forEach(x => x.classList.toggle('sel', x.dataset.f === pickedFamily));
+                });
+                mask.querySelector('.bc-cancel').onclick = () => mask.remove();
+                mask.onclick = (e) => { if (e.target === mask) mask.remove(); };
+                mask.querySelector('.bc-ok').onclick = () => {
+                    const brand = brandInput.value.trim();
+                    const nm = mask.querySelector('#bc-pf-name').value.trim();
+                    if (!brand && !nm) { brandInput.focus(); return; }
+                    const item = {
+                        brand: brand.slice(0,14),
+                        name: (nm || brand).slice(0,20),
+                        family: pickedFamily,
+                        top: mask.querySelector('#bc-pf-top').value.trim().slice(0,60),
+                        middle: mask.querySelector('#bc-pf-middle').value.trim().slice(0,60),
+                        base: mask.querySelector('#bc-pf-base').value.trim().slice(0,60),
+                        note: mask.querySelector('#bc-pf-note').value.trim().slice(0,20),
+                    };
+                    if (editing) data.perfume[editIdx] = item; else data.perfume.push(item);
+                    save(data);
+                    renderShelf('perfume');
+                    renderPerfumeReport();
+                    mask.remove();
+                };
+                setTimeout(()=>brandInput.focus(), 50);
+            }
+
+            // 把"佛手柑、柠檬 / 黑醋栗，雪松"这种自由文本拆成单个成分词
+            function pfSplitNotes(str) {
+                if (!str) return [];
+                return str.split(/[、，,\/\s]+/).map(s => s.trim()).filter(Boolean);
+            }
+
+            // —— 香调偏好报告：统计香调大类分布 + 高频成分，画环形图，AI 生成一段文字总结 ——
+            function renderPerfumeReport() {
+                const mount = appPage.querySelector('#bc-perfume-report');
+                if (!mount) return;
+                const items = data.perfume || [];
+                if (items.length === 0) {
+                    mount.innerHTML = `<div class="bc-result-empty">还没有收藏香水，添加几瓶之后这里会自动出偏好分析～</div>`;
+                    return;
+                }
+
+                // 香调大类分布
+                const famCount = {};
+                items.forEach(it => { const k = it.family || 'other'; famCount[k] = (famCount[k]||0) + 1; });
+                const famSegments = Object.keys(famCount).map(k => ({ ...pfFamilyInfo(k), count: famCount[k] })).sort((a,b)=>b.count-a.count);
+                const famTotal = items.length;
+
+                // 品牌分布
+                const brandCount = {};
+                items.forEach(it => { const b = it.brand || '未填品牌'; brandCount[b] = (brandCount[b]||0) + 1; });
+                const topBrands = Object.entries(brandCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+                // 成分频率（前中后调合并统计）
+                const noteCount = {};
+                items.forEach(it => {
+                    [...pfSplitNotes(it.top), ...pfSplitNotes(it.middle), ...pfSplitNotes(it.base)].forEach(n => {
+                        noteCount[n] = (noteCount[n]||0) + 1;
+                    });
+                });
+                const topNotes = Object.entries(noteCount).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+                // 环形图（香调大类占比，SVG 多段圆弧，跟"专注统计"同一套画法）
+                const R = 44, CIRC = 2 * Math.PI * R;
+                let offsetAcc = 0;
+                const arcs = famSegments.map(seg => {
+                    const frac = seg.count / famTotal;
+                    const dash = Math.max(frac * CIRC, frac > 0 ? 1.5 : 0);
+                    const gap = CIRC - dash;
+                    const rotate = -90 + offsetAcc * 360;
+                    offsetAcc += frac;
+                    return `<circle cx="60" cy="60" r="${R}" fill="none" stroke="${seg.color}" stroke-width="16" stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}" transform="rotate(${rotate.toFixed(2)} 60 60)"></circle>`;
+                }).join('');
+                const famLegend = famSegments.map(seg => {
+                    const pct = Math.round(seg.count / famTotal * 100);
+                    return `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4a3370;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${seg.color};display:inline-block;flex-shrink:0;"></span>
+                        <span>${seg.emoji} ${seg.label}</span>
+                        <span style="color:#9c87b8;">${seg.count} 瓶 · ${pct}%</span>
+                    </div>`;
+                }).join('');
+
+                const notesHtml = topNotes.map(([n,c]) => `<span style="display:inline-flex;align-items:center;gap:4px;background:#f3edfb;color:#7a64a8;padding:5px 10px;border-radius:12px;font-size:11px;margin:0 6px 6px 0;">${n.replace(/</g,'&lt;')} <span style="opacity:0.6;">×${c}</span></span>`).join('');
+                const brandsHtml = topBrands.map(([b,c]) => `<span style="display:inline-flex;align-items:center;gap:4px;background:#f3edfb;color:#7a64a8;padding:5px 10px;border-radius:12px;font-size:11px;margin:0 6px 6px 0;">${b.replace(/</g,'&lt;')} <span style="opacity:0.6;">×${c}</span></span>`).join('');
+
+                mount.innerHTML = `
+                    <div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(138,109,201,0.06);">
+                        <div style="font-size:11px;color:#9c87b8;margin-bottom:10px;">香调大类分布（共 ${famTotal} 瓶）</div>
+                        <div style="display:flex;align-items:center;gap:16px;">
+                            <div style="position:relative;width:110px;height:110px;flex-shrink:0;">
+                                <svg viewBox="0 0 120 120" style="width:100%;height:100%;">${arcs}</svg>
+                                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                    <div style="font-size:20px;color:#4a3370;font-weight:600;">${famTotal}</div>
+                                    <div style="font-size:9px;color:#9c87b8;">瓶香水</div>
+                                </div>
+                            </div>
+                            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;">${famLegend}</div>
+                        </div>
+                    </div>
+                    <div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(138,109,201,0.06);">
+                        <div style="font-size:11px;color:#9c87b8;margin-bottom:8px;">最常出现的成分</div>
+                        <div>${notesHtml || '<span style="font-size:11px;color:#ccc;">还没填过前中后调</span>'}</div>
+                    </div>
+                    <div style="background:#fff;border-radius:16px;padding:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(138,109,201,0.06);">
+                        <div style="font-size:11px;color:#9c87b8;margin-bottom:8px;">最常收藏的品牌</div>
+                        <div>${brandsHtml}</div>
+                    </div>
+                    <div style="background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 10px rgba(138,109,201,0.06);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="font-size:11px;color:#9c87b8;">AI 香调偏好总结</span>
+                            <span id="bc-pf-ai-btn" style="font-size:11px;color:#8a6dc9;text-decoration:underline;cursor:pointer;">${items.length < 2 ? '再添加一瓶就能生成' : '生成总结'}</span>
+                        </div>
+                        <div id="bc-pf-ai-text" style="font-size:12px;color:#4a3370;line-height:1.7;white-space:pre-wrap;">${items.length < 2 ? '至少收藏 2 瓶香水，才能看出点偏好规律哦～' : '点击"生成总结"，让 AI 帮你分析一下'}</div>
+                    </div>
+                `;
+
+                const aiBtn = mount.querySelector('#bc-pf-ai-btn');
+                if (aiBtn && items.length >= 2) {
+                    aiBtn.onclick = async () => {
+                        const textEl = mount.querySelector('#bc-pf-ai-text');
+                        aiBtn.style.pointerEvents = 'none';
+                        aiBtn.textContent = '生成中…';
+                        textEl.textContent = '';
+                        try {
+                            const famSummary = famSegments.map(s => `${s.label} ${s.count}瓶`).join('、');
+                            const noteSummary = topNotes.map(([n,c]) => `${n}(${c}次)`).join('、') || '无';
+                            const brandSummary = topBrands.map(([b,c]) => `${b}(${c}瓶)`).join('、');
+                            const listDetail = items.map(it => `《${it.name}》${it.brand?'-'+it.brand:''}${it.family?'['+pfFamilyInfo(it.family).label+']':''} 前调:${it.top||'无'} 中调:${it.middle||'无'} 后调:${it.base||'无'}`).join('\n');
+                            const text = await callAI([
+                                { role: 'system', content: '你是一个香水顾问，擅长从用户的香水收藏中分析出 TA 的香调偏好、性格气质，语气温柔自然、像朋友聊天，不要用"作为AI"这类话，不要输出markdown标题符号。' },
+                                { role: 'user', content: `这是我的香水收藏：\n${listDetail}\n\n香调大类分布：${famSummary}\n最常出现的成分：${noteSummary}\n最常收藏的品牌：${brandSummary}\n\n请用150-250字，帮我分析一下我的香调偏好、可能的气质/性格倾向，可以顺便推荐1-2个我可能会喜欢但还没收藏的相似香调方向。自然口语，不要分点、不要加标题。` }
+                            ]);
+                            textEl.textContent = text || '生成失败了，再试一次？';
+                        } catch(err) {
+                            textEl.textContent = '生成失败：' + (err.message || err);
+                        }
+                        aiBtn.style.pointerEvents = '';
+                        aiBtn.textContent = '重新生成';
+                    };
+                }
+            }
 
             // —— 选联系人 ——
             appPage.querySelector('#bc-narrator-row').onclick = () => {
@@ -13580,6 +14453,8 @@
 
             renderShelf('skin');
             renderShelf('makeup');
+            renderShelf('perfume');
+            renderPerfumeReport();
 
             // —— 聊聊护肤（消息气泡）——
             let bcChat = [];
