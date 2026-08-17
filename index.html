@@ -7949,6 +7949,7 @@
                 if (c.memory?.manual) s += `记忆：${c.memory.manual}\n`;
                 const recent = hsGetRecentChat(c, userNick);
                 if (recent) s += `\n最近和${userNick}的聊天：\n${recent}\n`;
+                s += hsBuildDaysContext(c);
                 s += `\n${c.name} 和 ${userNick} 的关系：` + (hsIsPartner(c, userNick) ? '恋人' : '朋友') + '\n';
                 return s;
             }
@@ -10277,6 +10278,35 @@
 
             function hsDayStorageKey(mode) { return mode === 'up' ? 'countUpDates' : 'countDownDates'; }
 
+            // 汇总正数日/倒数日的具体天数，塞进人设上下文里，让 AI 在用户提到时能自然接得上
+            function hsBuildDaysContext(c) {
+                if (!c) return '';
+                const up = hsGet(c.id, 'countUpDates', []);
+                const down = hsGet(c.id, 'countDownDates', []);
+                if (!up.length && !down.length) return '';
+                const fmtDate = (str) => {
+                    const d = parseLocalDate(str);
+                    return isNaN(d) ? str : `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                };
+                const lines = [];
+                up.forEach(item => {
+                    const info = hsCalcDayInfo(item, 'up');
+                    const title = item.title || '未命名';
+                    const dateStr = fmtDate(item.date);
+                    if (info.isToday) lines.push(`「${title}」（正数日）：今天就是起始的这一天（${dateStr}）`);
+                    else lines.push(`「${title}」（正数日）：从 ${dateStr} 算起，到今天是第 ${info.days} 天`);
+                });
+                down.forEach(item => {
+                    const info = hsCalcDayInfo(item, 'down');
+                    const title = item.title || '未命名';
+                    const dateStr = fmtDate(item.date) + (item.repeatYearly ? '（每年）' : '');
+                    if (info.isToday) lines.push(`「${title}」（倒数日）：今天就是这一天！（${dateStr}）`);
+                    else if (info.note === '已经过了') lines.push(`「${title}」（倒数日）：目标日 ${dateStr} 已经过去 ${info.days} 天了`);
+                    else lines.push(`「${title}」（倒数日）：距离 ${dateStr} 还有 ${info.days} 天`);
+                });
+                return `\n【重要日子记录】（你们共同记着的正数日/倒数日，具体数字如下，仅在对方聊到相关话题——比如问起纪念日过了多少天、还有多久到生日、提到"我们在一起多久了"之类——时才自然带出来，要像自己一直记着一样，不要生硬报数字或无关时主动打断话题去提起）：\n${lines.join('\n')}\n`;
+            }
+
             // 计算一条记录的天数：正数日 = 距起始日过了几天；倒数日 = 距目标日还有几天（支持每年重复）
             function hsCalcDayInfo(item, mode) {
                 const today = new Date(); today.setHours(0,0,0,0);
@@ -10624,7 +10654,7 @@
                             </div>
                             <div style="display:flex;justify-content:space-between;gap:6px;margin-top:22px;">
                                 <span class="hs-day-action" data-act="toggle-color" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">切换</span>
-                                <span class="hs-day-action" data-act="save-img" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">存为图片</span>
+                                <span class="hs-day-action" data-act="reset-default" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">恢复默认</span>
                                 <span class="hs-day-action" data-act="bg" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">换背景</span>
                                 <span class="hs-day-action" data-act="del" style="flex:1;text-align:center;background:#fff4de;color:#775C56;padding:10px 4px;border-radius:14px;font-size:11px;cursor:pointer;font-weight:500;">删除</span>
                             </div>
@@ -10686,42 +10716,9 @@
                                 openAlbum();
                                 return;
                             }
-                            if (act === 'save-img') {
-                                try {
-                                    if (!window.html2canvas) {
-                                        await new Promise((res, rej) => {
-                                            const s = document.createElement('script');
-                                            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-                                            s.onload = res; s.onerror = rej;
-                                            document.head.appendChild(s);
-                                        });
-                                    }
-                                    const cardEl = layer.querySelector('#hs-day-card');
-                                    const canvas = await html2canvas(cardEl, { useCORS: true, backgroundColor: null });
-                                    const dataUrl = canvas.toDataURL('image/png');
-                                    const filename = `${curItem.title || '重要日子'}.png`;
-                                    let sharedOk = false;
-                                    try {
-                                        const blob = await (await fetch(dataUrl)).blob();
-                                        const file = new File([blob], filename, { type: 'image/png' });
-                                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                                            await navigator.share({ files: [file], title: filename });
-                                            sharedOk = true;
-                                        }
-                                    } catch(shareErr) { if (shareErr && shareErr.name === 'AbortError') sharedOk = true; }
-                                    if (!sharedOk) {
-                                        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-                                        if (!isMobile) {
-                                            const a = document.createElement('a');
-                                            a.href = dataUrl; a.download = filename; a.click();
-                                        } else {
-                                            const win = window.open(dataUrl, '_blank');
-                                            if (win) alert('图片已在新标签页打开，长按图片选择"存储图像"即可保存～');
-                                        }
-                                    }
-                                } catch(e) {
-                                    alert('生成图片失败：' + (e.message || e));
-                                }
+                            if (act === 'reset-default') {
+                                if (!confirm('恢复成默认的背景和字色？')) return;
+                                if (updateItem({ bg: HS_DAY_DEFAULT_BG, textWhite: false })) renderCard();
                                 return;
                             }
                         };
@@ -19958,6 +19955,7 @@
                 let sys = `你是「${c.notes || c.name}」。\n`;
                 if (c.persona) sys += `【人设】：${c.persona}\n`;
                 if (c.memory?.manual) sys += `【记忆】：${c.memory.manual}\n`;
+                sys += hsBuildDaysContext(c);
                 if (wbText) sys += `\n【世界观设定】：\n${wbText}\n`;
                 sys += `\n【番外处写作要求】：\n`;
                 sys += `1. 这是一个不设限的番外创作空间，用户给你一条消息，你回复一段。\n`;
