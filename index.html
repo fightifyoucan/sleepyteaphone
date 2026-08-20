@@ -10306,6 +10306,8 @@
                 });
                 return `\n【重要日子记录】（你们共同记着的正数日/倒数日，具体数字如下，仅在对方聊到相关话题——比如问起纪念日过了多少天、还有多久到生日、提到"我们在一起多久了"之类——时才自然带出来，要像自己一直记着一样，不要生硬报数字或无关时主动打断话题去提起）：\n${lines.join('\n')}\n`;
             }
+            // 番外处等在另一个 <script> 标签里，函数作用域不互通，这里显式挂到 window 上供跨文件调用
+            window.hsBuildDaysContext = hsBuildDaysContext;
 
             // 计算一条记录的天数：正数日 = 距起始日过了几天；倒数日 = 距目标日还有几天（支持每年重复）
             function hsCalcDayInfo(item, mode) {
@@ -19628,6 +19630,7 @@
                 let selectedWorldBookIds = Array.isArray(c.extraRoomWorldBooks) ? [...c.extraRoomWorldBooks] : [];
                 let erFormatOn = !!c.extraRoomFormatOn; // 番外格式开关，默认关
                 let erBg = c.extraRoomBg || ''; // 番外背景图
+                let erContextLimit = c.extraRoomContextLimit || 20; // 番外上下文条数，默认20
 
                 appPage.innerHTML = `
                     <div class="app-header-520">
@@ -19711,6 +19714,36 @@
                     msgsEl.scrollTop = msgsEl.scrollHeight;
                 }
                 function escapeHtmlER(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+                // 底部弹出的文本编辑框，代替系统 prompt()（手机上 prompt 很难用，输入框太小还容易被遮挡）
+                function openERTextEditModal(initialText, onConfirm) {
+                    const mask = document.createElement('div');
+                    mask.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.45);z-index:1200;display:flex;align-items:flex-end;justify-content:center;';
+                    mask.innerHTML = `
+                        <div style="background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:16px;box-sizing:border-box;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <span id="er-edit-cancel" style="font-size:14px;color:#9A7872;cursor:pointer;padding:4px 8px;">取消</span>
+                                <span style="font-size:13px;color:#775C56;font-weight:600;">编辑消息</span>
+                                <span id="er-edit-ok" style="font-size:14px;color:#FF9EB5;font-weight:700;cursor:pointer;padding:4px 8px;">保存</span>
+                            </div>
+                            <textarea id="er-edit-text" style="width:100%;min-height:120px;max-height:40vh;border:1px solid #f0e0dc;border-radius:12px;padding:12px;font-size:15px;color:#775C56;outline:none;box-sizing:border-box;resize:none;font-family:inherit;line-height:1.5;"></textarea>
+                        </div>
+                    `;
+                    appPage.appendChild(mask);
+                    const ta = mask.querySelector('#er-edit-text');
+                    ta.value = initialText;
+                    // 光标定位到文字末尾，方便手机上继续往后打字
+                    ta.focus();
+                    ta.setSelectionRange(ta.value.length, ta.value.length);
+                    const close = () => mask.remove();
+                    mask.querySelector('#er-edit-cancel').onclick = close;
+                    mask.onclick = (e) => { if (e.target === mask) close(); };
+                    mask.querySelector('#er-edit-ok').onclick = () => {
+                        const v = ta.value;
+                        close();
+                        onConfirm(v);
+                    };
+                }
                 async function erHandleAction(act, idx, elBtn) {
                     const msgs = getERChats(contactId);
                     const m = msgs[idx];
@@ -19721,12 +19754,16 @@
                         }
                         if (elBtn) { elBtn.textContent='已复制'; setTimeout(()=>{ elBtn.textContent='复制'; }, 1200); }
                     } else if (act === 'edit') {
-                        const nv = prompt('编辑消息：', m.text || '');
-                        if (nv !== null && nv.trim() !== '') {
-                            msgs[idx].text = nv.trim();
-                            saveERChats(contactId, msgs);
-                            renderMessages();
-                        }
+                        openERTextEditModal(m.text || '', (nv) => {
+                            if (nv !== null && nv.trim() !== '') {
+                                const freshMsgs = getERChats(contactId);
+                                if (freshMsgs[idx]) {
+                                    freshMsgs[idx].text = nv.trim();
+                                    saveERChats(contactId, freshMsgs);
+                                    renderMessages();
+                                }
+                            }
+                        });
                     } else if (act === 'del') {
                         if (confirm('删除这条消息？')) {
                             msgs.splice(idx, 1);
@@ -19752,7 +19789,7 @@
                         msgsEl.appendChild(loadingEl);
                         msgsEl.scrollTop = msgsEl.scrollHeight;
                         try {
-                            const reply = await callExtraRoomAI(c, baseMsgs, selectedWorldBookIds, erFormatOn);
+                            const reply = await callExtraRoomAI(c, baseMsgs, selectedWorldBookIds, erFormatOn, erContextLimit);
                             const newMsgs = baseMsgs.slice();
                             newMsgs.push({ sender: 'ai', text: reply, time: new Date().toISOString() });
                             // 若原来这条之后还有内容，保留（接在新回复后面）
@@ -19800,7 +19837,7 @@
                                 <div id="er-wb-options" style="padding-left:8px;">${allBooks.length ? '' : '<div style="color:#775C56;opacity:0.5;font-size:13px;">还没有世界书，先去「世界书」app 创建</div>'}</div>
                             </div>
                             <!-- 番外格式 -->
-                            <div style="background:#FBF9F4;border-radius:12px;padding:14px;margin-bottom:18px;box-shadow:0 4px 12px rgba(120,120,120,0.22);">
+                            <div style="background:#FBF9F4;border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 4px 12px rgba(120,120,120,0.22);">
                                 <div style="font-weight:bold;color:#775C56;border-left:4px solid #FFD3D4;padding-left:8px;margin-bottom:12px;">番外格式</div>
                                 <div style="display:flex;align-items:center;justify-content:space-between;padding-left:8px;">
                                     <span style="color:#775C56;font-size:14px;">开启后回复带番外格式头</span>
@@ -19809,9 +19846,35 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- 上下文长度 -->
+                            <div style="background:#FBF9F4;border-radius:12px;padding:14px;margin-bottom:18px;box-shadow:0 4px 12px rgba(120,120,120,0.22);">
+                                <div style="display:flex;align-items:center;justify-content:space-between;">
+                                    <div style="display:flex;align-items:center;">
+                                        <span style="width:4px;height:14px;background:#D5EBE4;display:inline-block;margin-right:8px;border-radius:2px;"></span>
+                                        <span style="font-weight:bold;color:#775C56;">上下文长度</span>
+                                    </div>
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <input id="er-ctx-input" type="number" inputmode="numeric" min="1" max="60" step="1" value="${erContextLimit}" style="width:52px;text-align:center;font-size:14px;font-weight:700;color:#775C56;border:1px solid #e8e0d0;border-radius:8px;padding:5px 2px;outline:none;box-sizing:border-box;background:#fff;">
+                                        <span style="font-size:12px;color:#9A7872;">条</span>
+                                    </div>
+                                </div>
+                            </div>
                             <button id="er-set-done" style="width:100%;background:#D5EBE4;color:#775C56;border:none;border-radius:12px;padding:12px;font-weight:600;cursor:pointer;">完成</button>
                         </div>`;
                     document.body.appendChild(ov);
+
+                    // 上下文条数：直接输入数字（4~60），失焦/变化时校验边界
+                    const ctxInput = ov.querySelector('#er-ctx-input');
+                    const CTX_MIN = 1, CTX_MAX = 60;
+                    const clampCtx = () => {
+                        let v = parseInt(ctxInput.value, 10);
+                        if (isNaN(v)) v = erContextLimit;
+                        v = Math.max(CTX_MIN, Math.min(CTX_MAX, v));
+                        ctxInput.value = v;
+                        erContextLimit = v;
+                    };
+                    ctxInput.onchange = clampCtx;
+                    ctxInput.onblur = clampCtx;
 
                     // 世界书多选
                     const optsEl = ov.querySelector('#er-wb-options');
@@ -19881,16 +19944,20 @@
 
                     // 完成：保存所有设置
                     ov.querySelector('#er-set-done').onclick = () => {
+                        clampCtx();
                         selectedWorldBookIds = [...optsEl.querySelectorAll('input:checked')].map(i => i.value);
                         c.extraRoomWorldBooks = selectedWorldBookIds;
                         c.extraRoomFormatOn = erFormatOn;
+                        c.extraRoomContextLimit = erContextLimit;
                         if (typeof DB !== 'undefined' && DB.saveContact) DB.saveContact(c);
                         document.body.removeChild(ov);
                     };
                     ov.onclick = (e) => { if (e.target === ov) { 
+                        clampCtx();
                         selectedWorldBookIds = [...optsEl.querySelectorAll('input:checked')].map(i => i.value);
                         c.extraRoomWorldBooks = selectedWorldBookIds;
                         c.extraRoomFormatOn = erFormatOn;
+                        c.extraRoomContextLimit = erContextLimit;
                         if (typeof DB !== 'undefined' && DB.saveContact) DB.saveContact(c);
                         document.body.removeChild(ov);
                     }};
@@ -19914,7 +19981,7 @@
                     msgsEl.scrollTop = msgsEl.scrollHeight;
 
                     try {
-                        const reply = await callExtraRoomAI(c, msgs, selectedWorldBookIds, erFormatOn);
+                        const reply = await callExtraRoomAI(c, msgs, selectedWorldBookIds, erFormatOn, erContextLimit);
                         const msgs2 = getERChats(contactId);
                         msgs2.push({ sender: 'ai', text: reply, time: new Date().toISOString() });
                         saveERChats(contactId, msgs2);
@@ -19934,7 +20001,7 @@
             }
 
             // —— 调 AI：长篇叙事，不设限，一问一答 ——
-            async function callExtraRoomAI(c, msgs, worldBookIds, formatOn) {
+            async function callExtraRoomAI(c, msgs, worldBookIds, formatOn, contextLimit) {
                 const userNick = localStorage.getItem('user_nick') || '我';
                 const pPlat = localStorage.getItem('apiPlatform') || 'openai';
                 const ep = localStorage.getItem('apiEndpoint') || '';
@@ -19973,7 +20040,7 @@
                 }
 
                 // 组装对话历史（番外处独立）
-                const history = msgs.slice(-20).map(m => ({
+                const history = msgs.slice(-(contextLimit || 20)).map(m => ({
                     role: m.sender === 'me' ? 'user' : 'assistant',
                     content: m.text
                 }));
