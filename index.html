@@ -4241,10 +4241,19 @@
                                 const originalBtnText = btn.textContent;
                                 btn.textContent = '...';
                                 try {
-                                    // 如果最后一条是用户的转账或礼物，50%接收50%退还
-                                    const lastUserMsg = history[history.length - 1];
-                                    if(lastUserMsg && lastUserMsg.sender === 'me' && (lastUserMsg.type === 'transfer' || lastUserMsg.type === 'gift')) {
-                                        const targetIdx = history.length - 1;
+                                    // 从最近一条AI消息往前找：找出用户发的、还没被接收/退还的最新一笔转账或礼物
+                                    // （不再只看"最后一条"，避免用户发完礼物后又多聊了几句，AI 就再也不会去接收它）
+                                    let targetIdx = -1;
+                                    for (let _i = history.length - 1; _i >= 0; _i--) {
+                                        const _m = history[_i];
+                                        if (_m.sender === 'ai') break; // 上次AI已经回复过更早的了，不用再往前翻
+                                        if (_m.sender === 'me' && (_m.type === 'transfer' || _m.type === 'gift') && !_m.claimed && _m.status !== 'returned') {
+                                            targetIdx = _i;
+                                            break; // 只处理离现在最近的一笔，避免一次性弹好几条回应
+                                        }
+                                    }
+                                    const lastUserMsg = targetIdx !== -1 ? history[targetIdx] : null;
+                                    if(lastUserMsg) {
                                         await new Promise(r => setTimeout(r, 800 + Math.random() * 1000));
                                         const accepted = Math.random() < 0.5;
                                         if(accepted) {
