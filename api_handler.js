@@ -67,18 +67,38 @@ const ApiHandler = {
         if (platform === 'gemini') {
             const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
             url = `${cleanedEndpoint}/v1beta/models/${model}:generateContent?key=${apiKey}`;
-            // Gemini expects the 'contents' field to be the array of messages.
-            // 注意：Gemini 2.5 系列是推理模型，"思考"消耗的 token 也算在 maxOutputTokens 总预算里。
-            // 预算给太低（比如旧版的 2048），思考本身就可能把预算耗光，导致正文被截断甚至完全空白。
-            // 这里把预算提高，并且给 thinkingBudget 设一个上限，避免思考无限制地把预算全部吃掉。
-            body = JSON.stringify({
-                contents: messages,
+
+            // 项目里绝大多数地方构造的都是 OpenAI 风格的消息数组：{role:'system'|'user'|'assistant', content:'...'}，
+            // 然后不管选的是哪个平台，都直接调用这个函数。但 Gemini 原生 REST 接口要的格式不一样：
+            //   1. 没有 'system' 这个角色，系统提示词要放进单独的 systemInstruction 字段
+            //   2. 'assistant' 要改叫 'model'
+            //   3. 每条消息内容要包在 parts:[{text}] 里，而不是一个 content 字符串
+            // 之前这里是把 messages 原样塞进 contents，官方 Gemini 接口收到这种格式基本会报错或者返回异常，
+            // 这正是"反代能连、官方连不上"的根本原因——反代很可能自己做了兼容转换，官方接口没有。
+            // 这里统一做转换，兼容两种输入：已经是 {role,parts} 的（比如通话功能自己转换过的），
+            // 和 {role,content} 的（其余大多数地方用的）。
+            let systemText = '';
+            const contents = [];
+            (messages || []).forEach(m => {
+                if (m.role === 'system') {
+                    systemText += (systemText ? '\n' : '') + (m.content || '');
+                    return;
+                }
+                const role = m.role === 'assistant' ? 'model' : (m.role || 'user');
+                const parts = m.parts ? m.parts : [{ text: m.content || '' }];
+                contents.push({ role, parts });
+            });
+
+            const bodyObj = {
+                contents,
                 generationConfig: {
                     maxOutputTokens: 8192,
                     temperature: 1,
                     thinkingConfig: { thinkingBudget: 1024 }
                 }
-            });
+            };
+            if (systemText) bodyObj.systemInstruction = { parts: [{ text: systemText }] };
+            body = JSON.stringify(bodyObj);
             return { url, options: { method: 'POST', headers, body, signal: AbortSignal.timeout(60000) } };
         }
         
