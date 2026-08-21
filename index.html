@@ -179,7 +179,7 @@
         .message-avatar { width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fff; flex-shrink: 0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: pointer; }
         
         /* 气泡新样式 */
-        .message-bubble { border-radius: 18px 18px 18px 18px; padding: 7px 11px; font-size: 14px; line-height: 1.4; color: #775C56; position: relative; max-width: 100%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08)); }
+        .message-bubble { border-radius: 18px 18px 18px 18px; padding: 7px 11px; font-size: 14px; line-height: 1.4; color: #775C56; position: relative; max-width: 100%; transition: opacity 0.3s; word-wrap: break-word; display: inline-block; width: auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.08)); -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
         .message-bubble.sent { background-color: #FFD3D4; }
 
         .ctx-menu { position:fixed; background:#775C56; border-radius:12px; padding:5px; z-index:9998; box-shadow:0 4px 16px rgba(119,92,86,0.35); display:grid; grid-template-columns:repeat(4,1fr); gap:2px; width:236px; }
@@ -3715,7 +3715,7 @@
                                     DB.saveChats({...DB.getChats(),[id]:history});
                                     render();
                                 }}] : []),
-                                {label:'删除', danger:true, action:()=>{ deleteMsg(msgIdx); }},
+                                {label:'删除', danger:true, action:()=>{ showDeleteConfirm(msgIdx); }},
                             ];
                             menu.innerHTML = items.map((it,i)=>`<div class="ctx-item${it.danger?' danger':''}" data-i="${i}">${it.label}</div>`).join('');
                             // Position relative to chat page: 横排菜单显示在气泡上方居中（像微信）
@@ -3733,6 +3733,28 @@
                                 el.onclick = () => { items[parseInt(el.dataset.i)].action(); menu.remove(); };
                             });
                             setTimeout(()=>document.addEventListener('click', ()=>menu.remove(), {once:true}), 50);
+                        };
+
+                        // 【新增·删除二次确认】原来点"删除"直接就删了，手机上长按呼出菜单后手指稍一没对准
+                        // 很容易误触"删除"这个选项。这里加一层确认弹窗，米白色背景，薄荷绿"取消"+粉色"删除"，
+                        // 跟项目里其它弹窗保持一个调性，确认了才真的调 deleteMsg。
+                        const showDeleteConfirm = (idx) => {
+                            document.querySelectorAll('.del-confirm-overlay').forEach(el => el.remove());
+                            const overlay = document.createElement('div');
+                            overlay.className = 'del-confirm-overlay';
+                            overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                            overlay.innerHTML = `<div style="background:#FBF9F4;border-radius:16px;padding:22px 20px;width:78%;max-width:270px;box-shadow:0 8px 28px rgba(0,0,0,0.2);text-align:center;">
+                                <div style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:18px;">删除这条消息？</div>
+                                <div style="display:flex;gap:10px;">
+                                    <button class="del-confirm-cancel" style="flex:1;padding:10px 0;border:none;border-radius:12px;background:#D5EBE4;color:#775C56;font-size:14px;font-weight:600;cursor:pointer;">取消</button>
+                                    <button class="del-confirm-ok" style="flex:1;padding:10px 0;border:none;border-radius:12px;background:#FFD3D4;color:#775C56;font-size:14px;font-weight:600;cursor:pointer;">删除</button>
+                                </div>
+                            </div>`;
+                            p.appendChild(overlay);
+                            const close = () => overlay.remove();
+                            overlay.querySelector('.del-confirm-cancel').onclick = close;
+                            overlay.querySelector('.del-confirm-ok').onclick = () => { deleteMsg(idx); close(); };
+                            overlay.addEventListener('click', (e) => { if(e.target === overlay) close(); });
                         };
 
                         // Long press (touch) or right-click (desktop) to select
@@ -4440,6 +4462,12 @@
                                         const weatherInfo = await getWeatherInfo();
                                         if (weatherInfo) systemPrompt += buildWeatherPrompt(weatherInfo);
                                     } catch(e) {}
+
+                                    // 【新增·正数日/倒数日】把用户在小组件里记的正数日/倒数日（纪念日、生日、
+                                    // 目标日等）汇总成具体天数塞进上下文，让 AI 在用户聊到相关话题时能自然接得上，
+                                    // 而不是完全不知道这些日子的存在。之前这个函数只在「同频」「番外」等分支里
+                                    // 被调用，主聊天（也就是日常发消息用的这条流程）漏掉了，这里补上。
+                                    try { systemPrompt += hsBuildDaysContext(c); } catch(e) {}
 
                                     // 【收尾再强调·多发几条】放在整个 prompt 最末尾，利用"末尾指令权重更高"提升 AI 连发多条短消息的依从性
                                     if (!isOffline) systemPrompt += `\n\n【关于回复节奏】像真人发微信那样陪我聊就好——有话说、有情绪、有想分享的时候，自然地连发几条短消息（差不多 3 到 8 条，用换行分开，一条一行），别全挤成一句、也别一两句就匆匆收住。但不用硬凑数：话轻松、或者本就该简短回应的时候，少发两条也没关系。长短多少跟着当下的心情和内容走，自然，才像真的在陪我。`;
