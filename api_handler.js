@@ -7,12 +7,11 @@ const ApiHandler = {
      */
     getBaseUrl(endpoint) {
         let url = endpoint.replace(/\/$/, ''); // Remove trailing slash
-        if (url.endsWith('/v1/chat/completions')) {
-            return url.replace('/v1/chat/completions', '');
-        }
-        if (url.endsWith('/v1')) {
-            return url.replace('/v1', '');
-        }
+        // 【新增·兼容 GLM/智谱等 /v4 风格地址】原来只认识 /v1，用户填 GLM 的
+        // https://open.bigmodel.cn/api/paas/v4 或带了 /chat/completions 的完整地址时会拼错。
+        // 这里先统一去掉结尾的 /chat/completions，再去掉结尾的 /v1 或 /v4，逻辑对旧版 /v1 完全兼容。
+        url = url.replace(/\/chat\/completions$/, '');
+        url = url.replace(/\/(v1|v4)$/, '');
         return url;
     },
 
@@ -56,6 +55,28 @@ const ApiHandler = {
                 .filter(model => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
                 .map(model => model.name.replace('models/', ''))
                 .sort();
+        } else if (platform === 'glm') {
+            // 智谱官方目前没有公开、稳定的、和 OpenAI /v1/models 完全对等的模型列表接口
+            // （反代/网关不一定支持这个路径）。这里先按 OpenAI 兼容方式尝试请求一次
+            // {baseUrl}/models，请求失败或返回空就直接兜底成一份常见模型的静态列表，
+            // 保证下拉框不会因为这个接口不存在而空着。
+            const FALLBACK_GLM_MODELS = [
+                'glm-5.3', 'glm-5.2', 'glm-5', 'glm-5-turbo', 'glm-5-air',
+                'glm-4.7', 'glm-4.7-flash', 'glm-4.5', 'glm-4.5-air', 'glm-4.5-flash',
+                'glm-4-flash', 'glm-4-plus', 'glm-4v', 'glm-4v-flash'
+            ];
+            const baseUrl = this.getBaseUrl(endpoint) || 'https://open.bigmodel.cn/api/paas';
+            try {
+                const response = await fetch(`${baseUrl}/v4/models`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+                if (!response.ok) throw new Error('models endpoint not available');
+                const data = await response.json();
+                const ids = (data.data || []).map(m => m.id).filter(Boolean);
+                return (ids.length ? ids : FALLBACK_GLM_MODELS).sort();
+            } catch (e) {
+                return FALLBACK_GLM_MODELS.sort();
+            }
         }
         return [];
     },
@@ -114,10 +135,16 @@ const ApiHandler = {
             return { url, options: { method: 'POST', headers, body, signal: AbortSignal.timeout(60000) } };
         }
         
-        // Handles 'openai' and 'MyAPI' (OpenAI-like)
+        // Handles 'openai', 'MyAPI', 'glm'（智谱/GLM 官方接口本身就是 OpenAI Chat Completions 兼容格式）
         headers['Authorization'] = `Bearer ${apiKey}`;
         if (platform === 'openai') {
             url = 'https://api.openai.com/v1/chat/completions';
+        } else if (platform === 'glm') {
+            // 【新增·GLM 官方接口】getBaseUrl 会把用户填的地址里 /v4 这类版本后缀去掉（方便兼容各种填法），
+            // 所以这里要自己把 /v4/chat/completions 加回去，不能只加 /chat/completions——
+            // 智谱的真实路径是 /api/paas/v4/chat/completions，少了 /v4 会直接 404。
+            const baseUrl = this.getBaseUrl(endpoint) || 'https://open.bigmodel.cn/api/paas';
+            url = `${baseUrl}/v4/chat/completions`;
         } else { // MyAPI
             const baseUrl = this.getBaseUrl(endpoint);
             url = `${baseUrl}/v1/chat/completions`;
@@ -158,7 +185,7 @@ const ApiHandler = {
                 throw new Error('触发了 Gemini 的原创性/重复内容检测，换个问法再试试');
             }
             return text; // 确实没有更多信息，交回调用方按通用的"AI 返回空"处理
-        } else { // Handles 'openai' and 'MyAPI'
+        } else { // Handles 'openai', 'MyAPI', 'glm'（GLM 返回结构和 OpenAI 一致，直接复用）
             return data.choices?.[0]?.message?.content;
         }
     }
