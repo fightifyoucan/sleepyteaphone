@@ -99,7 +99,15 @@ const ApiHandler = {
                     maxOutputTokens: 8192,
                     temperature: 1,
                     thinkingConfig: { thinkingBudget: 1024 }
-                }
+                },
+                // 恋人陪伴类对话经常涉及亲密、情感浓度比较高的内容，稍微松一点安全过滤的阈值，
+                // 避免正常的情侣对话被误拦截。这不是关闭安全审核，只是不用默认的中等及以上就拦。
+                safetySettings: [
+                    { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+                    { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+                    { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+                    { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
+                ]
             };
             if (systemText) bodyObj.systemInstruction = { parts: [{ text: systemText }] };
             body = JSON.stringify(bodyObj);
@@ -129,7 +137,27 @@ const ApiHandler = {
      */
     parseChatResponse(platform, data) {
         if (platform === 'gemini') {
-            return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) return text;
+
+            // 拿不到正文的时候，把 Gemini 真正给出的原因扒出来，而不是让调用方只看到一句
+            // 千篇一律的"AI 返回空"——不然每次都得靠猜，根本不知道是哪种情况。
+            if (data.promptFeedback?.blockReason) {
+                throw new Error(`请求被内容安全过滤拦截了（${data.promptFeedback.blockReason}），可能是这次的内容触发了 Gemini 的审核，换个说法再试试`);
+            }
+            const candidate = data.candidates?.[0];
+            const finishReason = candidate?.finishReason;
+            if (finishReason === 'SAFETY') {
+                const hit = (candidate.safetyRatings || []).filter(r => r.blocked || r.probability === 'HIGH' || r.probability === 'MEDIUM').map(r => r.category.replace('HARM_CATEGORY_', ''));
+                throw new Error(`回复被内容安全过滤拦截了${hit.length ? '（' + hit.join('、') + '）' : ''}，换个说法再试试`);
+            }
+            if (finishReason === 'MAX_TOKENS') {
+                throw new Error('回复还没写正文，"思考"就把预算用完了——可以试着把 maxOutputTokens 调更大，或者简化一下这次的问题');
+            }
+            if (finishReason === 'RECITATION') {
+                throw new Error('触发了 Gemini 的原创性/重复内容检测，换个问法再试试');
+            }
+            return text; // 确实没有更多信息，交回调用方按通用的"AI 返回空"处理
         } else { // Handles 'openai' and 'MyAPI'
             return data.choices?.[0]?.message?.content;
         }
