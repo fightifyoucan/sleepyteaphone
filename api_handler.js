@@ -48,9 +48,13 @@ const ApiHandler = {
                 throw new Error(`Failed to fetch models: ${err.error?.message || response.statusText}`);
             }
             const data = await response.json();
+            // 之前这里先 map 成了纯名字字符串，再拿 "generateContent" 去搜这个名字——
+            // 但模型名字（比如 "gemini-2.5-pro"）本来就不可能包含这个词，导致永远筛不出结果，
+            // 一直报"未找到模型数据"。真正标记"是否支持 generateContent"的字段是模型对象自己的
+            // supportedGenerationMethods 数组，得在还没把对象简化成名字字符串之前去检查它。
             return data.models
+                .filter(model => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
                 .map(model => model.name.replace('models/', ''))
-                .filter(name => name.includes('generateContent'))
                 .sort();
         }
         return [];
