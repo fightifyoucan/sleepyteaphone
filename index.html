@@ -4557,7 +4557,9 @@
                                             const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
                                             if (lines.length >= 2) {
                                                 // 每行作为一条消息，但行内如果太长还是可以保留（真人一条消息也可能稍长）
-                                                return lines;
+                                                // 同样清理每行末尾多余的逗号/顿号——之前这条路径没做清理，
+                                                // 导致 AI 换行分句时如果某行末尾带了个「，」会原样显示出来（比如"很辛苦，"）
+                                                return lines.map(function(s){ return s.replace(/[，、]+$/, ''); });
                                             }
 
                                             const EPHOLD = 'ELLIPSIS_HOLD';
