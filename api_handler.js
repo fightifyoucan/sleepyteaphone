@@ -20,6 +20,9 @@ const ApiHandler = {
      */
     async fetchModels(platform, endpoint, apiKey) {
         if (platform === 'openai' || platform === 'MyAPI') {
+            if (platform === 'MyAPI' && !endpoint) {
+                throw new Error('请先填写 MyAPI 的接口地址');
+            }
             const baseUrl = (platform === 'openai') 
                 ? 'https://api.openai.com' 
                 : this.getBaseUrl(endpoint);
@@ -33,10 +36,12 @@ const ApiHandler = {
                 throw new Error(`Failed to fetch models: ${err.error?.message || response.statusText}`);
             }
             const data = await response.json();
-            // Filter for models that can be used with the chat completions endpoint
+            // 排掉非对话类模型（embedding/视觉理解/语音/图像/审核等），
+            // 而不是靠 "gpt"/"text-" 白名单救场——之前的写法因为 && 优先级比 || 高，
+            // 实际上变成了"只要不含 embed 或 vision 就放行"，会把 whisper/dall-e/tts 这类也混进来
             return data.data
                 .map(model => model.id)
-                .filter(id => id.includes('gpt') || id.includes('text-') || !id.includes('embed') && !id.includes('vision'))
+                .filter(id => !id.includes('embed') && !id.includes('vision') && !id.includes('whisper') && !id.includes('tts') && !id.includes('dall-e') && !id.includes('moderation'))
                 .sort();
         } else if (platform === 'gemini') {
             const cleanedEndpoint = (endpoint || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
@@ -146,6 +151,9 @@ const ApiHandler = {
             const baseUrl = this.getBaseUrl(endpoint) || 'https://open.bigmodel.cn/api/paas';
             url = `${baseUrl}/v4/chat/completions`;
         } else { // MyAPI
+            if (!endpoint) {
+                throw new Error('请先填写 MyAPI 的接口地址');
+            }
             const baseUrl = this.getBaseUrl(endpoint);
             url = `${baseUrl}/v1/chat/completions`;
         }
