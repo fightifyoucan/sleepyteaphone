@@ -4505,7 +4505,12 @@
                                         for (const msg of visibleHistory.slice(-ctxLimit)) {
                                             const role = msg.sender === 'me' ? 'user' : 'assistant';
                                             // 图片消息：尝试取出真实图片，按 vision 格式发给 AI，让它真的"看到"
-                                            if ((msg.type === 'image' || msg.type === 'sticker' || msg.type === 'photo') && msg.sender === 'me') {
+                                            // 【修复·GLM 报错】GLM 官方接口对 content.type 校验很严格，只认 'text'，
+                                            // 不支持 OpenAI 这种 content:[{type:'image_url',...}] 的多模态数组格式，
+                                            // 发过去整条请求直接 400（"messages.content.type 参数非法，取值范围
+                                            // ['text']"），导致那一轮对话彻底失败。所以 glm 平台跳过这个 vision 分支，
+                                            // 走下面 getMsgText 的纯文字描述兜底，不影响 openai / MyAPI 走真实识图。
+                                            if ((msg.type === 'image' || msg.type === 'sticker' || msg.type === 'photo') && msg.sender === 'me' && pPlat !== 'glm') {
                                                 let imgData = null;
                                                 try {
                                                     if (window.ImageDB && msg.content) {
