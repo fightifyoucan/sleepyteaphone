@@ -1849,55 +1849,6 @@
             });
         }
 
-        // ============ 【修复】手机模式下点输入框弹键盘：输入框被键盘挡住 / 键盘收起后底部留空白 ============
-        // 原因：手机模式下 .mobile-container 靠 100vh/100vw 撑满整个屏幕，但不少移动浏览器（尤其安卓）
-        // 软键盘弹出、收起时并不会让 100vh 实时刷新——键盘弹出时页面没跟着"变矮"，于是底部的输入框
-        // 就被键盘盖住、显示不全；键盘收起后有些浏览器还要等额外一次滚动/重排才会把 100vh 刷新回真实高度，
-        // 这段时间里屏幕底部就会多出一截空白。用 window.visualViewport 实时读出"刨掉键盘之后的真实可视高度"，
-        // 键盘一弹出/收起就主动把容器高度纠正过来，这两个现象就都不会再出现了。
-        (function () {
-            function syncMobileContainerHeight() {
-                if (!window.visualViewport) return;
-                if (!window.matchMedia('(pointer: coarse)').matches) return; // 只处理真机触屏全屏模式，桌面居中的手机模型外壳不受影响
-                const mc = document.querySelector('.mobile-container');
-                if (!mc) return;
-                mc.style.setProperty('height', window.visualViewport.height + 'px', 'important');
-            }
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', syncMobileContainerHeight);
-                window.visualViewport.addEventListener('scroll', syncMobileContainerHeight);
-            }
-            document.addEventListener('DOMContentLoaded', syncMobileContainerHeight);
-            window.syncMobileContainerHeight = syncMobileContainerHeight; // 供沉浸模式切换等主动改容器样式的地方，改完后调用校正一次
-        })();
-
-        // ============ 【修复·iOS "添加到主屏幕"独立模式】点输入框，整个网页被顶上去，露出一片空白 ============
-        // 原因：iOS Safari 在"添加到主屏幕"打开的独立模式（standalone）下没有地址栏可以收起，
-        // 输入框一聚焦，系统会直接把整个网页往上滚动，好让输入框躲开键盘——但这个 app 是靠固定尺寸的
-        // 手机外壳模拟界面，本来就不需要网页本身滚动，这一滚就把头部、聊天内容全顶出了可视区域，
-        // 只剩键盘上方那截空白背景；键盘收起后这个滚动位移经常也没完全归位，就变成了你看到的底部留白。
-        // 这里在输入框聚焦、失焦前后，多次强制把网页滚动位置纠正回 (0,0)，把系统这次"自作主张"的滚动顶回去。
-        (function () {
-            function forceScrollTop() {
-                window.scrollTo(0, 0);
-                if (document.documentElement) document.documentElement.scrollTop = 0;
-                if (document.body) document.body.scrollTop = 0;
-            }
-            function scheduleCorrections() {
-                // 键盘弹出/收起有动画过程，iOS 的自动滚动也是异步发生的，
-                // 所以不能只纠正一次，要在动画期间多纠正几次，确保最终稳定在 0,0。
-                [0, 50, 120, 220, 350, 500].forEach(delay => setTimeout(forceScrollTop, delay));
-            }
-            document.addEventListener('focus', (e) => {
-                const t = e.target;
-                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) scheduleCorrections();
-            }, true);
-            document.addEventListener('blur', (e) => {
-                const t = e.target;
-                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) scheduleCorrections();
-            }, true);
-        })();
-
         document.addEventListener('DOMContentLoaded', () => {
             const timeEl = document.getElementById('time');
             const dateEl = document.getElementById('date');
@@ -2101,7 +2052,6 @@
                 requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
 
                 if (di) di.style.display = 'none';
-                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
             }
 
             // --- 模板内容 ---
@@ -12356,7 +12306,6 @@
                                     periodWidget.style.transformOrigin = '';
                                 }
                                 requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
-                                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
                             } else {
                                 mobileContainer.style.cssText = '';
                                 document.documentElement.style.cssText = '';
@@ -12375,7 +12324,6 @@
                                     periodWidget.style.transformOrigin = '';
                                 }
                                 hsResetPeriodWidgetMargin();
-                                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
                             }
                             localStorage.setItem('immersive_mode', on ? '1' : '0');
                         }
