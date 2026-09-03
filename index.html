@@ -1871,6 +1871,33 @@
             window.syncMobileContainerHeight = syncMobileContainerHeight; // 供沉浸模式切换等主动改容器样式的地方，改完后调用校正一次
         })();
 
+        // ============ 【修复·iOS "添加到主屏幕"独立模式】点输入框，整个网页被顶上去，露出一片空白 ============
+        // 原因：iOS Safari 在"添加到主屏幕"打开的独立模式（standalone）下没有地址栏可以收起，
+        // 输入框一聚焦，系统会直接把整个网页往上滚动，好让输入框躲开键盘——但这个 app 是靠固定尺寸的
+        // 手机外壳模拟界面，本来就不需要网页本身滚动，这一滚就把头部、聊天内容全顶出了可视区域，
+        // 只剩键盘上方那截空白背景；键盘收起后这个滚动位移经常也没完全归位，就变成了你看到的底部留白。
+        // 这里在输入框聚焦、失焦前后，多次强制把网页滚动位置纠正回 (0,0)，把系统这次"自作主张"的滚动顶回去。
+        (function () {
+            function forceScrollTop() {
+                window.scrollTo(0, 0);
+                if (document.documentElement) document.documentElement.scrollTop = 0;
+                if (document.body) document.body.scrollTop = 0;
+            }
+            function scheduleCorrections() {
+                // 键盘弹出/收起有动画过程，iOS 的自动滚动也是异步发生的，
+                // 所以不能只纠正一次，要在动画期间多纠正几次，确保最终稳定在 0,0。
+                [0, 50, 120, 220, 350, 500].forEach(delay => setTimeout(forceScrollTop, delay));
+            }
+            document.addEventListener('focus', (e) => {
+                const t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) scheduleCorrections();
+            }, true);
+            document.addEventListener('blur', (e) => {
+                const t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) scheduleCorrections();
+            }, true);
+        })();
+
         document.addEventListener('DOMContentLoaded', () => {
             const timeEl = document.getElementById('time');
             const dateEl = document.getElementById('date');
