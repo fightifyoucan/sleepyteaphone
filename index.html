@@ -536,6 +536,7 @@
                 width: 100vw !important;
                 height: 100vh !important;
                 height: 100dvh !important;
+                height: var(--vvh, 100dvh) !important;
                 max-width: none !important;
                 max-height: none !important;
                 border-radius: 0 !important;
@@ -660,6 +661,31 @@
         <div id="woodfish-page" class="app-page"></div>
         <div id="app-home-indicator" class="home-indicator" style="display: none;"></div>
     </div>
+
+    <script>
+        // ============================================
+        // 【新增·键盘弹起视口修复】dvh 这个 CSS 单位理论上会跟着键盘变矮，但在不少 iOS Safari
+        // 版本/场景下更新得不及时或不准，导致键盘弹出后容器高度算错，输入框显示不完整。
+        // 这里改用 window.visualViewport（浏览器专门给"键盘/地址栏改变可视区域"这类场景设计的
+        // API，比 dvh 更新更实时可靠），把真实可见高度写进 CSS 变量 --vvh，
+        // 下面 .mobile-container 在全屏模式下会优先用这个变量，没有 visualViewport 支持时
+        // 自动退回 100dvh，不会报错。
+        (function() {
+            function setVVH() {
+                try {
+                    const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+                    document.documentElement.style.setProperty('--vvh', h + 'px');
+                } catch (e) {}
+            }
+            setVVH();
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', setVVH);
+                window.visualViewport.addEventListener('scroll', setVVH);
+            }
+            window.addEventListener('orientationchange', function() { setTimeout(setVVH, 300); });
+            window.addEventListener('resize', setVVH);
+        })();
+    </script>
 
     <script>
 
