@@ -2055,6 +2055,28 @@
                 if (di) di.style.display = 'none';
             }
 
+            // 【修复·键盘顶飞输入框】iOS "添加到主屏幕"全屏模式下，CSS 的 100dvh 并不总是可靠
+            // （standalone/WKWebView 环境里键盘弹出时不一定会触发 dvh 收缩）。
+            // 改用 visualViewport API 主动测量当前真正可见的视口高度，实时同步给全屏容器，
+            // 这个 API 是浏览器在键盘弹出时唯一保证会准确更新的数值。
+            if (window.visualViewport) {
+                let _vvRaf = null;
+                const syncImmersiveHeight = () => {
+                    if (_vvRaf) cancelAnimationFrame(_vvRaf);
+                    _vvRaf = requestAnimationFrame(() => {
+                        if (localStorage.getItem('immersive_mode') !== '1') return;
+                        const mc = document.querySelector('.mobile-container');
+                        if (!mc) return;
+                        mc.style.setProperty('height', window.visualViewport.height + 'px', 'important');
+                    });
+                };
+                window.visualViewport.addEventListener('resize', syncImmersiveHeight);
+                window.visualViewport.addEventListener('scroll', syncImmersiveHeight);
+                window.hsSyncImmersiveHeight = syncImmersiveHeight;
+                // 页面刚加载、且当前已处于沉浸模式时，先同步一次
+                syncImmersiveHeight();
+            }
+
             // --- 模板内容 ---
             const appContents = {
                 chat: `
@@ -12327,6 +12349,7 @@
                                 hsResetPeriodWidgetMargin();
                             }
                             localStorage.setItem('immersive_mode', on ? '1' : '0');
+                            if (window.hsSyncImmersiveHeight) window.hsSyncImmersiveHeight();
                         }
 
                         // 初始化状态
