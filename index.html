@@ -1849,6 +1849,39 @@
             });
         }
 
+        // ============ 【修复】iOS"添加到主屏幕"独立模式下，点输入框弹键盘：输入框弹不全 / 收起后按钮挤在一起 ============
+        // 根本原因：手机模式下 .mobile-container 是 position:absolute + top:0 + 100vh，锚定的是"整个网页文档"的坐标，
+        // 而不是"当前肉眼能看到的那块区域"。iOS 输入框聚焦时会把整个网页文档往上滚动一段来避开键盘——
+        // 网页文档一滚动，这个 position:absolute 的手机外壳就跟着"看起来"往上移出了可视区域一部分，
+        // 于是输入框只弹出来了一半、状态栏底下的内容也跟着错位；键盘收起后如果这次滚动没有精确复位，
+        // 底部就会残留一小截被压缩/多余的空白，三个按钮因为容器变矮了也跟着被"挤"在一起。
+        // 正确做法不是去跟 iOS 抢着滚动、把它滚回去（那样会跟系统自己的滚动动画打架，导致中间态被拍到），
+        // 而是用 window.visualViewport 实时读出"刨掉键盘、刨掉被滚动挪走的那部分之后，当前真正可见的那块区域"
+        // 的位置和大小，把手机外壳直接用 position:fixed 贴上去——不管网页文档怎么滚，外壳永远精确覆盖
+        // 当前可见区域，键盘弹再多次也不会跑偏，收起后也会立刻精确复位，不会留空白。
+        (function () {
+            function syncMobileContainerViewport() {
+                if (!window.visualViewport) return;
+                if (!window.matchMedia('(pointer: coarse)').matches) return; // 只处理真机触屏全屏模式，桌面居中的手机模型外壳不受影响
+                const mc = document.querySelector('.mobile-container');
+                if (!mc) return;
+                const vv = window.visualViewport;
+                mc.style.setProperty('position', 'fixed', 'important');
+                mc.style.setProperty('left', vv.offsetLeft + 'px', 'important');
+                mc.style.setProperty('top', vv.offsetTop + 'px', 'important');
+                mc.style.setProperty('width', vv.width + 'px', 'important');
+                mc.style.setProperty('height', vv.height + 'px', 'important');
+                mc.style.setProperty('margin', '0', 'important');
+            }
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncMobileContainerViewport);
+                window.visualViewport.addEventListener('scroll', syncMobileContainerViewport);
+            }
+            window.addEventListener('orientationchange', () => setTimeout(syncMobileContainerViewport, 300));
+            document.addEventListener('DOMContentLoaded', syncMobileContainerViewport);
+            window.syncMobileContainerHeight = syncMobileContainerViewport; // 供沉浸模式切换等主动改容器样式的地方，改完后调用校正一次
+        })();
+
         document.addEventListener('DOMContentLoaded', () => {
             const timeEl = document.getElementById('time');
             const dateEl = document.getElementById('date');
@@ -2052,6 +2085,7 @@
                 requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
 
                 if (di) di.style.display = 'none';
+                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
             }
 
             // --- 模板内容 ---
@@ -12306,6 +12340,7 @@
                                     periodWidget.style.transformOrigin = '';
                                 }
                                 requestAnimationFrame(hsAlignPeriodWidgetToIconRow);
+                                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
                             } else {
                                 mobileContainer.style.cssText = '';
                                 document.documentElement.style.cssText = '';
@@ -12324,6 +12359,7 @@
                                     periodWidget.style.transformOrigin = '';
                                 }
                                 hsResetPeriodWidgetMargin();
+                                if (window.syncMobileContainerHeight) window.syncMobileContainerHeight();
                             }
                             localStorage.setItem('immersive_mode', on ? '1' : '0');
                         }
