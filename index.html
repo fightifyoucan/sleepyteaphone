@@ -11692,7 +11692,7 @@
                             renderPhoneLog();
                         }
                         else if (appId === 'album') {
-                            appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="album-back">‹</span><h2 class="title" style="position:absolute;left:50%;top:50%;transform:translateX(-50%);color:#775C56;">相册</h2><span></span></div><div class="app-content" id="album-grid" style="background:#FBF9F4;padding:8px;"></div><div id="album-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;flex-direction:column;align-items:center;justify-content:center;"><img id="album-big" style="max-width:90%;max-height:75%;border-radius:8px;object-fit:contain;"><div id="album-time" style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:14px;"></div><div style="display:flex;gap:20px;margin-top:20px;align-items:center;"><button id="album-prev" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">‹</button><button id="album-close-btn" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:14px;padding:8px 16px;border-radius:20px;cursor:pointer;">关闭</button><button id="album-del" style="background:rgba(255,255,255,0.15);border:none;color:#FF6B6B;font-size:14px;padding:8px 16px;border-radius:20px;cursor:pointer;">删除</button><button id="album-next" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">›</button></div><div id="album-confirm" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;z-index:5;"><div style="background:#FBF9F4;border-radius:18px;padding:22px 20px;width:230px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.25);"><div style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:6px;">删掉这张照片？</div><div style="font-size:11px;color:#9A7872;line-height:1.6;margin-bottom:16px;">聊天里的原图不受影响哦～</div><div style="display:flex;gap:8px;"><button id="album-del-no" style="flex:1;border:none;border-radius:13px;padding:10px;background:#D5EBE4;color:#775C56;font-size:13px;cursor:pointer;">再想想</button><button id="album-del-yes" style="flex:1;border:none;border-radius:13px;padding:10px;background:#FFD3D4;color:#775C56;font-size:13px;font-weight:600;cursor:pointer;">删掉</button></div></div></div></div>`;
+                            appPage.innerHTML = `<div class="app-header-520"><span class="close-btn-520" id="album-back">‹</span><h2 class="title" style="position:absolute;left:50%;top:50%;transform:translateX(-50%);color:#775C56;">相册</h2><span id="album-memories-entry" style="font-size:20px;cursor:pointer;padding:0 6px;">💭</span></div><div class="app-content" id="album-grid" style="background:#FBF9F4;padding:8px;"></div><div id="album-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;flex-direction:column;align-items:center;justify-content:center;"><img id="album-big" style="max-width:90%;max-height:70%;border-radius:8px;object-fit:contain;"><div id="album-time" style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:14px;"></div><div id="album-memory-list" style="width:90%;max-width:340px;max-height:22%;overflow-y:auto;margin-top:8px;"></div><div style="display:flex;gap:10px;margin-top:14px;"><span id="album-recall" style="background:rgba(255,255,255,0.15);border:none;color:#FFD9E0;font-size:13px;padding:8px 16px;border-radius:20px;cursor:pointer;">💭 让 TA 回忆这一刻</span></div><div style="display:flex;gap:20px;margin-top:16px;align-items:center;"><button id="album-prev" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">‹</button><button id="album-close-btn" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:14px;padding:8px 16px;border-radius:20px;cursor:pointer;">关闭</button><button id="album-del" style="background:rgba(255,255,255,0.15);border:none;color:#FF6B6B;font-size:14px;padding:8px 16px;border-radius:20px;cursor:pointer;">删除</button><button id="album-next" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">›</button></div><div id="album-confirm" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;z-index:5;"><div style="background:#FBF9F4;border-radius:18px;padding:22px 20px;width:230px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,0.25);"><div style="font-size:14px;color:#775C56;font-weight:600;margin-bottom:6px;">删掉这张照片？</div><div style="font-size:11px;color:#9A7872;line-height:1.6;margin-bottom:16px;">聊天里的原图不受影响哦～</div><div style="display:flex;gap:8px;"><button id="album-del-no" style="flex:1;border:none;border-radius:13px;padding:10px;background:#D5EBE4;color:#775C56;font-size:13px;cursor:pointer;">再想想</button><button id="album-del-yes" style="flex:1;border:none;border-radius:13px;padding:10px;background:#FFD3D4;color:#775C56;font-size:13px;font-weight:600;cursor:pointer;">删掉</button></div></div></div></div>`;
                             appPage.querySelector('#album-back').onclick = () => { appPage.innerHTML=''; appPage.classList.remove('active'); };
                             const album = JSON.parse(localStorage.getItem('chat_album')||'[]');
                             const gridEl = appPage.querySelector('#album-grid');
@@ -11700,6 +11700,7 @@
                             const bigImg = appPage.querySelector('#album-big');
                             const albumTime = appPage.querySelector('#album-time');
                             let currentIdx = 0;
+                            const _esc = (s) => (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
                             // 辅助：把 imgdb://xxx 解析为真正的 src，否则原样返回
                             const resolveSrc = async (src) => {
@@ -11710,11 +11711,17 @@
                                 return src;
                             };
 
+                            const renderPhotoMemories = () => {
+                                const memEl = appPage.querySelector('#album-memory-list');
+                                const mems = album[currentIdx].memories || [];
+                                memEl.innerHTML = mems.map(m => `<div style="background:rgba(255,255,255,0.12);border-radius:12px;padding:9px 12px;margin-bottom:6px;font-size:12.5px;color:rgba(255,255,255,0.92);line-height:1.6;text-align:left;"><b style="color:#FFD9E0;">${_esc(m.name)}：</b>${_esc(m.text)}</div>`).join('');
+                            };
                             const showPhoto = async (idx) => {
                                 currentIdx = Math.max(0, Math.min(idx, album.length-1));
                                 bigImg.src = await resolveSrc(album[currentIdx].src);
                                 const d = new Date(album[currentIdx].time);
                                 albumTime.textContent = d.toLocaleString('zh-CN', {year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'});
+                                renderPhotoMemories();
                                 viewer.style.display = 'flex';
                             };
                             appPage.querySelector('#album-prev').onclick = (e) => { e.stopPropagation(); showPhoto(currentIdx-1); };
@@ -11760,6 +11767,119 @@
                             const delYes = appPage.querySelector('#album-del-yes');
                             if (delNo) delNo.onclick = () => { delConfirm.style.display = 'none'; };
                             if (delYes) delYes.onclick = doDelete;
+
+                            // ============ 【新增】让 TA 回忆这一刻 ============
+                            // 单张照片手动触发：选一个联系人，AI 看这张照片 + 拍摄日期，
+                            // 写一段第一人称的回忆感想，存进这张照片自己的 memories 数组里。
+                            const contactAvatarHtml = (av) => {
+                                if (!av) return '💌';
+                                if (typeof av === 'string' && av.includes('<')) return av;
+                                if (typeof av === 'string' && (av.startsWith('imgdb://') || av.startsWith('data:') || av.startsWith('http'))) return `<img data-albumavatar="${av}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+                                return av;
+                            };
+                            const resolveAvatarImgs = (root) => { root.querySelectorAll('img[data-albumavatar]').forEach(async img => { const src = img.getAttribute('data-albumavatar'); if (src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) { try { img.src = await window.ImageDB.resolve(src); } catch(e){} } else img.src = src; }); };
+
+                            async function callAlbumMemoryAI(contact, photoSrc, dateStr) {
+                                const apiKey = localStorage.getItem('apiKey');
+                                if (!apiKey) throw new Error('no-key');
+                                const pPlat = localStorage.getItem('apiPlatform') || 'openai';
+                                const ep = localStorage.getItem('apiEndpoint') || '';
+                                const model = localStorage.getItem('apiModel') || 'gpt-3.5-turbo';
+                                const userNick = localStorage.getItem('user_nick') || '我';
+                                let sys = `角色：${contact.name}\n`;
+                                if (contact.notes) sys += `备注：${contact.notes}\n`;
+                                if (contact.persona) sys += `人设：${contact.persona}\n`;
+                                if (contact.memory && contact.memory.manual) sys += `记忆：${contact.memory.manual}\n`;
+                                sys += `\n【任务】：${userNick} 翻相册翻到了一张 ${dateStr} 拍的照片，点开让你也看看、回忆一下。请你以 ${contact.name} 的口吻，看着这张照片写一段简短的回忆感想：可以是看到照片的第一反应、想起了当时的什么事、或者现在看着它的心情。温柔、具体、有画面感。60-120字，只输出你要说的话，不要罗列、不要加引号。`;
+                                // GLM 官方接口不支持 image_url 这种多模态数组格式，跳过带图，直接用纯文字兜底
+                                const canVision = pPlat !== 'glm';
+                                let messages;
+                                if (canVision && photoSrc && photoSrc.startsWith('data:image')) {
+                                    if (pPlat === 'gemini') {
+                                        messages = [{ role:'user', parts:[{ text: sys + `\n（下面是那张照片，拍摄于 ${dateStr}，请一起看）` }, { inline_data: { mime_type: photoSrc.split(';')[0].split(':')[1], data: photoSrc.split(',')[1] } }] }];
+                                    } else {
+                                        messages = [{ role:'system', content: sys }, { role:'user', content: [{ type:'text', text:`这是那张照片，拍摄于 ${dateStr}，请一起看着回忆一下。` }, { type:'image_url', image_url:{ url: photoSrc } }] }];
+                                    }
+                                } else {
+                                    const txt = `${userNick} 翻到一张 ${dateStr} 拍的照片给你看（暂时看不到图，凭这个日期和你们的关系随意联想着回应就好）。`;
+                                    messages = (pPlat === 'gemini') ? [{ role:'user', parts:[{ text: sys + '\n' + txt }] }] : [{ role:'system', content: sys }, { role:'user', content: txt }];
+                                }
+                                const payload = ApiHandler.generateChatPayload(pPlat, ep, apiKey, model, messages);
+                                const resp = await fetch(payload.url, payload.options);
+                                if (!resp.ok) throw new Error('api-fail');
+                                const data = await resp.json();
+                                let text = ApiHandler.parseChatResponse(pPlat, data);
+                                if (!text) throw new Error('empty');
+                                return text.trim().replace(/^["'“”]+|["'“”]+$/g, '');
+                            }
+
+                            const openContactPickerForRecall = () => {
+                                const cs = (typeof DB !== 'undefined' && DB.getContacts) ? DB.getContacts().filter(c => c && c.name) : [];
+                                if (!cs.length) { if (typeof toast === 'function') toast('还没有联系人呀～先去 520 添加一个吧'); return; }
+                                const dlg = document.createElement('div');
+                                dlg.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.55);z-index:1000;display:flex;align-items:flex-end;justify-content:center;';
+                                dlg.innerHTML = `<div style="background:#FBF9F4;border-radius:20px 20px 0 0;width:100%;max-width:420px;padding:18px 16px 24px;box-sizing:border-box;max-height:70%;overflow-y:auto;">
+                                    <div style="text-align:center;font-size:15px;font-weight:600;color:#775C56;margin-bottom:14px;">让谁来回忆这张照片？</div>
+                                    ${cs.map(c => `<div class="album-recall-pick" data-id="${c.id}" style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid #ece0d4;border-radius:14px;padding:12px;margin-bottom:9px;cursor:pointer;"><div style="width:38px;height:38px;border-radius:11px;overflow:hidden;background:#f5f0e8;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">${contactAvatarHtml(c.avatar)}</div><div style="flex:1;font-size:14px;color:#775C56;font-weight:500;">${_esc(c.notes||c.name)}</div></div>`).join('')}
+                                    <div id="album-recall-cancel" style="text-align:center;background:#efe6da;color:#775C56;border-radius:13px;padding:12px;font-size:14px;cursor:pointer;margin-top:4px;">再想想</div>
+                                </div>`;
+                                appPage.appendChild(dlg);
+                                resolveAvatarImgs(dlg);
+                                dlg.onclick = (e) => { if (e.target === dlg) dlg.remove(); };
+                                dlg.querySelector('#album-recall-cancel').onclick = () => dlg.remove();
+                                dlg.querySelectorAll('.album-recall-pick').forEach(el => {
+                                    el.onclick = async () => {
+                                        const cid = el.dataset.id;
+                                        const contact = (DB.getContacts()||[]).find(c => c.id === cid);
+                                        dlg.remove();
+                                        if (!contact) return;
+                                        const recallBtn = appPage.querySelector('#album-recall');
+                                        const oldLabel = recallBtn.textContent;
+                                        recallBtn.textContent = '💭 正在回忆…'; recallBtn.style.pointerEvents = 'none';
+                                        const idxAtStart = currentIdx;
+                                        const dateStr = new Date(album[idxAtStart].time).toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric'});
+                                        let text = '';
+                                        try {
+                                            const photoSrc = await resolveSrc(album[idxAtStart].src);
+                                            text = await callAlbumMemoryAI(contact, photoSrc, dateStr);
+                                        } catch (e) {
+                                            text = pick(['看着这张照片，忽然就想起当时的心情了，说不太清楚，但心里暖暖的。','翻到这张的时候愣了一下，好多细节都想起来了。']);
+                                        }
+                                        if (!album[idxAtStart].memories) album[idxAtStart].memories = [];
+                                        album[idxAtStart].memories.push({ contactId: contact.id, name: contact.notes || contact.name, text, time: Date.now() });
+                                        persistAlbum();
+                                        recallBtn.textContent = oldLabel; recallBtn.style.pointerEvents = '';
+                                        if (currentIdx === idxAtStart) renderPhotoMemories();
+                                    };
+                                });
+                            };
+                            function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+                            const recallBtnEl = appPage.querySelector('#album-recall');
+                            if (recallBtnEl) recallBtnEl.onclick = openContactPickerForRecall;
+
+                            // ============ 【新增】相册右上角"💭"入口：看所有已经攒下的回忆 ============
+                            const memEntryBtn = appPage.querySelector('#album-memories-entry');
+                            if (memEntryBtn) memEntryBtn.onclick = () => {
+                                const withMem = [];
+                                album.forEach((ph, i) => { (ph.memories||[]).forEach(m => withMem.push({ ...m, photoIdx: i, photoTime: ph.time })); });
+                                withMem.sort((a,b) => b.time - a.time);
+                                const dlg = document.createElement('div');
+                                dlg.style.cssText = 'position:absolute;inset:0;background:#FBF9F4;z-index:1000;display:flex;flex-direction:column;';
+                                dlg.innerHTML = `<div class="app-header-520"><span id="album-mem-close" style="font-size:22px;cursor:pointer;color:#775C56;padding:0 6px;">‹</span><h2 class="title" style="position:absolute;left:50%;top:50%;transform:translateX(-50%);color:#775C56;">回忆记录</h2><span style="width:28px;"></span></div>
+                                    <div style="flex:1;overflow-y:auto;padding:14px;">
+                                    ${withMem.length ? withMem.map(m => `<div class="album-mem-jump" data-idx="${m.photoIdx}" style="display:flex;gap:10px;background:#fff;border:1px solid #ece0d4;border-radius:14px;padding:11px;margin-bottom:10px;cursor:pointer;">
+                                        <img data-albummemthumb="${m.photoIdx}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;background:#eee;flex-shrink:0;">
+                                        <div style="flex:1;min-width:0;">
+                                            <div style="font-size:12px;color:#775C56;opacity:0.6;margin-bottom:3px;">${new Date(m.photoTime).toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric'})}</div>
+                                            <div style="font-size:13px;color:#775C56;line-height:1.6;"><b>${_esc(m.name)}：</b>${_esc(m.text)}</div>
+                                        </div>
+                                    </div>`).join('') : `<div style="text-align:center;color:#775C56;opacity:0.5;padding:60px 20px;line-height:2;">还没有回忆记录呀～<br><span style="font-size:12px;">打开一张照片，点"让 TA 回忆这一刻"试试</span></div>`}
+                                    </div>`;
+                                appPage.appendChild(dlg);
+                                dlg.querySelectorAll('img[data-albummemthumb]').forEach(async img => { const i = parseInt(img.dataset.albummemthumb); img.src = await resolveSrc(album[i].src); });
+                                dlg.querySelector('#album-mem-close').onclick = () => dlg.remove();
+                                dlg.querySelectorAll('.album-mem-jump').forEach(el => { el.onclick = () => { const i = parseInt(el.dataset.idx); dlg.remove(); showPhoto(i); }; });
+                            };
                         }
                     }
 
@@ -18499,6 +18619,16 @@
 
             function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
             function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+            // 【新增】格式化物品存入抽屉的日期：今天/昨天显示相对说法，更早的显示具体月日
+            function fmtDrawerDate(ts) {
+                if (!ts) return '';
+                const d = new Date(ts), now = new Date();
+                const sameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+                const yest = new Date(now); yest.setDate(now.getDate()-1);
+                if (sameDay(d, now)) return '今天 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                if (sameDay(d, yest)) return '昨天 ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+                return (d.getMonth()+1) + '月' + d.getDate() + '日';
+            }
             let curCid = null, curContact = null;
             const drawerKey = () => 'memodrawer_' + curCid;
             const getItems = () => { try { const a = JSON.parse(localStorage.getItem(drawerKey())||'[]'); return Array.isArray(a)?a:[]; } catch(e){ return []; } };
@@ -18542,13 +18672,16 @@
                         ${items.length ? '' : `<div style="text-align:center;color:${INK2};font-size:13px;padding:40px 20px;line-height:2;">抽屉空空的～<br><span style="font-size:12px;">点下面的＋，放点小东西进来吧📦</span></div>`}
                         ${items.map(it => {
                             let inner = '';
-                            if (it.type === 'image') inner = `<img data-mdimg="${it.content}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block;">`;
+                            if (it.type === 'image') inner = `<img data-mdimg="${it.content}" data-mdview="1" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;display:block;cursor:pointer;">`;
                             else if (it.type === 'link') inner = `<a href="${esc(it.content)}" target="_blank" style="font-size:13px;color:#6d8b98;word-break:break-all;text-decoration:underline;">🔗 ${esc(it.content)}</a>`;
                             else inner = `<div style="font-size:14px;color:${INK};line-height:1.8;white-space:pre-wrap;">${esc(it.content)}</div>`;
                             return `<div style="background:${CARD};border:1px solid ${LINE};border-radius:14px;padding:13px;margin-bottom:12px;box-shadow:0 2px 6px rgba(140,120,110,0.08);">
                                 ${inner}
                                 ${it.note ? `<div style="font-size:12px;color:${INK2};margin-top:9px;padding-top:9px;border-top:1px dashed ${LINE};line-height:1.6;">✍️ ${esc(it.note)}</div>` : ''}
-                                <div style="text-align:right;margin-top:6px;"><span class="md-del" data-id="${it.id}" style="font-size:11px;color:#c99;cursor:pointer;">删除</span></div>
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+                                    <span style="font-size:11px;color:${INK2};opacity:0.75;">${it.createdAt ? '🗓️ ' + esc(fmtDrawerDate(it.createdAt)) : ''}</span>
+                                    <span class="md-del" data-id="${it.id}" style="font-size:11px;color:#c99;cursor:pointer;">删除</span>
+                                </div>
                             </div>`;
                         }).join('')}
                         <div style="height:150px;"></div>
@@ -18556,12 +18689,59 @@
                     <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 18px;background:linear-gradient(to top,${BG},${BG}ee,${BG}00);display:flex;gap:10px;z-index:5;">
                         <div id="md-add" style="flex-shrink:0;background:${PINK};color:${ACCENT};border-radius:24px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;">＋</div>
                         <div id="md-open" style="flex:1;text-align:center;background:${ACCENT};color:#fff;border-radius:24px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(142,127,127,0.5);">📂 让 TA 打开抽屉看</div>
+                    </div>
+                    <div id="md-viewer" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;flex-direction:column;align-items:center;justify-content:center;">
+                        <img id="md-viewer-img" style="max-width:92%;max-height:76%;border-radius:8px;object-fit:contain;">
+                        <div id="md-viewer-note" style="color:rgba(255,255,255,0.75);font-size:13px;margin-top:14px;max-width:80%;text-align:center;line-height:1.6;white-space:pre-wrap;"></div>
+                        <div style="display:flex;gap:20px;margin-top:20px;align-items:center;">
+                            <button id="md-viewer-prev" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">‹</button>
+                            <button id="md-viewer-close" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:14px;padding:8px 16px;border-radius:20px;cursor:pointer;">关闭</button>
+                            <button id="md-viewer-next" style="background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:44px;height:44px;border-radius:50%;cursor:pointer;">›</button>
+                        </div>
                     </div>`;
                 appPage.querySelector('#md-back').onclick = () => { const cs = contacts(); if (cs.length > 1) pickContact(); else { appPage.classList.remove('active'); appPage.innerHTML=''; } };
                 appPage.querySelector('#md-add').onclick = () => openAdd();
                 appPage.querySelector('#md-open').onclick = () => { const items = getItems(); if (!items.length) { toast('抽屉还空空的呀～先放点东西进来💗'); return; } doLetTaSee(curContact); };
                 resolveImgs(appPage);
                 appPage.querySelectorAll('.md-del').forEach(el => { el.onclick = () => { const arr = getItems().filter(x=>x.id!==el.dataset.id); saveItems(arr); renderList(); }; });
+
+                // 点击图片放大看全貌，像相册一样
+                const imgItems = items.filter(it => it.type === 'image');
+                const viewer = appPage.querySelector('#md-viewer');
+                if (viewer && imgItems.length) {
+                    const viewerImg = appPage.querySelector('#md-viewer-img');
+                    const viewerNote = appPage.querySelector('#md-viewer-note');
+                    const prevBtn = appPage.querySelector('#md-viewer-prev');
+                    const nextBtn = appPage.querySelector('#md-viewer-next');
+                    const closeBtn = appPage.querySelector('#md-viewer-close');
+                    let mdViewIdx = 0;
+                    const resolveOne = async (src) => {
+                        if (typeof src === 'string' && src.startsWith('imgdb://') && window.ImageDB && window.ImageDB.resolve) {
+                            try { return await window.ImageDB.resolve(src); } catch(e){ return ''; }
+                        }
+                        return src;
+                    };
+                    const showMdPhoto = async (idx) => {
+                        mdViewIdx = (idx + imgItems.length) % imgItems.length;
+                        viewerImg.src = await resolveOne(imgItems[mdViewIdx].content);
+                        viewerNote.textContent = imgItems[mdViewIdx].note || '';
+                        viewer.style.display = 'flex';
+                    };
+                    appPage.querySelectorAll('img[data-mdview]').forEach((img, i) => { img.onclick = () => showMdPhoto(i); });
+                    // 只有一张图时不需要切换箭头
+                    const showArrows = imgItems.length > 1;
+                    if (prevBtn) { prevBtn.style.display = showArrows ? '' : 'none'; prevBtn.onclick = (e) => { e.stopPropagation(); showMdPhoto(mdViewIdx - 1); }; }
+                    if (nextBtn) { nextBtn.style.display = showArrows ? '' : 'none'; nextBtn.onclick = (e) => { e.stopPropagation(); showMdPhoto(mdViewIdx + 1); }; }
+                    if (closeBtn) closeBtn.onclick = () => { viewer.style.display = 'none'; };
+                    viewer.onclick = (e) => { if (e.target === viewer) viewer.style.display = 'none'; };
+                    let mdTouchStartX = 0;
+                    viewer.addEventListener('touchstart', e => { mdTouchStartX = e.touches[0].clientX; });
+                    viewer.addEventListener('touchend', e => {
+                        if (!showArrows) return;
+                        const dx = e.changedTouches[0].clientX - mdTouchStartX;
+                        if (Math.abs(dx) > 50) showMdPhoto(dx < 0 ? mdViewIdx + 1 : mdViewIdx - 1);
+                    });
+                }
             }
 
             function openAdd() {
