@@ -4594,13 +4594,24 @@
                                         }
 
                                         function splitResponseWithSentenceMigration(text) {
+                                            // 心声〈...〉和动作描写（...）本来该是一个整体的气泡；但如果 AI 自己
+                                            // 在这一整段里面换了行，下面"按换行直接拆"的快速通道会从中间把它切断，
+                                            // 变成一条气泡只有开头的〈、另一条只有结尾的〉，格式就对不上了。
+                                            // 这里先把跨行的整段钉成一个占位符（占位符本身不含换行，不会被切开），
+                                            // 快速换行拆分完之后再照原样换回来（连里面的换行一起还原）。
+                                            const _mlHold = [];
+                                            const _protectMultiline = (s) => s
+                                                .replace(/〈[^〈〉]*〉/g, function(m){ _mlHold.push(m); return '\u0002MLSEG_'+(_mlHold.length-1)+'\u0002'; })
+                                                .replace(/[（(][^（()）]*[）)]/g, function(m){ _mlHold.push(m); return '\u0002MLSEG_'+(_mlHold.length-1)+'\u0002'; });
+                                            const _restoreMultiline = (s) => s.replace(/\u0002MLSEG_(\d+)\u0002/g, function(_, idx){ return _mlHold[parseInt(idx)]; });
+
                                             // 优先：如果 AI 已经用换行分成了多行（多条消息），直接按行拆
-                                            const lines = text.split(/\n+/).map(s => s.trim()).filter(Boolean);
+                                            const lines = _protectMultiline(text).split(/\n+/).map(s => s.trim()).filter(Boolean);
                                             if (lines.length >= 2) {
                                                 // 每行作为一条消息，但行内如果太长还是可以保留（真人一条消息也可能稍长）
                                                 // 同样清理每行末尾多余的逗号/顿号——之前这条路径没做清理，
                                                 // 导致 AI 换行分句时如果某行末尾带了个「，」会原样显示出来（比如"很辛苦，"）
-                                                return lines.map(function(s){ return s.replace(/[，、]+$/, ''); });
+                                                return lines.map(function(s){ return _restoreMultiline(s.replace(/[，、]+$/, '')); });
                                             }
 
                                             const EPHOLD = 'ELLIPSIS_HOLD';
