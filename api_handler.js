@@ -194,7 +194,21 @@ const ApiHandler = {
             }
             return text; // 确实没有更多信息，交回调用方按通用的"AI 返回空"处理
         } else { // Handles 'openai', 'MyAPI', 'glm'（GLM 返回结构和 OpenAI 一致，直接复用）
-            return data.choices?.[0]?.message?.content;
+            let content = data.choices?.[0]?.message?.content;
+            if (typeof content === 'string') {
+                // 有些反代接口 / 思考模型（DeepSeek-R1、QwQ、GLM 思考模式等）会把思考过程用
+                // <think>...</think>（或 <thinking>...</thinking>）直接混在 content 里一起返回，
+                // 不处理的话这段思考文字会原样出现在聊天气泡里。这里统一把它剥掉，只留正文。
+                content = content
+                    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+                    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+                    // 极少数情况下思考没写完就被截断，只有开头 <think> 没有闭合标签——
+                    // 这种基本整段都是没写完的思考，直接把开头标签往后的内容一并去掉。
+                    .replace(/<think>[\s\S]*$/i, '')
+                    .replace(/<thinking>[\s\S]*$/i, '')
+                    .trim();
+            }
+            return content;
         }
     }
 };

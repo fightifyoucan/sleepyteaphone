@@ -3732,7 +3732,15 @@
                             menu.querySelectorAll('.ctx-item').forEach(el => {
                                 el.onclick = () => { items[parseInt(el.dataset.i)].action(); menu.remove(); };
                             });
-                            setTimeout(()=>document.addEventListener('click', ()=>menu.remove(), {once:true}), 50);
+                            const _ctxOpenedAt = Date.now();
+                            const _closeCtxOnOutsideClick = () => {
+                                // 长按松手那一刻浏览器会紧跟着补发一次 click，如果不忽略，
+                                // 菜单（包括"编辑"）会在手指刚抬起时就被这个 click 秒关，根本点不到。
+                                if (Date.now() - _ctxOpenedAt < 400) return;
+                                document.removeEventListener('click', _closeCtxOnOutsideClick);
+                                menu.remove();
+                            };
+                            document.addEventListener('click', _closeCtxOnOutsideClick);
                         };
 
                         // 【新增·删除二次确认】原来点"删除"直接就删了，手机上长按呼出菜单后手指稍一没对准
