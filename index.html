@@ -11574,9 +11574,12 @@
                         }
                     };
 
-                    // 页面内容是不是第一次搭建，这里自己判断、自己搭建，不用再去模拟点图标触发
+                    // 页面内容是不是第一次搭建，这里自己判断、自己搭建，不用再去模拟点图标触发。
+                    // 注意：setupCoupleSpaceApp 内部一上来就会 querySelector 页面模板里的元素，
+                    // 跟点图标那条路一样，必须先把模板塞进 appPage.innerHTML，不然全部落空直接报错中止。
                     const needsFreshSetup = !appPage.innerHTML;
                     if (needsFreshSetup) {
+                        appPage.innerHTML = appContents['couple-space'];
                         setupCoupleSpaceApp(appPage);
                     }
 
