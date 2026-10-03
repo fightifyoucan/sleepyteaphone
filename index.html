@@ -7878,15 +7878,6 @@
                 
                 renderAll();
 
-                // 消费"待跳转"标记：如果是从首页月经提醒小组件的气泡点进来的，这里加载完就自动帮忙打开月经记录页
-                if (window.hsPendingNav === 'period') {
-                    window.hsPendingNav = null;
-                    const targetC = contacts.find(x => x.id === currentId);
-                    if (targetC) {
-                        setTimeout(() => hsOpenPeriod(appPage, targetC, userNick), 0);
-                    }
-                }
-                
                 // 切换同频对象
                 appPage.querySelector('#hs-contact-switch').onclick = () => {
                     if (contacts.length === 1) { alert('只有一个联系人哦'); return; }
@@ -11558,43 +11549,66 @@
                 widget.addEventListener('pointercancel', pressOff);
                 widget.addEventListener('pointerleave', pressOff);
 
+                // 直接、确定地打开"心跳同频中"页面并叠加月经记录层——不再靠"模拟点一下图标，
+                // 设个标记，等 80 毫秒看标记有没有被 renderAll() 消费掉"这种有时间窗口、
+                // 容易踩空的办法（心跳同频中如果之前已经打开过缓存着，就不会重新触发那个消费逻辑，
+                // 一旦哪次动画或渲染比 80 毫秒慢，标记就没人收，气泡点了跟没点一样）。
+                function hsGoToPeriodFromWidget() {
+                    const appPage = document.getElementById('couple-space-page');
+                    if (!appPage) { console.warn('[period-widget] couple-space-page 未找到，中止'); return; }
+
+                    const openPeriodPage = () => {
+                        try {
+                            if (typeof DB === 'undefined' || !DB.getContacts) {
+                                console.warn('[period-widget] window.DB 或 DB.getContacts 不存在，中止');
+                                return;
+                            }
+                            const contacts = (DB.getContacts() || []).filter(x => x && x.name);
+                            if (!contacts.length) { console.warn('[period-widget] 过滤后没有联系人，中止'); return; }
+                            const id = hsGetActiveContactId();
+                            const c = contacts.find(x => x.id === id) || contacts[0];
+                            const userNick = localStorage.getItem('user_nick') || '我';
+                            hsOpenPeriod(appPage, c, userNick);
+                        } catch (err) {
+                            console.error('[period-widget] 跳转月经记录页失败:', err);
+                        }
+                    };
+
+                    // 页面内容是不是第一次搭建，这里自己判断、自己搭建，不用再去模拟点图标触发
+                    const needsFreshSetup = !appPage.innerHTML;
+                    if (needsFreshSetup) {
+                        setupCoupleSpaceApp(appPage);
+                    }
+
+                    // 把"心跳同频中"的页面显示出来——跟点图标那段代码里展示 appPage 的逻辑一致，
+                    // 这里直接照做，而不是通过模拟点击图标去间接触发
+                    if (!appPage.classList.contains('active')) {
+                        const mobileContainer = document.querySelector('.mobile-container');
+                        if (mobileContainer) mobileContainer.classList.add('app-open');
+                        appPage.classList.add('active');
+                        const ind = document.getElementById('app-home-indicator');
+                        if (ind) {
+                            ind.style.display = 'block';
+                            const chatPage = document.getElementById('chat-page');
+                            if (chatPage && chatPage.classList.contains('active')) ind.style.setProperty('display', 'none', 'important');
+                        }
+                    }
+
+                    // 刚搭建完内容的话让它先把 DOM 落定，下一帧再叠加月经记录层，
+                    // 不是第一次的话（页面早就在了）直接叠加，不用等
+                    setTimeout(openPeriodPage, needsFreshSetup ? 50 : 0);
+                }
+
                 // 点击小组件：默认跳转到"心跳同频中"主页；点白色气泡（头像+文字）则直接跳进月经记录页
                 widget.addEventListener('click', (e) => {
                     const isBubble = !!e.target.closest('#period-widget-bubble');
+                    if (isBubble) {
+                        hsGoToPeriodFromWidget();
+                        return;
+                    }
                     const coupleIcon = document.querySelector('.app-icon[data-app="couple-space"]');
                     if (!coupleIcon) { console.warn('[period-widget] 找不到心跳同频中的图标'); return; }
-
-                    if (isBubble) {
-                        // 设一个"待跳转"标记：如果心跳同频中是第一次打开、会重新走 setupCoupleSpaceApp，
-                        // 那边 renderAll() 之后会检查这个标记并自动打开月经记录页、然后清掉标记
-                        window.hsPendingNav = 'period';
-                    }
-                    coupleIcon.click(); // 打开/切到"心跳同频中"
-
-                    if (isBubble) {
-                        // 兜底：如果心跳同频中之前已经打开过（缓存着，不会重新触发 setupCoupleSpaceApp），
-                        // 上面的标记就没人消费——这里检查一下，如果标记还留着，就自己直接打开
-                        setTimeout(() => {
-                            if (window.hsPendingNav !== 'period') return; // 已经被 renderAll() 那边消费掉了，不用再处理
-                            window.hsPendingNav = null;
-                            try {
-                                const appPage = document.getElementById('couple-space-page');
-                                if (!appPage) { console.warn('[period-widget] couple-space-page 未找到，中止'); return; }
-                                if (typeof DB === 'undefined' || !DB.getContacts) {
-                                    console.warn('[period-widget] window.DB 或 DB.getContacts 不存在，中止');
-                                    return;
-                                }
-                                const contacts = (DB.getContacts() || []).filter(x => x && x.name);
-                                if (!contacts.length) { console.warn('[period-widget] 过滤后没有联系人，中止'); return; }
-                                const id = hsGetActiveContactId();
-                                const c = contacts.find(x => x.id === id) || contacts[0];
-                                const userNick = localStorage.getItem('user_nick') || '我';
-                                hsOpenPeriod(appPage, c, userNick);
-                            } catch(err) {
-                                console.error('[period-widget] 跳转月经记录页失败:', err);
-                            }
-                        }, 80);
-                    }
+                    coupleIcon.click(); // 打开/切到"心跳同频中"主页
                 });
 
                 window.addEventListener('storage', (e) => {
